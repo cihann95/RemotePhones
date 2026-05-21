@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Phone Farm - SERGIO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="mode-selection-container">
+    <!-- Header -->
+    <header class="mode-header">
+      <div class="logo-section">
+        <span class="logo-icon">📱</span>
+        <h1>Phone Farm</h1>
+        <span class="sergio-badge">SERGIO</span>
+      </div>
+      <p class="subtitle">Profesyonel Telefon Yonetim Sistemi</p>
+    </header>
+
+    <!-- Mode Cards -->
+    <main class="mode-cards">
+      <div class="mode-card" id="mode-home">
+        <div class="mode-icon">🏠</div>
+        <h2>EV</h2>
+        <p>Telefonlarin bagli oldugu bilgisayar</p>
+        <ul class="mode-features">
+          <li>Telefonlari USB ile bagla</li>
+          <li>Ekranlari goruntule ve kontrol et</li>
+          <li>Parsec ile uzaktan erisime ac</li>
+        </ul>
+        <button class="btn btn-primary btn-lg mode-btn">
+          EV Modunu Baslat
+        </button>
+      </div>
+
+      <div class="mode-card" id="mode-office">
+        <div class="mode-icon">🏢</div>
+        <h2>OFIS</h2>
+        <p>Uzaktan baglanan bilgisayar</p>
+        <ul class="mode-features">
+          <li>Ev bilgisayarina baglan</li>
+          <li>Parsec ile uzaktan eris</li>
+          <li>Telefonlari ofisten kontrol et</li>
+        </ul>
+        <button class="btn btn-primary btn-lg mode-btn">
+          OFIS Modunu Baslat
+        </button>
+      </div>
+    </main>
+
+    <!-- Status Bar -->
+    <section class="status-bar">
+      <div class="status-item">
+        <span class="status-icon">🔗</span>
+        <span class="status-label">Tailscale:</span>
+        <span class="status-value" id="tailscale-status">
+          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+        </span>
+      </div>
+      <div class="status-item">
+        <span class="status-icon">🎮</span>
+        <span class="status-label">Parsec:</span>
+        <span class="status-value" id="parsec-status">
+          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+        </span>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-brand">
+        <span class="sergio">SERGIO</span>
+        <span class="footer-divider"></span>
+        <span class="footer-version">v2.0</span>
+      </div>
+      <div class="footer-actions" style="margin-left: auto; display: flex; align-items: center; gap: 16px;">
+        <span id="license-info" style="font-size: 11px; color: var(--text-muted);">
+          <!-- License info will be populated by JS -->
+        </span>
+        <button class="btn btn-outline btn-sm" id="btn-deactivate-license" style="font-size: 11px; padding: 4px 10px;">
+          Lisansi Deaktive Et
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

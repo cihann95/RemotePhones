@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude doctor)",
+      "Bash(claude update:*)",
+      "Bash(dir:*)",
+      "Bash(test:*)",
+      "Bash(npm run build:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(node -e:*)"
+    ]
+  }
+}

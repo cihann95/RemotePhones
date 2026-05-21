@@ -1,0 +1,84 @@
+{
+  "projectRoot": "..",
+  "scanIntervalMs": 600000,
+  "outputDir": "../.ci",
+  "ignoredDirs": ["node_modules", "dist/win-unpacked/resources/app/node_modules", "empty_dir"],
+  "ignorePatterns": [],
+  "stateFile": "./checker-state.json",
+  "watchFiles": [
+    "src/main/*.js",
+    "src/renderer/*.js",
+    "src/*.js",
+    "package.json",
+    "package-lock.json"
+  ],
+  "checks": {
+    "syntax": {
+      "enabled": true,
+      "severity": "critical",
+      "label": "JS Syntax Check"
+    },
+    "npmAudit": {
+      "enabled": true,
+      "severity": "high",
+      "label": "NPM Audit"
+    },
+    "deadImportDetector": {
+      "enabled": true,
+      "severity": "medium",
+      "label": "Dead Import Detection"
+    },
+    "unguardedLogDetector": {
+      "enabled": true,
+      "severity": "medium",
+      "label": "Unguarded console.* Detection"
+    },
+    "todoMarkerDetector": {
+      "enabled": true,
+      "severity": "low",
+      "label": "TODO/FIXME Marker Detection"
+    },
+    "ipcHandlerGuardDetector": {
+      "enabled": true,
+      "severity": "high",
+      "label": "IPC Handler Null-Guard Detection"
+    },
+    "processExitDetector": {
+      "enabled": true,
+      "severity": "high",
+      "label": "Unguarded process.exit Detection",
+      "allowedFiles": ["main.js"]
+    },
+    "unhandledPromiseDetector": {
+      "enabled": true,
+      "severity": "high",
+      "label": "Unhandled Promise / Missing catch() Detection"
+    },
+    "electronSecurityCheck": {
+      "enabled": true,
+      "severity": "high",
+      "label": "Electron Security Anti-patterns"
+    },
+    "packageFreshness": {
+      "enabled": true,
+      "severity": "low",
+      "label": "package.json / package-lock.json Freshness"
+    },
+    "gitNewFiles": {
+      "enabled": true,
+      "severity": "low",
+      "label": "Untracked / Uncommitted Git Changes"
+    }
+  },
+  "knownIssues": {
+    "skipChecksOnIds": [],
+    "suppressedIds": [],
+    "note": "IDs listed here will no longer be re-reported on subsequent scans until source files change"
+  },
+  "agentIntegration": {
+    "taskListFile": "../AGENT_TASK_LIST.md",
+    "taskListPhase": "PHASE 2",
+    "maxPendingTasksPerCycle": 10,
+    "deduplicateWithExisting": true
+  }
+}

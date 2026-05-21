@@ -1,0 +1,14 @@
+// =====================================================
+// PHONE FARM V2 - SHARED APPLICATION CONSTANTS
+// =====================================================
+
+module.exports = {
+  DEFAULT_POLL_INTERVAL: 10000,
+  SCRCPY_SPAWN_TIMEOUT_MS: 30000,
+  STOP_DEVICE_TIMEOUT_MS: 3000,
+  MIN_INSTALL_PROGRESS_DELAY_MS: 2000,
+  INSTALL_PROGRESS_DELAY_MS: 2000,
+  INSTALL_RETRY_DELAY_MS: 1000,
+  LICENSE_RETRY_ATTEMPTS: 3,
+  DEFAULT_LICENSE_RETRY_DELAY_MS: 1000
+};

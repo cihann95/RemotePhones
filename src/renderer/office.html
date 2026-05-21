@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Phone Farm Ofis - SERGIO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="back-btn" id="btn-back">
+        ← Geri
+      </button>
+      <h1>
+        <span class="logo-icon">🏢</span>
+        <span>Phone Farm Ofis</span>
+        <span class="sergio-badge">SERGIO</span>
+      </h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-sm btn-outline" id="btn-settings" title="Ayarlar">⚙️ Ayarlar</button>
+      <button class="btn btn-sm btn-outline" id="btn-minimize" title="Kucult">➖</button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Control Panel -->
+    <section class="control-panel">
+      <h2>Ev Bilgisayarina Baglan</h2>
+      <p>Telefonlari gormek icin ev bilgisayariniza Parsec ile baglanin.</p>
+      <div class="control-buttons">
+        <button class="btn btn-primary big-button" id="btn-connect">
+          <span>🎮</span>
+          <span>PARSEC BAGLAN</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+      <!-- Status Card -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="icon">📊</span>
+            <span>Baglanti Durumu</span>
+          </h2>
+          <button class="btn btn-sm btn-outline" id="btn-refresh-status">🔄 Yenile</button>
+        </div>
+        <div class="card-body">
+          <div class="status-row">
+            <span class="status-label"><span>🔗</span><span>Tailscale</span></span>
+            <span class="status-value" id="tailscale-status">
+              <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+            </span>
+          </div>
+          <div class="status-row">
+            <span class="status-label"><span>🎮</span><span>Parsec</span></span>
+            <span class="status-value" id="parsec-status">
+              <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Info Card -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="icon">ℹ️</span>
+            <span>Nasıl Calisir?</span>
+          </h2>
+        </div>
+        <div class="card-body">
+          <div style="line-height: 1.8;">
+            <p><strong>1.</strong> Ev bilgisayarinda Phone Farm Ev uygulamasi calisiyor olmali</p>
+            <p class="mt-2"><strong>2.</strong> Telefonlar USB ile ev bilgisayarina bagli olmali</p>
+            <p class="mt-2"><strong>3.</strong> Parsec ile baglandiginizda tum telefon ekranlarini goreceksiniz</p>
+            <p class="mt-2"><strong>4.</strong> Mouse ve klavye ile telefonlari kontrol edebilirsiniz</p>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Quick Actions -->
+    <section class="card mt-3">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="icon">⚡</span>
+          <span>Hızlı İslemler</span>
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="flex gap-2" style="flex-wrap: wrap;">
+          <button class="btn btn-secondary" id="btn-open-parsec">🎮 Parsec Ac</button>
+          <button class="btn btn-secondary" id="btn-open-tailscale">🔗 Tailscale Yonetim</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings Modal -->
+  <div class="loading-overlay hidden" id="settings-modal">
+    <div class="card" style="max-width: 500px; margin: 24px;">
+      <div class="card-header">
+        <h2 class="card-title">⚙️ Ayarlar</h2>
+        <button class="btn btn-sm btn-outline" id="btn-close-settings">✕</button>
+      </div>
+      <div class="card-body">
+        <div class="text-center">
+          <button class="btn btn-outline" id="btn-open-setup">🔧 Kurulum Sihirbazi</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-brand">
+      <span class="sergio">SERGIO</span>
+      <span class="footer-divider"></span>
+      <span class="footer-version">v2.0</span>
+    </div>
+  </footer>
+
+  <script src="office.js"></script>
+</body>
+</html>

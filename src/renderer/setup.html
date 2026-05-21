@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Phone Farm - Kurulum</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .setup-container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .setup-header {
+      text-align: center;
+      padding: 48px 24px 32px;
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    }
+    .setup-header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+    .setup-content {
+      flex: 1;
+      padding: 32px 24px;
+      max-width: 800px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .setup-step {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .setup-step-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .step-number {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    .step-number.completed {
+      background: var(--success);
+    }
+    .step-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .step-description {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.7;
+    }
+    .step-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .step-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-color);
+    }
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--bg-tertiary);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent-primary);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .progress-text {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <!-- Header -->
+    <header class="setup-header">
+      <h1>Phone Farm Kurulumu <span class="sergio-badge">SERGIO</span></h1>
+      <p style="color: var(--text-secondary);">Telefonlarinizi uzaktan kontrol etmek icin gerekli araclari kuralim.</p>
+    </header>
+
+    <!-- Content -->
+    <main class="setup-content">
+      <!-- Step 1: Tailscale -->
+      <div class="setup-step" id="step-tailscale">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-tailscale-number">1</span>
+          <h2 class="step-title">Tailscale Kurulumu</h2>
+        </div>
+        <p class="step-description">
+          Tailscale, iki bilgisayarinizi internet uzerinden guvenli bir sekilde baglar.
+          VPN portu acmaniza veya karmasik ayarlar yapmaniza gerek kalmaz.
+        </p>
+
+        <div id="tailscale-status" class="step-status">
+          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+        </div>
+
+        <div id="tailscale-progress" class="hidden">
+          <div class="progress-bar">
+            <div class="progress-bar-fill" id="tailscale-progress-bar" style="width: 0%"></div>
+          </div>
+          <p class="progress-text" id="tailscale-progress-text">Indiriliyor... 0%</p>
+        </div>
+
+        <div class="step-actions" id="tailscale-actions">
+          <button class="btn btn-primary" id="btn-tailscale-install">Tailscale Kur</button>
+          <button class="btn btn-secondary" id="btn-tailscale-login" disabled>Giris Yap</button>
+          <button class="btn btn-outline" id="btn-tailscale-refresh">Yenile</button>
+        </div>
+      </div>
+
+      <!-- Step 2: Parsec -->
+      <div class="setup-step" id="step-parsec">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-parsec-number">2</span>
+          <h2 class="step-title">Parsec Kurulumu</h2>
+        </div>
+        <p class="step-description">
+          Parsec, ofis bilgisayarinizdan ev bilgisayarinizi gormenizi saglar.
+          Oyun icin tasarlandigi icin cok dusuk gecikme suresi sunar.
+        </p>
+
+        <div id="parsec-status" class="step-status">
+          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+        </div>
+
+        <div id="parsec-progress" class="hidden">
+          <div class="progress-bar">
+            <div class="progress-bar-fill" id="parsec-progress-bar" style="width: 0%"></div>
+          </div>
+          <p class="progress-text" id="parsec-progress-text">Indiriliyor... 0%</p>
+        </div>
+
+        <div class="step-actions" id="parsec-actions">
+          <button class="btn btn-primary" id="btn-parsec-install">Parsec Kur</button>
+          <button class="btn btn-secondary" id="btn-parsec-open" disabled>Parsec Ac</button>
+          <button class="btn btn-outline" id="btn-parsec-refresh">Yenile</button>
+        </div>
+      </div>
+
+      <!-- Step 3: Complete -->
+      <div class="setup-step" id="step-complete">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-complete-number">3</span>
+          <h2 class="step-title">Kurulumu Tamamla</h2>
+        </div>
+        <p class="step-description">
+          Tebrikler! Gerekli araclar kuruldu. Artik telefonlarinizi baglayabilir
+          ve uzaktan kontrol etmeye baslayabilirsiniz.
+        </p>
+
+        <div class="step-actions mt-2">
+          <button class="btn btn-success btn-lg" id="btn-complete-setup" disabled>Kurulumu Tamamla</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-brand">
+        <span class="sergio">SERGIO</span>
+        <span class="footer-divider"></span>
+        <span class="footer-version">v2.0</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>

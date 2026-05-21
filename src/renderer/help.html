@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Yardim - Phone Farm</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="back-btn" id="btn-back">← Geri</button>
+      <h1>
+        <span class="logo-icon">❓</span>
+        <span>Yardim</span>
+        <span class="sergio-badge">SERGIO</span>
+      </h1>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- FAQ -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="icon">📋</span>
+          <span>Sik Sorulan Sorular</span>
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Telefon baglanmiyor, ne yapmaliyim?</span>
+            <span class="faq-toggle">▼</span>
+          </div>
+          <div class="faq-answer">
+            <ol>
+              <li>Telefonda USB Hata Ayiklama modunun acik oldugunu kontrol edin</li>
+              <li>USB kablosunun duzgun calistigini kontrol edin</li>
+              <li>Telefonu bilgisayara yeniden baglayin</li>
+              <li>Telefonunuzda "Bu bilgisayara guven" uyarisini onaylayin</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Parsec baglantisi kurulamiyor?</span>
+            <span class="faq-toggle">▼</span>
+          </div>
+          <div class="faq-answer">
+            <ol>
+              <li>Her iki bilgisayarda Parsec'in calistigini kontrol edin</li>
+              <li>Her iki bilgisayarda ayni Parsec hesabina giris yapildigini kontrol edin</li>
+              <li>Guvenlik duvarinin Parsec'e izin verdigini kontrol edin</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question">
+            <span>Tailscale baglantisi yok?</span>
+            <span class="faq-toggle">▼</span>
+          </div>
+          <div class="faq-answer">
+            <ol>
+              <li>Her iki bilgisayarda Tailscale'in calistigini kontrol edin</li>
+              <li>Her iki bilgisayarin ayni Tailscale aginda oldugunu kontrol edin</li>
+              <li>Tailscale admin panelinden cihazlarin online oldugunu kontrol edin</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Klavye Kisayollari -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">
+          <span class="icon">⌨️</span>
+          <span>Klavye Kisayollari</span>
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="shortcut-list">
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+1-9</span>
+            <span class="shortcut-action">Telefon sec</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+A</span>
+            <span class="shortcut-action">Tum pencereleri ac</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+W</span>
+            <span class="shortcut-action">Secili pencereyi kapat</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+Shift+W</span>
+            <span class="shortcut-action">Tum pencereleri kapat</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+R / F5</span>
+            <span class="shortcut-action">Cihaz listesini yenile</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Ctrl+S</span>
+            <span class="shortcut-action">Farm'i baslat/durdur</span>
+          </div>
+          <div class="shortcut-item">
+            <span class="shortcut-key">Escape</span>
+            <span class="shortcut-action">Modal kapat</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-brand">
+      <span class="sergio">SERGIO</span>
+      <span class="footer-divider"></span>
+      <span class="footer-version">v2.0</span>
+    </div>
+  </footer>
+
+  <script src="help.js"></script>
+
+  <style>
+    .faq-item {
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius-sm);
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition-fast);
+    }
+    .faq-question:hover {
+      background: var(--bg-hover);
+    }
+    .faq-toggle {
+      font-size: 12px;
+      color: var(--text-muted);
+      transition: transform var(--transition-fast);
+    }
+    .faq-item.open .faq-toggle {
+      transform: rotate(180deg);
+    }
+    .faq-answer {
+      display: none;
+      padding: 0 16px 14px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      padding-top: 14px;
+    }
+    .faq-item.open .faq-answer {
+      display: block;
+    }
+    .faq-answer ol {
+      padding-left: 20px;
+      line-height: 1.8;
+      margin: 0;
+    }
+  </style>
+</body>
+</html>

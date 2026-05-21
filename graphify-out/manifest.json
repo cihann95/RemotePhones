@@ -1,0 +1,110 @@
+{
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\preload.js": {
+    "mtime": 1770331975.3070436,
+    "hash": "28802f26358151c950480b74e32d503b"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\adb.js": {
+    "mtime": 1770331969.0641322,
+    "hash": "a73cd6e310cf470a6a6587fb89943105"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\autostart.js": {
+    "mtime": 1765902148.447301,
+    "hash": "95c1cb0a1962b1940be4ba0c720919ad"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\device-store.js": {
+    "mtime": 1765902121.5229125,
+    "hash": "7f344e27dc135cbcd964a39c4372df5a"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\devices.js": {
+    "mtime": 1765958676.1866968,
+    "hash": "348e57e374cf5df5f94d2361bf1e670a"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\license.js": {
+    "mtime": 1765957421.218521,
+    "hash": "ce0f0d8ce23a0840afcf33edb764ea06"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\main.js": {
+    "mtime": 1770331982.673756,
+    "hash": "834fd055f191fb4d04e8090cd2299196"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\notifications.js": {
+    "mtime": 1765902182.148158,
+    "hash": "e7897de86312ba6e2b6e5c6c8e4338d7"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\parsec.js": {
+    "mtime": 1765902040.2117825,
+    "hash": "c0f666d6072d2b785c3d19d9400da4f4"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\paths.js": {
+    "mtime": 1765920544.8058605,
+    "hash": "bfacd5b7a2f6ba87b394325d52df54cd"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\scrcpy.js": {
+    "mtime": 1770331959.9980485,
+    "hash": "229cc91d6d6246d5601718dbd41812c9"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\shortcuts.js": {
+    "mtime": 1765902196.5446026,
+    "hash": "598861ab451f315ad1d221918ef8e94f"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\main\\tailscale.js": {
+    "mtime": 1765902079.0253603,
+    "hash": "2154512347689fa3731f67a3914b3e21"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\about.js": {
+    "mtime": 1765904965.452515,
+    "hash": "2e298552b03ad11b835454810c04451c"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\help.js": {
+    "mtime": 1765904969.1968014,
+    "hash": "57255d52c34ad016307eb256062e16c7"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\index.js": {
+    "mtime": 1765921840.1324553,
+    "hash": "9a24895c1f45a409201cf4fe85127013"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\license.js": {
+    "mtime": 1765957391.393459,
+    "hash": "21889008ad754605e624d2e3c407bf31"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\office.js": {
+    "mtime": 1765923984.4990208,
+    "hash": "63ac00cb35b56836e07cefe11acefb48"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\renderer.js": {
+    "mtime": 1770332065.4667163,
+    "hash": "2cb1d9c7688a0e28f55c7ea5d660af70"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\setup.js": {
+    "mtime": 1765904967.3355727,
+    "hash": "80592023641267e59ea23fb627743c5b"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\about.html": {
+    "mtime": 1765905070.9094877,
+    "hash": "f78c6d3c56260d275bbb624dc006958b"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\help.html": {
+    "mtime": 1765905091.2084448,
+    "hash": "e33f3b7c7b5c68af910a45c06be074dd"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\home.html": {
+    "mtime": 1770331993.8574147,
+    "hash": "a5425541bbf4eb869d2c2fe0be75f8df"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\index.html": {
+    "mtime": 1765921812.9526553,
+    "hash": "6c402b1cf498ba3adf71c39a98c5d166"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\license.html": {
+    "mtime": 1765919637.9873576,
+    "hash": "473968680b6e6bb62d8d9eb248fbfb60"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\office.html": {
+    "mtime": 1765905069.0807726,
+    "hash": "174aad2ca8ad65f2472d6b52da8ffe34"
+  },
+  "C:\\Users\\USER\\Desktop\\phone_farm_v2\\phone_farm_v2\\phone-farm-release\\phone-farm-backup\\src\\renderer\\setup.html": {
+    "mtime": 1765905072.7207909,
+    "hash": "525d22c97e654d063cc2a603c6dc9e36"
+  }
+}

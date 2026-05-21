@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Lisans Aktivasyonu - Phone Farm</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .license-container {
+      width: 100%;
+      max-width: 440px;
+    }
+    .license-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .license-logo {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+    .license-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .license-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .license-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .license-input-group {
+      margin-bottom: 20px;
+    }
+    .license-input-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+    }
+    .license-input {
+      width: 100%;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      color: var(--text-primary);
+      transition: border-color var(--transition-fast);
+    }
+    .license-input:focus {
+      outline: none;
+      border-color: var(--accent-primary);
+    }
+    .license-input::placeholder {
+      color: var(--text-muted);
+    }
+    .license-error {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--danger);
+      border-radius: var(--border-radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      color: var(--danger);
+      font-size: 13px;
+    }
+    .license-error.show {
+      display: block;
+    }
+    .license-success {
+      display: none;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid var(--success);
+      border-radius: var(--border-radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      color: var(--success);
+      font-size: 13px;
+    }
+    .license-success.show {
+      display: block;
+    }
+    .license-info {
+      display: none;
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius-sm);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .license-info.show {
+      display: block;
+    }
+    .license-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .license-info-row:last-child {
+      border-bottom: none;
+    }
+    .license-info-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    .license-info-value {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+    .license-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .btn-activate {
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .btn-deactivate {
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+    }
+    .license-footer {
+      text-align: center;
+      margin-top: 24px;
+    }
+    .license-footer-text {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .loading-spinner {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border-color);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto;
+    }
+    .loading-spinner.show {
+      display: inline-block;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .feature-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .feature-badge.enabled {
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
+    }
+    .feature-badge.disabled {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+  </style>
+</head>
+<body>
+  <div class="license-container">
+    <!-- Header -->
+    <div class="license-header">
+      <div class="license-logo">🔐</div>
+      <div class="license-title">Phone Farm</div>
+      <div class="license-subtitle">Lisans aktivasyonu gerekli</div>
+    </div>
+
+    <!-- License Card -->
+    <div class="license-card">
+      <!-- Error Message -->
+      <div class="license-error" id="error-message"></div>
+
+      <!-- Success Message -->
+      <div class="license-success" id="success-message"></div>
+
+      <!-- License Info (shown when activated) -->
+      <div class="license-info" id="license-info">
+        <div class="license-info-row">
+          <span class="license-info-label">Durum</span>
+          <span class="license-info-value" id="info-status">-</span>
+        </div>
+        <div class="license-info-row">
+          <span class="license-info-label">Lisans</span>
+          <span class="license-info-value" id="info-key">-</span>
+        </div>
+        <div class="license-info-row">
+          <span class="license-info-label">Bitis Tarihi</span>
+          <span class="license-info-value" id="info-expiry">-</span>
+        </div>
+        <div class="license-info-row">
+          <span class="license-info-label">Telefon Limiti</span>
+          <span class="license-info-value" id="info-phones">-</span>
+        </div>
+        <div class="license-info-row">
+          <span class="license-info-label">Uzaktan Erisim</span>
+          <span class="license-info-value" id="info-remote">-</span>
+        </div>
+      </div>
+
+      <!-- Input (shown when not activated) -->
+      <div id="activation-form">
+        <div class="license-input-group">
+          <label for="license-key">Lisans Anahtari</label>
+          <input
+            type="text"
+            id="license-key"
+            class="license-input"
+            placeholder="XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX-XXXXXX"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="license-actions">
+        <div class="loading-spinner" id="loading-spinner"></div>
+        <button class="btn btn-primary btn-activate" id="btn-activate">
+          Lisansi Aktiflestir
+        </button>
+        <button class="btn btn-success btn-activate hidden" id="btn-continue">
+          Devam Et
+        </button>
+        <button class="btn btn-outline btn-deactivate hidden" id="btn-deactivate">
+          Lisansi Deaktif Et
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="license-footer">
+      <div class="footer-brand">
+        <span class="sergio">SERGIO</span>
+        <span class="footer-divider"></span>
+        <span class="footer-version">v2.0</span>
+      </div>
+      <p class="license-footer-text mt-2">
+        Lisans anahtariniz yoksa yoneticinizle iletisime gecin.
+      </p>
+    </div>
+  </div>
+
+  <script src="license.js"></script>
+</body>
+</html>

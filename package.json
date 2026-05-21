@@ -1,0 +1,66 @@
+{
+  "name": "phone-farm",
+  "version": "2.0.0",
+  "description": "Phone Farm - Professional Phone Management System by SERGIO",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64",
+    "build:dir": "electron-builder --win --x64 --dir"
+  },
+  "dependencies": {
+    "@cryptlex/lexactivator": "^3.37.0",
+    "electron-store": "^8.1.0"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "author": "SERGIO",
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "com.sergio.phonefarm",
+    "productName": "Phone Farm",
+    "artifactName": "PhoneFarm-Setup-${version}.${ext}",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../tools",
+        "to": "tools",
+        "filter": ["**/*"]
+      },
+      {
+        "from": "src/main/Product.dat",
+        "to": "Product.dat"
+      }
+    ],
+    "asar": false,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/phoneFarm.ico",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Phone Farm",
+      "installerIcon": "assets/phoneFarm.ico",
+      "uninstallerIcon": "assets/phoneFarm.ico"
+    }
+  }
+}

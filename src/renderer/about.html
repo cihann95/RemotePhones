@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>Hakkinda - Phone Farm</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .about-container {
+      width: 100%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .about-logo {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+    .about-title {
+      font-size: 28px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .about-version {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+    .about-description {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+    .about-features {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .feature-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .feature-icon {
+      font-size: 24px;
+    }
+    .feature-text {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .about-divider {
+      width: 48px;
+      height: 1px;
+      background: var(--border-color);
+      margin: 32px auto;
+    }
+    .brand-badge {
+      display: inline-block;
+      padding: 8px 20px;
+      background: var(--sergio-glow);
+      border: 1px solid var(--sergio-primary);
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+    .brand-text {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      color: var(--sergio-text);
+    }
+    .brand-tagline {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+    .copyright {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+  <div class="about-container">
+    <div class="about-logo">📱</div>
+    <div class="about-title">Phone Farm</div>
+    <div class="about-version">Versiyon 2.0.0</div>
+
+    <div class="about-description">
+      Profesyonel telefon yonetim sistemi. Birden fazla telefonu ayni anda goruntuleyin ve kontrol edin.
+    </div>
+
+    <div class="about-features">
+      <div class="feature-item">
+        <span class="feature-icon">📱</span>
+        <span class="feature-text">Coklu Telefon</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">🔗</span>
+        <span class="feature-text">Uzaktan Erisim</span>
+      </div>
+      <div class="feature-item">
+        <span class="feature-icon">⚡</span>
+        <span class="feature-text">Dusuk Gecikme</span>
+      </div>
+    </div>
+
+    <div class="about-divider"></div>
+
+    <div class="brand-badge">
+      <span class="brand-text">SERGIO</span>
+    </div>
+    <div class="brand-tagline">Profesyonel Yazilim Cozumleri</div>
+
+    <div class="copyright">
+      &copy; 2024 SERGIO. Tum haklari saklidir.
+    </div>
+
+    <button class="btn btn-outline" id="btn-close">Kapat</button>
+  </div>
+
+  <script src="about.js"></script>
+</body>
+</html>
