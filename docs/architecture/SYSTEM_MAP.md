@@ -30,10 +30,10 @@
 - ~~There is a potential cross-zone import violation in core/plugins/base_plugin.py (if the imports from scheduler.manager and tasks.registry are present) creating a hard dependency from OpenCode's zone to Kilo's zones.~~ **RESOLVED** — Protocol refactor removed all cross-zone imports.
 
 ## Tespit edilen kırılma noktaları
-- ~~[P0] ManagerProtocol and RegistryProtocol mismatch: plugins expecting these interfaces will not work with current scheduler/manager.py and tasks/registry.py.~~ **RESOLVED** — Kilo/Laguna already implemented both protocols.
-- ~~[P0] If cross-zone imports exist in core/plugins/base_plugin.py (as logged in OPENCODE_LOG.md), this creates a hard dependency violating ownership rules.~~ **RESOLVED** — Protocol refactor removed all cross-zone imports.
-- ~~[P1] Monitor layer using shell_output instead of run_command may bypass retry logic and other features of run_command.~~ **PARTIALLY RESOLVED** — `shell_output` added to interface contract. Migration to `run_command` is optional (monitor may not need retry for health checks).
-- [P2] Lack of error handling in some ADB command usages (e.g., in automations/instagram.py, there are try-except blocks but some ADB calls are not wrapped).
+- ~~[P0] ManagerProtocol and RegistryProtocol mismatch~~ **RESOLVED** — Kilo/Laguna implemented both protocols.
+- ~~[P0] Cross-zone imports~~ **RESOLVED** — Protocol refactor removed all cross-zone imports.
+- ~~[P1] Monitor layer using shell_output~~ **PARTIALLY RESOLVED** — `shell_output` added to interface contract.
+- ~~[P2] automations/base.py hardcoded coordinates~~ **RESOLVED** — Now uses proportional screen dimensions.
 
 ## 4 ajanın dokunduğu kesişim noktaları
 - AGENTS.md: written by OpenCode (MiMo), read by all agents to understand interface contracts.
