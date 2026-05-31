@@ -138,16 +138,15 @@ class InstagramFollowTask(BaseTask):
 
     # ── helpers ─────────────────────────────────────────────────────────────
 
-    @staticmethod
+@staticmethod
     def _type_text(adb: MobileOperations, text: str,
                    device_id: str | None = None) -> None:
         """Type *text* character-by-character via ``adb shell input text``."""
         for ch in text:
             if ch == " ":
-                adb.adb._run(["shell", "input", "keyevent", "62"], device_id=device_id)
+                adb.adb.run_command(["shell", "input", "keyevent", "62"], device_id=device_id)
             elif ch.isalnum() or ch in "._-@":
-                adb.adb._run(["shell", "input", "text", ch], device_id=device_id)
+                adb.adb.run_command(["shell", "input", "text", ch], device_id=device_id)
             else:
-                # fall back to keycode for special chars
-                adb.adb._run(["shell", "input", "keyevent", "3"], device_id=device_id)
+                adb.adb.run_command(["shell", "input", "keyevent", "3"], device_id=device_id)
             time.sleep(0.1)
