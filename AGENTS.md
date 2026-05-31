@@ -34,10 +34,11 @@
 - `core.device_manager.DeviceManager`
 - `core.adb.ADBClient` + `AsyncADBClient`
 - `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int) -> str`
+- `core.adb.ADBClient.shell_output(command: str, device_id: str | None, timeout: int) -> str`
 - `utils.logger.get_logger(name: str) -> Logger`
 - `config.loader.load_config(path: str | None) -> dict`
-- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli)
-- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli)
+- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
+- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
 
 ## Pending Interface Changes
 (yok)

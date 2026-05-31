@@ -105,3 +105,27 @@ _Append entries. Never delete. Kilo Code reads this._
 **Next:** All P0 bugs resolved. System stable. Awaiting new tasks.
 
 ---
+
+## [2026-05-31 13:00] — Architecture Audit + Interface Contract Update
+
+**Did:**
+- Audited `docs/architecture/INTERFACE_SPEC.md` and `docs/architecture/SYSTEM_MAP.md`
+- Discovered Kilo/Laguna already implemented both Protocols:
+  - `scheduler/manager.py:41` → `class PhoneFarmManager(ManagerProtocol):`
+  - `tasks/registry.py:14` → `class TaskRegistry(RegistryProtocol):`
+- Added `shell_output` to AGENTS.md Shared Interface Contract (was missing, used by monitor/tests/device_manager)
+- Marked ManagerProtocol + RegistryProtocol as "✅ uygulandı" in AGENTS.md
+- Updated architecture docs — resolved P0 Protocol mismatch warnings
+- Verified cross-zone imports fully removed from core/plugins/
+
+**Commits:** pending
+
+**Interface changes:** `AGENTS.md` — added `core.adb.ADBClient.shell_output(command, device_id, timeout) -> str` to contract. Marked protocols as implemented.
+
+**Kilo must know:** 
+- `shell_output` is now officially in the interface contract. Do not change its signature without updating AGENTS.md first.
+- Architecture docs cleaned up — all P0 items resolved. Remaining: P2 error handling in automations/.
+
+**Next:** System fully aligned. All interfaces documented. Ready for new tasks.
+
+---
