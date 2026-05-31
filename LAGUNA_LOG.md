@@ -38,7 +38,10 @@
 
 **Interface sorunları:** yok
 
-**OpenCode bilmeli:** yok (zaten Protocol'leri tanımlamış)
+**OpenCode bilmeli:**
+- AGENTS.md'de `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int)` imzası hatalı
+- Doğru imza: `run_command(args: List[str], device_id, timeout) -> str` (INTERFACE_SPEC.md'e göre)
+- AGENTS.md Status: OpenCode WORKING → IDLE (Cross-zone Protocol refactor bitti) (zaten Protocol'leri tanımlamış)
 
 **Sıradaki:** BaseTask interface kontrolü
 
@@ -54,7 +57,10 @@
 
 **Interface sorunları:** yok
 
-**OpenCode bilmeli:** yok
+**OpenCode bilmeli:**
+- AGENTS.md'de `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int)` imzası hatalı
+- Doğru imza: `run_command(args: List[str], device_id, timeout) -> str` (INTERFACE_SPEC.md'e göre)
+- AGENTS.md Status: OpenCode WORKING → IDLE (Cross-zone Protocol refactor bitti)
 
 **Sıradaki:** automations/ zone kontrolü (hardcoded koordinatlar mevcut)
 
@@ -72,7 +78,10 @@
 
 **Interface sorunları:** yok
 
-**OpenCode bilmeli:** yok
+**OpenCode bilmeli:**
+- AGENTS.md'de `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int)` imzası hatalı
+- Doğru imza: `run_command(args: List[str], device_id, timeout) -> str` (INTERFACE_SPEC.md'e göre)
+- AGENTS.md Status: OpenCode WORKING → IDLE (Cross-zone Protocol refactor bitti)
 
 **Sıradaki:** AGENTS.md ve OPENCODE_LOG.md güncelleme (interface onayı)
 
