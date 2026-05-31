@@ -1,7 +1,5 @@
-"""phone_farm.yaml — sample configuration.
-
-Copy and adapt for production use.
-"""
+# phone_farm.yaml — sample configuration.
+# Copy and adapt for production use.
 
 # ── adb ──────────────────────────────────────────────────────────────────────
 adb_path: adb                       # path to adb binary (must be on PATH)
