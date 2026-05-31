@@ -59,6 +59,13 @@ class ADBClient:
         return subprocess.list2cmdline(prefix + ["shell"])
 
     def devices(self) -> List[str]:
+        """Return a list of connected device IDs.
+
+        Returns
+        -------
+        List[str]
+            Serial IDs of all devices in the ``device`` state.
+        """
         output = self._run(["devices"])
         ids: List[str] = []
         for line in output.splitlines():
@@ -70,10 +77,12 @@ class ADBClient:
         return ids
 
     def tap(self, x: int, y: int, device_id: Optional[str] = None) -> None:
+        """Tap at screen coordinates (x, y)."""
         self._run(["shell", "input", "tap", str(x), str(y)])
 
     def swipe(self, x1: int, y1: int, x2: int, y2: int,
               duration_ms: int = 300, device_id: Optional[str] = None) -> None:
+        """Swipe from (x1, y1) to (x2, y2) over *duration_ms* milliseconds."""
         self._run([
             "shell", "input", "swipe",
             str(x1), str(y1), str(x2), str(y2), str(duration_ms),
@@ -81,22 +90,28 @@ class ADBClient:
 
     def screencap(self, path: str = "/sdcard/screen.png",
                   device_id: Optional[str] = None) -> None:
+        """Capture a screenshot and save it to *path* on the device."""
         self._run(["shell", "screencap", "-p", path])
 
     def pull(self, remote: str, local: str, device_id: Optional[str] = None) -> None:
+        """Pull a file from the device (*remote*) to the host (*local*)."""
         self._run(["pull", remote, local])
 
     def push(self, local: str, remote: str, device_id: Optional[str] = None) -> None:
+        """Push a file from the host (*local*) to the device (*remote*)."""
         self._run(["push", local, remote])
 
     def install(self, apk_path: str, device_id: Optional[str] = None) -> None:
+        """Install an APK on the device (replace if already installed)."""
         self._run(["install", "-r", apk_path])
 
     def uninstall(self, package: str, device_id: Optional[str] = None) -> None:
+        """Uninstall a package from the device."""
         self._run(["uninstall", package])
 
     def launch(self, package: str, activity: str,
                device_id: Optional[str] = None) -> None:
+        """Launch an app activity on the device."""
         self._run([
             "shell", "am", "start", "-n",
             f"{package}/{activity}",
@@ -105,6 +120,7 @@ class ADBClient:
     def shell_output(self, command: str,
                      device_id: Optional[str] = None,
                      timeout: int = 30) -> str:
+        """Execute a shell command on the device and return stdout."""
         return self._run(["shell", command], timeout=timeout)
 
     def run_command(self, args: List[str], device_id: Optional[str] = None,

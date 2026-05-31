@@ -55,10 +55,12 @@ class MobileOperations:
     # screen & touch -----------------------------------------------------------
     def screenshot(self, remote: str = "/sdcard/screen.png",
                    device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Capture a screenshot on the device."""
         self.adb.screencap(remote, device_id=device_id)
         return self._result(True, remote=remote)
 
     def tap(self, x: int, y: int, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Tap at screen coordinates (x, y)."""
         self.adb.tap(x, y, device_id=device_id)
         return self._result(True, x=x, y=y)
 
@@ -69,6 +71,7 @@ class MobileOperations:
         duration_ms: int = 400,
         device_id: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """Swipe from (x1, y1) to (x2, y2) over *duration_ms* milliseconds."""
         self.adb.swipe(x1, y1, x2, y2, duration_ms=duration_ms,
                        device_id=device_id)
         return self._result(True, x1=x1, y1=y1, x2=x2, y2=y2)
@@ -96,6 +99,7 @@ class MobileOperations:
     # apps ---------------------------------------------------------------------
     def install_apk(self, apk_path: str,
                     device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Install an APK on the device (replace if installed)."""
         try:
             self.adb.install(apk_path, device_id=device_id)
             return self._result(True, apk=apk_path)
@@ -104,6 +108,7 @@ class MobileOperations:
 
     def uninstall_pkg(self, package: str,
                       device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Uninstall a package from the device."""
         try:
             self.adb.uninstall(package, device_id=device_id)
             return self._result(True, package=package)
@@ -114,6 +119,7 @@ class MobileOperations:
 
     def launch(self, package: str, activity: str,
                device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Launch an app activity on the device."""
         try:
             self.adb.launch(package, activity, device_id=device_id)
             return self._result(True, package=package, activity=activity)
@@ -122,6 +128,7 @@ class MobileOperations:
 
     # ui automation ------------------------------------------------------------
     def dump_ui(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Dump the current UI hierarchy as XML."""
         out, ok = self._safe_shell(
             "uiautomator dump /sdcard/dump.xml 2>/dev/null; "
             "cat /sdcard/dump.xml 2>/dev/null",
@@ -130,11 +137,13 @@ class MobileOperations:
         return self._result(ok, xml=out.strip())
 
     def get_text(self, device_id: Optional[str] = None) -> str:
+        """Return the current focused window text."""
         out, _ = self._safe_shell("dumpsys window | grep mCurrentFocus",
                                    device_id=device_id)
         return out.strip()
 
     def current_focus(self, device_id: Optional[str] = None) -> str:
+        """Return the current window focus info."""
         out, _ = self._safe_shell(
             "dumpsys window | grep mCurrentFocus", device_id=device_id
         )
@@ -171,18 +180,23 @@ class MobileOperations:
         return self._result(True, key=key_name, code=code)
 
     def press_home(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Press the home button."""
         return self.press_key("home", device_id=device_id)
 
     def press_back(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Press the back button."""
         return self.press_key("back", device_id=device_id)
 
     def press_recent(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Press the recent apps button."""
         return self.press_key("recent", device_id=device_id)
 
     def volume_up(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Press volume up."""
         return self.press_key("volume_up", device_id=device_id)
 
     def volume_down(self, device_id: Optional[str] = None) -> Dict[str, Any]:
+        """Press volume down."""
         return self.press_key("volume_down", device_id=device_id)
 
     # ── browser / URL ────────────────────────────────────────────────────────
