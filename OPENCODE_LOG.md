@@ -172,7 +172,7 @@ _Append entries. Never delete. Kilo Code reads this._
 - Fixed blank-line formatting in `core/plugins/base_plugin.py` — missing newlines before `@runtime_checkable` decorators on `JobQueueProtocol` and `TaskRunnerProtocol`
 - Added both protocols to AGENTS.md Shared Interface Contract (were already in code but not documented in contract)
 
-**Commits:** _(see below)_
+**Commits:** `5bdef66`
 
 **Interface changes:** Added `core.plugins.base_plugin.JobQueueProtocol` and `core.plugins.base_plugin.TaskRunnerProtocol` to AGENTS.md Shared Interface Contract.
 
