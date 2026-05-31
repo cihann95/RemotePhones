@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Protocol, runtime_checkable
+from typing import Optional, Protocol, runtime_checkable
 
 from core.adb import ADBClient
 from core.device_manager import DeviceManager

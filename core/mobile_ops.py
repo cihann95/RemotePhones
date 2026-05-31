@@ -157,7 +157,7 @@ class MobileOperations:
         "back":       "4",
         "recent":     "187",
         "volume_up":  "24",
-        "volume_down":"25",
+        "volume_down": "25",
         "power":      "26",
         "menu":       "82",
         "search":     "84",

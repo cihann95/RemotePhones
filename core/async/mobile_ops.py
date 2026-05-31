@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-from core.async.adb import AsyncADBClient
+from .adb import AsyncADBClient
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +150,7 @@ class AsyncMobileOperations:
         "back":       "4",
         "recent":     "187",
         "volume_up":  "24",
-        "volume_down":"25",
+        "volume_down": "25",
         "power":      "26",
         "menu":       "82",
         "search":     "84",

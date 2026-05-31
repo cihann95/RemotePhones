@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import List, Optional
+from typing import List, Optional, cast
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,10 @@ class AsyncADBClient:
         self.retry_delay = retry_delay
 
     def _device_prefix(self, device_id: Optional[str] = None) -> List[str]:
-        if device_id is not None or self.default_device is not None:
-            return [self.adb_path, "-s", device_id or self.default_device]
+        if device_id is not None:
+            return [self.adb_path, "-s", device_id]
+        if self.default_device is not None:
+            return [self.adb_path, "-s", self.default_device]
         return [self.adb_path]
 
     async def _run(self, args: List[str], timeout: int = 30, device_id: Optional[str] = None) -> str:
@@ -50,7 +52,7 @@ class AsyncADBClient:
                 logger.debug("STDERR: %s", error_output)
                 
                 if process.returncode != 0:
-                    raise subprocess.CalledProcessError(process.returncode, cmd, output, error_output)
+                    raise subprocess.CalledProcessError(cast(int, process.returncode), cmd, output, error_output)
                     
                 return output
                 

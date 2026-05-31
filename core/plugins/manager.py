@@ -5,9 +5,11 @@ import importlib
 import logging
 import os
 import pkgutil
-from typing import Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
-from core.plugins.base_plugin import BasePlugin
+from core.adb import ADBClient
+from core.device_manager import DeviceManager
+from core.plugins.base_plugin import BasePlugin, ManagerProtocol, RegistryProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +87,7 @@ class PluginManager:
 
         return discovered
 
-    def load_plugin(self, plugin_name: str, *args, **kwargs) -> BasePlugin:
+    def load_plugin(self, plugin_name: str, *args: Any, **kwargs: Any) -> BasePlugin:
         """Load and initialize a plugin.
 
         Parameters
@@ -123,11 +125,11 @@ class PluginManager:
         
         return plugin_instance
 
-    def initialize_plugin(self, plugin_name: str, 
-                         adb_client, 
-                         device_manager, 
-                         phone_farm_manager, 
-                         task_registry) -> None:
+    def initialize_plugin(self, plugin_name: str,
+                         adb_client: ADBClient,
+                         device_manager: DeviceManager,
+                         phone_farm_manager: ManagerProtocol,
+                         task_registry: RegistryProtocol) -> None:
         """Initialize a loaded plugin with system dependencies.
 
         Parameters

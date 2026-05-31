@@ -3,7 +3,10 @@
 import os
 import sys
 import platform
-from typing import Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any, Optional
+
+if TYPE_CHECKING:
+    from core.adb import ADBClient
 
 from utils.logger import get_logger
 
@@ -125,7 +128,7 @@ def get_screenshot_tool_path() -> str:
     return possible_paths[0] if possible_paths else 'scrcpy'
 
 
-def is_android_device_connected(adb_client) -> bool:
+def is_android_device_connected(adb_client: ADBClient) -> bool:
     """
     Check if any Android device is connected via ADB.
     
@@ -143,7 +146,7 @@ def is_android_device_connected(adb_client) -> bool:
         return False
 
 
-def get_device_architecture(device_id: str, adb_client) -> Optional[str]:
+def get_device_architecture(device_id: str, adb_client: ADBClient) -> Optional[str]:
     """
     Get the CPU architecture of an Android device.
     
@@ -156,22 +159,20 @@ def get_device_architecture(device_id: str, adb_client) -> Optional[str]:
     """
     try:
         # Try to get CPU architecture from device properties
-        prop = adb_client.shell_output(
+        prop: str = adb_client.shell_output(
             "getprop ro.product.cpu.abi",
             device_id=device_id
         )
-        arch = prop.strip()
-        if arch:
-            return arch
+        if prop.strip():
+            return prop.strip()
 
         # Fallback to secondary property
-        prop2 = adb_client.shell_output(
+        prop2: str = adb_client.shell_output(
             "getprop ro.product.cpu.abi2",
             device_id=device_id
         )
-        arch2 = prop2.strip()
-        if arch2:
-            return arch2
+        if prop2.strip():
+            return prop2.strip()
             
         return None
     except Exception as e:
@@ -179,7 +180,7 @@ def get_device_architecture(device_id: str, adb_client) -> Optional[str]:
         return None
 
 
-def get_os_version(device_id: str, adb_client) -> Optional[str]:
+def get_os_version(device_id: str, adb_client: ADBClient) -> Optional[str]:
     """
     Get the Android OS version of a device.
     

@@ -1,11 +1,9 @@
 """AsyncDeviceManager — asynchronous device lifecycle manager."""
 from __future__ import annotations
 
-import asyncio
-import logging
 from typing import Dict, List, Optional
 
-from core.async.adb import AsyncADBClient
+from .adb import AsyncADBClient
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -76,7 +74,7 @@ class AsyncDeviceManager:
             "getprop ro.build.version.release 2>/dev/null; "
             "getprop ro.product.manufacturer 2>/dev/null"
         )
-        lines = [l.strip() for l in properties_raw.splitlines() if l.strip()]
+        lines = [line.strip() for line in properties_raw.splitlines() if line.strip()]
         model = lines[0] if len(lines) > 0 else "unknown"
         android_ver = lines[1] if len(lines) > 1 else "unknown"
         manufacturer = lines[2] if len(lines) > 2 else "unknown"

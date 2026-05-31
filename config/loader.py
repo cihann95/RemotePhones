@@ -17,7 +17,7 @@ except ImportError:
 _logger = None  # lazy-init to avoid circular imports
 
 
-def _get_logger():
+def _get_logger() -> Any:
     global _logger
     if _logger is None:
         try:
@@ -53,10 +53,10 @@ if _HAS_PYDANTIC:
 
         @field_validator("devices", mode="before")
         @classmethod
-        def _ensure_list(cls, v: Any) -> list:
+        def _ensure_list(cls, v: Any) -> list[Any]:
             if v is None:
                 return []
-            return v
+            return v  # type: ignore[no-any-return]
 
 
 def load_config(path: str | None = None) -> dict[str, Any]:

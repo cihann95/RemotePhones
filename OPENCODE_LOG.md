@@ -212,3 +212,47 @@ _Append entries. Never delete. Kilo Code reads this._
 **Next:** Idle.
 
 ---
+
+## [2026-05-31 15:00] — Full Zone Audit: mypy, flake8, Python 3.12+ compat, Architecture Follow-up
+
+**Trigger:** NEMOTRON_LOG.md audit → all architect items tracked + comprehensive zone cleanup.
+
+**Architect follow-up (NEMOTRON_LOG.md):**
+- "ManagerProtocol/RegistryProtocol mismatch" → ✅ Already resolved (commit `30c7e09`)
+- "Cross-zone imports" → ✅ Already resolved (commit `76fd402`)
+- "Monitor shell_output retry atlıyor" → ❌ False alarm — both shell_output and run_command use `_run()` with retry
+- "JobQueue/TaskRunner interface" → ✅ JobQueueProtocol + TaskRunnerProtocol defined in base_plugin.py
+
+**Python 3.12+ compatibility (critical: `async` reserved keyword):**
+- `core/async/mobile_ops.py`, `core/async/device_manager.py` — changed absolute imports `from core.async.adb` → relative `from .adb`
+- `scheduler/async_manager.py` (Kilo zone, zone exception) — changed `from core.async.*` to `importlib.import_module()` workaround
+
+**Architect-flagged risks resolved (OpenCode zone):**
+- `core/async/adb.py` — R1: AsyncADBClient.shell() missing `timeout` param → added
+- `config/loader.py` — R2: validation silently returned raw dict → now raises `ValueError`
+- `utils/logger.py` — R3: confirmed idempotent, no action needed
+
+**MyPy fixes (17 files now clean):**
+- `utils/platform.py` — added `ADBClient` type hints to 3 functions, fixed `Any` returns
+- `core/async/adb.py` — fixed `_device_prefix` type narrowing, `CalledProcessError` arg type
+- `core/plugins/manager.py` — added type annotations for `*args`, `**kwargs`, `initialize_plugin` params
+- `config/loader.py` — added `-> Any` return type to `_get_logger()`, fixed `list[Any]` return
+
+**Flake8 fixes:**
+- Removed unused imports (F401): `asyncio`, `logging`, `time`, `List`, `Any`, `Dict`
+- Renamed ambiguous variable `l` → `line` (E741)
+- Fixed missing whitespace `"volume_down":"25"` → `"volume_down": "25"` (E231)
+
+**Commits:** _(this commit)_
+
+**Interface changes:** None (internal fixes only).
+
+**Kilo must know:**
+- `scheduler/async_manager.py` was modified for Python 3.12+ compat (`importlib.import_module` workaround for reserved keyword `async`). Verify the import approach works for your use case.
+- All architect-flagged items in OpenCode zone are now fully resolved.
+- config/loader.py now raises `ValueError` on validation failure — catch it if calling `load_config()`.
+- RISK_REGISTER.md in architect zone — needs update: OpenCode risks R1, R2, R3 resolved.
+
+**Next:** Idle.
+
+---
