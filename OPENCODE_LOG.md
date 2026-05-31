@@ -243,7 +243,7 @@ _Append entries. Never delete. Kilo Code reads this._
 - Renamed ambiguous variable `l` → `line` (E741)
 - Fixed missing whitespace `"volume_down":"25"` → `"volume_down": "25"` (E231)
 
-**Commits:** _(this commit)_
+**Commits:** `028318d` (audit fixes)
 
 **Interface changes:** None (internal fixes only).
 
