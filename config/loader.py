@@ -80,6 +80,11 @@ def load_config(path: str | None = None) -> dict[str, Any]:
     dict
         Merged configuration dictionary.  Returns ``{}`` when no config
         file is found.
+
+    Raises
+    ------
+    ValueError
+        When a config file is found but pydantic validation fails.
     """
     log = _get_logger()
 
@@ -103,7 +108,9 @@ def load_config(path: str | None = None) -> dict[str, Any]:
                     validated = PhoneFarmConfig.model_validate(data)
                     data = validated.model_dump()
                 except Exception as exc:
-                    log.warning("Config validation failed, using raw dict: %s", exc)
+                    raise ValueError(
+                        f"Config validation failed for {candidate}: {exc}"
+                    ) from exc
             log.info("Config loaded: %d top-level keys", len(data))
             return data
 

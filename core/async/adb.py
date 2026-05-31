@@ -66,7 +66,7 @@ class AsyncADBClient:
                                  self.max_retries, " ".join(cmd))
         raise last_exc  # type: ignore[misc]
 
-    async def shell(self, device_id: Optional[str] = None) -> str:
+    async def shell(self, device_id: Optional[str] = None, timeout: int = 30) -> str:
         """Return open adb shell invocation for interactive use."""
         prefix = self._device_prefix(device_id)
         # For shell, we just return the command string as it's meant for interactive use

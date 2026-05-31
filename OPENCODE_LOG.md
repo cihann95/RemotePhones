@@ -166,7 +166,35 @@ _Append entries. Never delete. Kilo Code reads this._
 
 ---
 
-## [2026-05-31 14:15] — Formatting Fix: JobQueueProtocol / TaskRunnerProtocol
+## [2026-05-31 14:30] — Architect Actions Follow-up + Risk Resolution
+
+**Trigger:** NEMOTRON_LOG.md audit → architect concerns tracked and addressed.
+
+**Architect said:**
+1. "ManagerProtocol ve RegistryProtocol eşleşmiyor" → ✅ Already resolved (commit `30c7e09`)
+2. "Cross-zone imports sahte bağımlılık" → ✅ Already resolved (commit `76fd402`)
+3. "Monitor shell_output retry atlıyor" → ✅ False alarm — both shell_output and run_command share `_run()` with retry
+4. "JobQueue/TaskRunner interface tanımlanmalı" → ✅ JobQueueProtocol + TaskRunnerProtocol defined in base_plugin.py
+
+**Own zone risks resolved:**
+- `core/async/adb.py` — AsyncADBClient.shell() missing `timeout` parameter → added for API parity
+- `config/loader.py` — validation silently returned raw dict → now raises `ValueError` on failure
+- `utils/logger.py` — confirmed idempotent, no action needed
+- `docs/architecture/RISK_REGISTER.md` — cleaned up duplicate sections, marked all 3 risks as RESOLVED
+
+**Commits:** _(see below)_
+
+**Interface changes:** None (only internal fixes and doc updates).
+
+**Kilo must know:**
+- All architect-flagged items in OpenCode zone are now resolved.
+- JobQueueProtocol + TaskRunnerProtocol ready for Kilo/Laguna implementation in scheduler/ zone.
+- config/loader.py now raises ValueError on validation failure — catch it if calling load_config().
+- RISK_REGISTER.md cleaned up — consolidated duplicate backlog sections.
+
+**Next:** Idle.
+
+---## [2026-05-31 14:15] — Formatting Fix: JobQueueProtocol / TaskRunnerProtocol
 
 **Did:**
 - Fixed blank-line formatting in `core/plugins/base_plugin.py` — missing newlines before `@runtime_checkable` decorators on `JobQueueProtocol` and `TaskRunnerProtocol`
