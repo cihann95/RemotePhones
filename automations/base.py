@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 from core.adb import ADBClient
-from core.device_manager import DeviceManager
 
 logger = logging.getLogger(__name__)
 
@@ -26,23 +25,44 @@ class AutomationBase:
 
     # ------------------------------------------------------------------
     def swipe_up(self, device_id: str | None = None,
-                 duration_ms: int = 400) -> None:
-        """Generic scroll-up gesture."""
-        self.adb.swipe(500, 1800, 500, 500, duration_ms=duration_ms,
-                       device_id=device_id)
+                 duration_ms: int = 400,
+                 screen_width: int = 1080,
+                 screen_height: int = 1920) -> None:
+        """Generic scroll-up gesture.
+
+        Uses proportional coordinates (75% down to 25% up) for device-agnostic automation.
+        """
+        mid_x = int(screen_width * 0.5)
+        start_y = int(screen_height * 0.75)
+        end_y = int(screen_height * 0.25)
+        self.adb.swipe(mid_x, start_y, mid_x, end_y,
+                       duration_ms=duration_ms, device_id=device_id)
 
     def swipe_down(self, device_id: str | None = None,
-                   duration_ms: int = 400) -> None:
-        """Generic scroll-down gesture."""
-        self.adb.swipe(500, 500, 500, 1800, duration_ms=duration_ms,
-                       device_id=device_id)
+                   duration_ms: int = 400,
+                   screen_width: int = 1080,
+                   screen_height: int = 1920) -> None:
+        """Generic scroll-down gesture.
+
+        Uses proportional coordinates (25% top to 75% bottom) for device-agnostic automation.
+        """
+        mid_x = int(screen_width * 0.5)
+        start_y = int(screen_height * 0.25)
+        end_y = int(screen_height * 0.75)
+        self.adb.swipe(mid_x, start_y, mid_x, end_y,
+                       duration_ms=duration_ms, device_id=device_id)
 
     def screenshot(self, remote: str = "/sdcard/screen.png",
                    device_id: str | None = None) -> None:
         self.adb.screencap(path=remote, device_id=device_id)
 
-    def tap_center(self, device_id: str | None = None) -> None:
-        self.adb.tap(500, 1000, device_id=device_id)
+    def tap_center(self, device_id: str | None = None,
+                   screen_width: int = 1080,
+                   screen_height: int = 1920) -> None:
+        """Tap center of screen using proportional coordinates."""
+        mid_x = int(screen_width * 0.5)
+        mid_y = int(screen_height * 0.5)
+        self.adb.tap(mid_x, mid_y, device_id=device_id)
 
 
 class AutomationFlow(AutomationBase):
