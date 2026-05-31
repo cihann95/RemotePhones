@@ -5,12 +5,13 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from tasks.base_task import BaseTask, TaskConfig, TaskResult
+from core.plugins.base_plugin import RegistryProtocol
+from tasks.base_task import BaseTask
 
 logger = logging.getLogger(__name__)
 
 
-class TaskRegistry:
+class TaskRegistry(RegistryProtocol):
     """Central registry for :class:`BaseTask` subclasses.
 
     Usage::
@@ -39,6 +40,15 @@ class TaskRegistry:
     def get(self, name: str) -> Any:
         """Return an *uninstantiated* task class for *name*, or ``None``."""
         return self._tasks.get(name)
+
+    # RegistryProtocol implementation
+    def get_task(self, task_id: str) -> object:
+        """Return registered task class for task_id (Protocol method)."""
+        return self.get(task_id)
+
+    def list_tasks(self) -> list[str]:
+        """List all registered task names (Protocol method)."""
+        return self.names
 
     def create(
         self,

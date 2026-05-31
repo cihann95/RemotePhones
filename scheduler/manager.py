@@ -22,6 +22,8 @@ import threading
 import time
 from typing import TYPE_CHECKING
 
+from core.plugins.base_plugin import ManagerProtocol
+
 from core.adb import ADBClient
 from core.device_manager import DeviceManager
 from scheduler.job_queue import JobQueue
@@ -36,7 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PhoneFarmManager:
+class PhoneFarmManager(ManagerProtocol):
     """Top-level entry-point for the automation layer.
 
     Parameters
@@ -60,6 +62,17 @@ class PhoneFarmManager:
         self.runner: TaskRunner = TaskRunner(queue=self.queue, registry=self.registry)
         self._auto_discover = auto_discover
         self._lock = threading.Lock()
+
+    # ------------------------------------------------------------------
+    # ManagerProtocol implementation
+    def get_devices(self) -> list:
+        """Return list of connected device IDs."""
+        return [did for did, info in self.dm.all_devices.items() if info.get("status") == "online"]
+
+    def run_task(self, task_id: str, device_id: str) -> bool:
+        """Enqueue task and run immediately. Returns True if task started."""
+        result = self.enqueue_task(task_id, device_id)
+        return bool(result.get("job_id"))
 
     # ------------------------------------------------------------------
     def start(self) -> None:
