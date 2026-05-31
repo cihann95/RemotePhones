@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict
+from typing import Dict, List, Optional
 
 from core.adb import ADBClient
 from utils.logger import get_logger
@@ -24,19 +24,19 @@ class DeviceManager:
         self.adb: ADBClient = adb_client
         self._connected: Dict[str, dict] = {}
 
-    def discover(self) -> list[str]:
+    def discover(self) -> List[str]:
         """Return a list of connected device IDs.
 
         Returns
         -------
-        list[str]
+        List[str]
             Serial IDs of all devices in the ``device`` state.
         """
         ids = self.adb.devices()
         logger.info("Discovered %d device(s): %s", len(ids), ids)
         return ids
 
-    def register(self, device_id: str, metadata: dict | None = None) -> dict:
+    def register(self, device_id: str, metadata: Optional[Dict] = None) -> Dict:
         """Register a device so it can be tracked by the manager.
 
         Parameters
@@ -48,17 +48,17 @@ class DeviceManager:
 
         Returns
         -------
-        dict
+        Dict
             The device record stored in ``_connected``.
         """
-        record: dict = {"id": device_id, "status": "registered"}
+        record: Dict = {"id": device_id, "status": "registered"}
         if metadata:
             record.update(metadata)
         self._connected[device_id] = record
         logger.info("Registered device: %s", device_id)
         return record
 
-    def connect(self, device_id: str) -> dict:
+    def connect(self, device_id: str) -> Dict:
         """Verify a device is reachable and mark it as online.
 
         Parameters
@@ -68,7 +68,7 @@ class DeviceManager:
 
         Returns
         -------
-        dict
+        Dict
             Updated device record.
         """
         properties_raw = self.adb.shell_output(
@@ -108,16 +108,16 @@ class DeviceManager:
         self._connected.pop(device_id, None)
         logger.info("Device removed: %s", device_id)
 
-    def get(self, device_id: str) -> dict | None:
+    def get(self, device_id: str) -> Optional[Dict]:
         """Return the device record for *device_id*, or ``None``."""
         return self._connected.get(device_id)
 
     @property
-    def all_devices(self) -> Dict[str, dict]:
+    def all_devices(self) -> Dict[str, Dict]:
         return dict(self._connected)
 
     @property
-    def online_devices(self) -> Dict[str, dict]:
+    def online_devices(self) -> Dict[str, Dict]:
         return {
             k: v for k, v in self._connected.items()
             if v.get("status") == "online"
