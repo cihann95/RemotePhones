@@ -6,8 +6,10 @@ import logging
 import sys
 from typing import Any
 
+_loguru_initialized = False
 
-def get_logger(name: str, level: int | str = logging.INFO) -> logging.Logger:
+
+def get_logger(name: str, level: int | str = logging.INFO) -> Any:
     """Return a configured :class:`logging.Logger` instance.
 
     Uses :class:`loguru` if it is importable; otherwise falls back to the
@@ -25,21 +27,25 @@ def get_logger(name: str, level: int | str = logging.INFO) -> logging.Logger:
     -------
     logging.Logger
     """
+    global _loguru_initialized
+
     try:
         from loguru import logger as _lu
 
-        _lu.remove()
-        _lu.add(
-            sys.stderr,
-            level=level,
-            format=(
-                "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
-                "<level>{level:<7}</level> | "
-                "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> — "
-                "<level>{message}</level>"
-            ),
-        )
-        return _lu  # type: ignore[return-value]
+        if not _loguru_initialized:
+            _lu.remove()
+            _lu.add(
+                sys.stderr,
+                level=level,
+                format=(
+                    "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                    "<level>{level:<7}</level> | "
+                    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> — "
+                    "<level>{message}</level>"
+                ),
+            )
+            _loguru_initialized = True
+        return _lu
     except ImportError:
         pass
 

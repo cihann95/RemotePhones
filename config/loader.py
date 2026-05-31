@@ -8,19 +8,55 @@ from typing import Any
 
 import yaml
 
-logger = None  # will be set by utils.logger if available
+try:
+    from pydantic import BaseModel, Field, field_validator
+    _HAS_PYDANTIC = True
+except ImportError:
+    _HAS_PYDANTIC = False
+
+_logger = None  # lazy-init to avoid circular imports
 
 
 def _get_logger():
-    global logger
-    if logger is None:
+    global _logger
+    if _logger is None:
         try:
             from utils.logger import get_logger as _gl
-            logger = _gl(__name__)
+            _logger = _gl(__name__)
         except Exception:
             import logging
-            logger = logging.getLogger(__name__)
-    return logger
+            _logger = logging.getLogger(__name__)
+    return _logger
+
+
+if _HAS_PYDANTIC:
+    class ADBConfig(BaseModel):
+        adb_path: str = "adb"
+        default_device: str | None = None
+
+    class SchedulerConfig(BaseModel):
+        poll_interval_s: float = Field(default=1.0, gt=0)
+        max_retries: int = Field(default=3, ge=0)
+        retry_delay_base_s: float = Field(default=5.0, gt=0)
+
+    class MonitorConfig(BaseModel):
+        health_check_interval_s: float = Field(default=60.0, gt=0)
+        battery_low_pct: int = Field(default=15, ge=0, le=100)
+        temperature_high_c: int = Field(default=50, ge=0)
+        memory_high_pct: int = Field(default=90, ge=0, le=100)
+
+    class PhoneFarmConfig(BaseModel):
+        adb: ADBConfig = Field(default_factory=ADBConfig)
+        scheduler: SchedulerConfig = Field(default_factory=SchedulerConfig)
+        monitor: MonitorConfig = Field(default_factory=MonitorConfig)
+        devices: list[dict[str, Any]] = Field(default_factory=list)
+
+        @field_validator("devices", mode="before")
+        @classmethod
+        def _ensure_list(cls, v: Any) -> list:
+            if v is None:
+                return []
+            return v
 
 
 def load_config(path: str | None = None) -> dict[str, Any]:
@@ -45,7 +81,7 @@ def load_config(path: str | None = None) -> dict[str, Any]:
         Merged configuration dictionary.  Returns ``{}`` when no config
         file is found.
     """
-    get_logger = _get_logger()
+    log = _get_logger()
 
     candidates: list[Path] = []
     if path:
@@ -59,11 +95,17 @@ def load_config(path: str | None = None) -> dict[str, Any]:
 
     for candidate in candidates:
         if candidate.is_file():
-            get_logger().debug("Loading config from %s", candidate)
+            log.debug("Loading config from %s", candidate)
             with open(candidate, "r", encoding="utf-8") as fh:
                 data: dict[str, Any] = yaml.safe_load(fh) or {}
-            get_logger().info("Config loaded: %d top-level keys", len(data))
+            if _HAS_PYDANTIC:
+                try:
+                    validated = PhoneFarmConfig.model_validate(data)
+                    data = validated.model_dump()
+                except Exception as exc:
+                    log.warning("Config validation failed, using raw dict: %s", exc)
+            log.info("Config loaded: %d top-level keys", len(data))
             return data
 
-    get_logger().warning("No config file found; returning empty dict")
+    log.warning("No config file found; returning empty dict")
     return {}
