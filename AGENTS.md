@@ -39,6 +39,8 @@
 - `config.loader.load_config(path: str | None) -> dict`
 - `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
 - `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
+- core.plugins.base_plugin.JobQueueProtocol (Kilo/Laguna implement etmeli)
+- core.plugins.base_plugin.TaskRunnerProtocol (Kilo/Laguna implement etmeli)
 
 ## Pending Interface Changes
 (yok)

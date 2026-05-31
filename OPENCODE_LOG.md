@@ -165,3 +165,22 @@ _Append entries. Never delete. Kilo Code reads this._
 **Next:** Idle.
 
 ---
+
+## [2026-05-31 14:15] — Formatting Fix: JobQueueProtocol / TaskRunnerProtocol
+
+**Did:**
+- Fixed blank-line formatting in `core/plugins/base_plugin.py` — missing newlines before `@runtime_checkable` decorators on `JobQueueProtocol` and `TaskRunnerProtocol`
+- Added both protocols to AGENTS.md Shared Interface Contract (were already in code but not documented in contract)
+
+**Commits:** _(see below)_
+
+**Interface changes:** Added `core.plugins.base_plugin.JobQueueProtocol` and `core.plugins.base_plugin.TaskRunnerProtocol` to AGENTS.md Shared Interface Contract.
+
+**Kilo must know:**
+- `JobQueueProtocol` defines: `enqueue(task_name, priority, payload) -> dict`, `dequeue() -> dict | None`, `qsize() -> int`
+- `TaskRunnerProtocol` defines: `start() -> None`, `stop(timeout=5.0) -> None`
+- These are now documented in AGENTS.md for Kilo/Laguna implementation.
+
+**Next:** Idle.
+
+---

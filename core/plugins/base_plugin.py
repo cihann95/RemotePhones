@@ -25,6 +25,19 @@ class RegistryProtocol(Protocol):
     def list_tasks(self) -> list[str]: ...
 
 
+@runtime_checkable
+class JobQueueProtocol(Protocol):
+    def enqueue(self, task_name: str, priority: int | str, payload: dict) -> dict: ...
+    def dequeue(self) -> dict | None: ...
+    def qsize(self) -> int: ...
+
+
+@runtime_checkable
+class TaskRunnerProtocol(Protocol):
+    def start(self) -> None: ...
+    def stop(self, timeout: float = 5.0) -> None: ...
+
+
 class BasePlugin(ABC):
     """Abstract base class for all Phone Farm plugins.
 
