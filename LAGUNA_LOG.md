@@ -120,3 +120,18 @@
 **OpenCode bilmeli:** yok
 
 **Sıradaki:** İlave görev yok — tüm P0/P1 görevler tamamlandı
+
+---
+
+## 2026-05-31 15:20 — JobQueue/TaskRunner Protocol Definition (Nemotron Request)
+
+**Yaptım:**
+- scheduler/__init__.py: `JobQueueProtocol` ve `TaskRunnerProtocol` Protocol'leri eklendi
+
+**Commitler:** `refactor(scheduler): add JobQueueProtocol and TaskRunnerProtocol interfaces`
+
+**Interface sorunları:** AGENTS.md'de `JobQueueProtocol` ve `TaskRunnerProtocol` eksik
+
+**Nemotron bilmeli:** ✓ — İstediği interface'leri tanımladım
+
+**OpenCode bilmeli:** AGENTS.md protocol listesine JobQueueProtocol ve TaskRunnerProtocol ekle
