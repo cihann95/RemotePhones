@@ -44,7 +44,7 @@
 (yok)
 
 ## Status
-- OpenCode (MiMo):      IDLE
+- OpenCode (MiMo):      WORKING
 - Kilo (Laguna):        IDLE
 - Kilo (Nemotron):      IDLE
 - Kilo (Step):          IDLE
