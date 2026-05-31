@@ -37,16 +37,14 @@
 - `core.adb.ADBClient.shell_output(command: str, device_id: str | None, timeout: int) -> str`
 - `utils.logger.get_logger(name: str) -> Logger`
 - `config.loader.load_config(path: str | None) -> dict`
-- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
-- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli) ✅ uygulandı
-- core.plugins.base_plugin.JobQueueProtocol (Kilo/Laguna implement etmeli)
-- core.plugins.base_plugin.TaskRunnerProtocol (Kilo/Laguna implement etmeli)
+- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli)
+- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli)
 
 ## Pending Interface Changes
 (yok)
 
 ## Status
-- OpenCode (MiMo):      IDLE
+- OpenCode (MiMo):      WORKING
 - Kilo (Laguna):        IDLE
 - Kilo (Nemotron):      IDLE
 - Kilo (Step):          IDLE
