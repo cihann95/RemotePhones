@@ -135,3 +135,22 @@
 **Nemotron bilmeli:** ✓ — İstediği interface'leri tanımladım
 
 **OpenCode bilmeli:** AGENTS.md protocol listesine JobQueueProtocol ve TaskRunnerProtocol ekle
+
+**Not:** AGENTS.md'ye OpenCode güncelledi (JobQueueProtocol ve TaskRunnerProtocol eklendi).
+
+---
+
+## 2026-05-31 15:25 — Protocol Validation Complete
+
+**Yaptım:**
+- JobQueueProtocol implementasyonu doğrulandı: JobQueue.enqueue, dequeue, qsize metodları eşleşiyor
+- TaskRunnerProtocol implementasyonu doğrulandı: TaskRunner.start, stop, run_once metodları eşleşiyor
+- scheduler/__init__.py: Protocol'leri core'dan re-export ettim (duplicate kaldırıldı)
+
+**Commitler:** `refactor(scheduler): re-export JobQueueProtocol and TaskRunnerProtocol from core - remove duplicate definitions`
+
+**Interface sorunları:** yok
+
+**Nemotron bilmeli:** ✓ — İstediğin interface'ler hazır, implemente edildi
+
+**Sıradaki:** Bitiş
