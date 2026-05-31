@@ -82,3 +82,25 @@ Copy and adapt for production use.
 **Recommendation:** Remove or convert to `#` comments.
 
 ---
+
+## [2026-05-31 12:30] — Cross-zone Protocol Refactor
+
+**Did:**
+- Removed all cross-zone imports from `core/plugins/` (scheduler.*, tasks.*)
+- Added `ManagerProtocol` + `RegistryProtocol` (runtime_checkable) to `core/plugins/base_plugin.py`
+- Added `self.log = get_logger(__name__)` to `BasePlugin.__init__()`
+- Refactored `core/plugins/example_plugin.py` — standalone `TaskResult`/`TaskConfig` dataclasses, no external deps
+- Updated `AGENTS.md` interface contract with protocols
+
+**Commits:** pending
+
+**Interface changes:** Added `core.plugins.base_plugin.ManagerProtocol` and `core.plugins.base_plugin.RegistryProtocol` to Shared Interface Contract.
+
+**Kilo must know:** 
+- `ManagerProtocol` defines: `get_devices() -> list`, `run_task(task_id, device_id) -> bool`
+- `RegistryProtocol` defines: `get_task(task_id) -> object`, `list_tasks() -> list[str]`
+- Kilo/Laguna's `PhoneFarmManager` and `TaskRegistry` must satisfy these protocols.
+- `BasePlugin` no longer imports from `scheduler/` or `tasks/`. All plugin code now uses Protocol duck-typing.
+- `self.log` is now available on all BasePlugin subclasses.
+
+---

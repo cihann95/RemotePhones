@@ -36,6 +36,8 @@
 - `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int) -> str`
 - `utils.logger.get_logger(name: str) -> Logger`
 - `config.loader.load_config(path: str | None) -> dict`
+- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli)
+- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli)
 
 ## Pending Interface Changes
 (yok)
