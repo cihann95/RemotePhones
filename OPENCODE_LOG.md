@@ -2,3 +2,83 @@
 _Append entries. Never delete. Kilo Code reads this._
 
 ---
+
+## [2026-05-31 12:00] — Phase 0 + Full Codebase Scan
+
+**Did:**
+- Phase 0: rewrote `.gitignore`, `AGENTS.md` (Claude Code → OpenCode), created `OPENCODE_LOG.md`
+- Initial commit: `chore: init repo — agent coordination structure`
+
+**Commits:** `b34b9ba`
+
+**Interface changes:** `AGENTS.md` updated — added `core.adb.ADBClient.run_command(args, device_id, timeout)` to Shared Interface Contract.
+
+**Kilo must know:** `run_command()` is a new public method on `ADBClient` and `AsyncADBClient`. It replaces private `_run()` calls from `mobile_ops.py`. If your code was calling `adb._run(...)` directly, switch to `adb.run_command(...)`.
+
+**Next:** Bug fixes below.
+
+---
+
+## [2026-05-31 12:05] — P0 Bug Fixes (OpenCode zone)
+
+**Did:** Fixed 9 bugs in core/, config/, utils/:
+
+| File | Bug | Fix |
+|------|-----|-----|
+| `config/loader.py:48` | `get_logger = _get_logger()` shadowed name; `get_logger().debug()` called logger as function | Renamed to `_logger`, local `log = _get_logger()` |
+| `core/async/device_manager.py:8` | `from core.adb import ADBClient` wrong import | Fixed to `from core.async.adb import AsyncADBClient` |
+| `utils/platform.py:158,167,194` | `shell_output(["getprop",...])` passed list, API expects string | Fixed to `shell_output("getprop ...", device_id=...)` |
+| `core/plugins/`, `core/async/` | Missing `__init__.py` | Created both |
+| `core/adb.py` + `core/async/adb.py` | No public `run_command()` — callers used private `_run()` | Added `run_command()` public API |
+| `core/mobile_ops.py:159,195` | `self.adb._run(...)` — private method access | Changed to `self.adb.run_command(...)` |
+| `core/async/mobile_ops.py:164,204` | Same private method access in async | Changed to `await self.adb.run_command(...)` |
+| `core/mobile_ops.py:78,83` | Hardcoded swipe coordinates `500,1600,500,400` | Added `screen_height` param, derived proportionally |
+| `core/mobile_ops.py:120` | `dump_ui` truncated XML to 200 chars | Removed truncation, returns full output |
+| `utils/logger.py:31` | `loguru.remove()` called on every `get_logger()` | Guarded with `_loguru_initialized` flag |
+| `core/adb.py` + `core/async/adb.py` | No retry logic | Added exponential backoff (configurable `max_retries`, `retry_delay`) |
+| `config/loader.py` | No schema validation | Added pydantic `PhoneFarmConfig` model with validation |
+
+**Commits:** pending (batch commit at end)
+
+**Interface changes:** `AGENTS.md` updated with `run_command()`.
+
+**Kilo must know:** see interface note above.
+
+---
+
+## Forbidden-Zone Bugs (Kilo Code territory — DO NOT FIX)
+
+> These bugs are in Kilo Code's zones. Logged here for awareness.
+
+### 1. `core/plugins/base_plugin.py:9-10` — Cross-zone imports
+```python
+from scheduler.manager import PhoneFarmManager   # ← Kilo's zone
+from tasks.registry import TaskRegistry           # ← Kilo's zone
+```
+**Impact:** Hard dependency on Kilo's internal modules. If Kilo restructures `scheduler/` or `tasks/`, `BasePlugin` breaks and all plugins fail.
+**Recommendation:** Move `PhoneFarmManager` and `TaskRegistry` type hints to `core/` or use `TYPE_CHECKING` + string annotations to decouple.
+
+### 2. `core/plugins/example_plugin.py:5` — Cross-zone import
+```python
+from tasks.base_task import BaseTask, TaskConfig, TaskResult  # ← Kilo's zone
+```
+**Impact:** Same coupling issue. Example plugin cannot load if `tasks/` is missing or restructured.
+
+### 3. `core/plugins/example_plugin.py:27` — Missing `self.log` attribute
+```python
+self.log.info("Registered example task from %s", self.name)
+```
+**Impact:** `BasePlugin` has no `log` attribute. This will raise `AttributeError` at runtime.
+**Recommendation:** Add `self.log = logger` in `BasePlugin.__init__()` or use `logging.getLogger(__name__)` directly.
+
+### 4. `config/phone_farm.yaml:1-4` — Docstring in YAML
+```yaml
+"""phone_farm.yaml — sample configuration.
+
+Copy and adapt for production use.
+"""
+```
+**Impact:** YAML parsers may treat the leading `"""` as a scalar value rather than a comment. The docstring convention doesn't belong in YAML.
+**Recommendation:** Remove or convert to `#` comments.
+
+---
