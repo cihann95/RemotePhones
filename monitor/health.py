@@ -1,132 +1,203 @@
-"""Device health checks and status polling for the monitor layer."""
+"""Device health checks for the monitor layer.
+
+Return a typed :class:`HealthCheckResult` from :class:`DeviceHealthChecker`
+and keep ``alerts.py`` free to check fields without fragile ``dict`` keys.
+"""
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
-class HealthStatus:
-    device_id: str
-    reachable: bool = False
-    battery_pct: int = -1
-    temperature_c: float | None = None
-    uptime_s: int = 0
-    memory_pct: float | None = None
-    issues: list[str] = None
+class HealthCheckResult:
+    """Typed result returned by :meth:`DeviceHealthChecker.check`."""
 
-    def __post_init__(self) -> None:
-        if self.issues is None:
-            self.issues = []
+    device_id: str
+    online: bool = False
+    battery_level: int | None = None
+    cpu_usage: float | None = None  # 0.0-1.0
+    memory_free_mb: int | None = None
+    adb_responsive: bool = False
+    last_checked: float = field(default_factory=time.time)
 
     @property
-    def healthy(self) -> bool:
-        return self.reachable and len(self.issues) == 0
-
-    def add_issue(self, msg: str) -> None:
-        self.issues.append(msg)
+    def ok(self) -> bool:
+        return bool(self.online)
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "device_id": self.device_id,
-            "reachable": self.reachable,
-            "battery_pct": self.battery_pct,
-            "temperature_c": self.temperature_c,
-            "uptime_s": self.uptime_s,
-            "memory_pct": self.memory_pct,
-            "issues": self.issues,
-            "healthy": self.healthy,
+            "online": self.online,
+            "battery": self.battery_level,
+            "cpu_usage": self.cpu_usage,
+            "memory_free_mb": self.memory_free_mb,
+            "adb_responsive": self.adb_responsive,
+            "last_checked": self.last_checked,
         }
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "HealthCheckResult":
+        return cls(
+            device_id=str(data.get("device_id", "unknown")),
+            online=bool(data.get("online", False)),
+            battery_level=data.get("battery"),
+            cpu_usage=data.get("cpu_usage"),
+            memory_free_mb=data.get("memory_free_mb"),
+            adb_responsive=bool(data.get("adb_responsive", False)),
+            last_checked=float(data.get("last_checked", time.time())),
+        )
 
-class HealthChecker:
-    """Run health checks against a device via :class:`core.adb.ADBClient`."""
 
-    BATTERY_LOW = 15
-    MEMORY_HIGH_PCT = 90.0
-    TEMP_HIGH_C = 50.0
+class DeviceHealthChecker:
+    """Bir cihazın sağlık durumunu DeviceManager üzerinden sorgular."""
 
-    def __init__(self, adb: Any) -> None:
-        self.adb = adb
+    def __init__(self, device_manager: Any, config: dict | None = None) -> None:
+        self.dm = device_manager
+        self.config = config or {}
+        mon_cfg = self.config.get("monitor", {})
 
-    def check(self, device_id: str | None = None) -> HealthStatus:
-        status = HealthStatus(device_id=device_id or "unknown")
+        # Thresholds — config'den al, yoksa varsayılan
+        self.battery_low_pct: int = mon_cfg.get("battery_low_pct", 15)
+        self.temperature_high_c: int = mon_cfg.get("temperature_high_c", 50)
+        self.memory_high_pct: int = mon_cfg.get("memory_high_pct", 90)
+        self._timeout_s: int = mon_cfg.get("health_check_timeout_s", 10)
+
+    def check(self, device_id: str) -> dict:
+        """
+        Döner: {
+          device_id: str,
+          online: bool,
+          battery: int | None,      # 0-100
+          cpu_usage: float | None,  # 0.0-1.0
+          memory_free_mb: int | None,
+          adb_responsive: bool,
+          last_checked: float        # unix timestamp
+        }
+
+        Dönüş tipi ``dict`` olur; bu tip aynı zamanda :class:`HealthCheckResult`
+        ile uyumludur. Eğer gerekirse::
+
+            result = DeviceHealthChecker(...).check(id)
+            typed = HealthCheckResult.from_dict(result)
+
+        Exception yakalanır ve ``online: False`` döndürülür — asla yukarı fırlatılmaz.
+        """
+        raw_result = HealthCheckResult(device_id=device_id)
         try:
-            status.reachable = True
-            self._check_battery(status, device_id)
-            self._check_temperature(status, device_id)
-            self._check_memory(status, device_id)
-            self._check_uptime(status, device_id)
-        except Exception as exc:
-            logger.error("Health check failed for %s: %s", device_id, exc, exc_info=True)
-            status.reachable = False
-            status.add_issue(f"check_exception: {exc}")
-        return status
+            device = self.dm.get(device_id)
+            if device is None or device.get("status") != "online":
+                return raw_result.to_dict()
 
-    def _check_battery(self, status: HealthStatus,
-                       device_id: str | None) -> None:
-        raw = self.adb.shell_output(
-            "dumpsys battery 2>/dev/null | grep level", device_id=device_id
-        )
-        for line in raw.splitlines():
-            if "level" in line:
-                try:
-                    status.battery_pct = int(line.split(":")[-1].strip())
-                except (ValueError, IndexError):
-                    pass
-                break
-        if status.battery_pct < self.BATTERY_LOW:
-            status.add_issue(f"battery_low ({status.battery_pct}% < {self.BATTERY_LOW}%)")
+            raw_result.online = True
+            raw_result.adb_responsive = True
 
-    def _check_temperature(self, status: HealthStatus,
-                           device_id: str | None) -> None:
-        raw = self.adb.shell_output(
-            "dumpsys battery 2>/dev/null | grep temperature", device_id=device_id
-        )
-        for line in raw.splitlines():
-            if "temperature" in line:
-                try:
-                    raw_val = line.split(":")[-1].strip()
-                    temp_c = int(raw_val) / 10.0
-                    status.temperature_c = temp_c
-                    if temp_c > self.TEMP_HIGH_C:
-                        status.add_issue(f"temperature_high ({temp_c}°C)")
-                except (ValueError, IndexError):
-                    pass
-                break
-
-    def _check_memory(self, status: HealthStatus,
-                      device_id: str | None) -> None:
-        raw = self.adb.shell_output(
-            "cat /proc/meminfo 2>/dev/null | grep -E '^MemTotal|^MemAvailable'",
-            device_id=device_id,
-        )
-        lines = {
-            parts[0].rstrip(":"): int(parts[1])
-            for line in raw.splitlines()
-            for parts in [line.split()]
-            if len(parts) >= 2 and parts[0] in {"MemTotal:", "MemAvailable:"}
-        }
-        if "MemTotal" in lines and "MemAvailable" in lines:
-            total = lines["MemTotal"]
-            avail = lines["MemAvailable"]
-            pct = ((total - avail) / total) * 100
-            status.memory_pct = round(pct, 1)
-            if status.memory_pct > self.MEMORY_HIGH_PCT:
-                status.add_issue(f"memory_high ({status.memory_pct}%)")
-
-    def _check_uptime(self, status: HealthStatus,
-                      device_id: str | None) -> None:
-        raw = self.adb.shell_output("uptime 2>/dev/null | awk '{print $3}'",
-                                    device_id=device_id)
-        for line in raw.splitlines():
+            # Battery
             try:
-                raw_val = line.split(":")[0].strip().rstrip(",")
-                status.uptime_s = int(float(raw_val) * 3600)
-            except (ValueError, IndexError):
-                pass
-            break
+                raw = self.dm.adb.run_command(
+                    ["shell", "dumpsys battery 2>/dev/null | grep level"],
+                    device_id=device_id,
+                    timeout=self._timeout_s,
+                )
+                for line in raw.splitlines():
+                    if "level" in line:
+                        parts = line.split(":")
+                        if len(parts) >= 2:
+                            pct = int(parts[-1].strip())
+                            if 0 <= pct <= 100:
+                                raw_result.battery_level = pct
+                        break
+            except Exception as exc:
+                logger.debug("Battery check failed for %s: %s", device_id, exc)
+
+            # CPU usage
+            try:
+                raw = self.dm.adb.run_command(
+                    [
+                        "shell",
+                        "top -n 1 -b 2>/dev/null | head -20 "
+                        "|| vmstat 1 1 2>/dev/null",
+                    ],
+                    device_id=device_id,
+                    timeout=self._timeout_s,
+                )
+                cpu = self._parse_cpu(raw)
+                if cpu is not None and 0.0 <= cpu <= 1.0:
+                    raw_result.cpu_usage = cpu
+            except Exception as exc:
+                logger.debug("CPU check failed for %s: %s", device_id, exc)
+
+            # Memory free (MB) — MemAvailable > MemFree > None
+            try:
+                raw = self.dm.adb.run_command(
+                    [
+                        "shell",
+                        "cat /proc/meminfo 2>/dev/null "
+                        "| grep -E '^MemAvailable|^MemFree'",
+                    ],
+                    device_id=device_id,
+                    timeout=self._timeout_s,
+                )
+                mem_free_kb = self._parse_mem_free_kb(raw)
+                if mem_free_kb is not None:
+                    raw_result.memory_free_mb = mem_free_kb // 1024
+            except Exception as exc:
+                logger.debug("Memory check failed for %s: %s", device_id, exc)
+
+        except Exception as exc:
+            logger.error(
+                "Health check failed for %s: %s", device_id, exc, exc_info=True
+            )
+            raw_result.online = False
+
+        return raw_result.to_dict()
+
+    @staticmethod
+    def _parse_cpu(raw: str) -> float | None:
+        """Basit CPU kullanım parse (top/vmstat çıktısı)."""
+        for line in raw.splitlines():
+            if not line.strip():
+                continue
+            if "cpu" in line.lower() and "id" in line.lower():
+                parts = line.split()
+                for part in parts:
+                    if part.startswith("id="):
+                        try:
+                            idle = float(part.split("=")[1])
+                            return max(0.0, min(1.0, 1.0 - idle / 100.0))
+                        except (ValueError, IndexError):
+                            pass
+            if line.strip().startswith("Cpu"):
+                try:
+                    rest = line.split(":")[1]
+                    for token in rest.replace(",", " ").split():
+                        if token.endswith("%id"):
+                            idle = float(token[:-3])
+                            return max(0.0, min(1.0, 1.0 - idle / 100.0))
+                except (ValueError, IndexError):
+                    pass
+        return None
+
+    @staticmethod
+    def _parse_mem_free_kb(raw: str) -> int | None:
+        """MemAvailable veya MemFree değerini KB olarak döndür."""
+        for line in raw.splitlines():
+            if line.startswith("MemAvailable:"):
+                try:
+                    return int(line.split()[1])  # kB
+                except (ValueError, IndexError):
+                    pass
+        for line in raw.splitlines():
+            if line.startswith("MemFree:"):
+                try:
+                    return int(line.split()[1])
+                except (ValueError, IndexError):
+                    pass
+        return None
