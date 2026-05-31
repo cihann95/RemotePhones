@@ -59,3 +59,21 @@
 **Sıradaki:** automations/ zone kontrolü (hardcoded koordinatlar mevcut)
 
 **Not:** automations/base.py'de hardcoded swipe koordinatları (500,1800,500,500) var - refactor gerekiyor ama P1. BaseTask interface'i mevcut tasklarla uyumlu.
+
+---
+
+## 2026-05-31 14:07 — automations Private Method Fix
+
+**Yaptım:**
+- automations/instagram.py: `adb.adb._run()` → `adb.adb.run_command()` değiştirildi (3 yer)
+- automations/instagram_flow.py: `adb.adb._run()` → `adb.adb.run_command()` değiştirildi (3 yer)
+
+**Commitler:** `refactor(automations): replace private _run with public run_command API`
+
+**Interface sorunları:** yok
+
+**OpenCode bilmeli:** yok
+
+**Sıradaki:** AGENTS.md ve OPENCODE_LOG.md güncelleme (interface onayı)
+
+**Not:** automations/base.py'de hardcoded koordinatlar (500,1800,500,500) hâlâ var ama P1. relative hesaplama veya config'den alınması gerekiyor.
