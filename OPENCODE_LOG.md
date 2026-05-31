@@ -182,7 +182,7 @@ _Append entries. Never delete. Kilo Code reads this._
 - `utils/logger.py` — confirmed idempotent, no action needed
 - `docs/architecture/RISK_REGISTER.md` — cleaned up duplicate sections, marked all 3 risks as RESOLVED
 
-**Commits:** _(see below)_
+**Commits:** `ba5dcff` (fixes), `5499fa6` (status IDLE)
 
 **Interface changes:** None (only internal fixes and doc updates).
 
