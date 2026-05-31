@@ -94,6 +94,10 @@ class BaseTask(ABC):
         record = dm.get(device_id)
         return bool(record and record.get("status") == self.config.expected_device_state)
 
+    def on_failure(self, error: Exception) -> None:
+        """Called when task execution fails."""
+        logger.error(f"Task failed: {error}")
+
     def __repr__(self) -> str:
         return (
             f"<{self.__class__.__name__} name={self.config.name!r} "

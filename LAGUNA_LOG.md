@@ -41,3 +41,21 @@
 **OpenCode bilmeli:** yok (zaten Protocol'leri tanımlamış)
 
 **Sıradaki:** BaseTask interface kontrolü
+
+---
+
+## 2026-05-31 14:05 — BaseTask Interface Enforcement Completed
+
+**Yaptım:**
+- tasks/base_task.py: `on_failure(error: Exception)` metodu eklendi
+- tasks/concrete.py: `import time` eklendi (SwipeSequenceTask'te kullanılmıştı)
+
+**Commitler:** `refactor(tasks): enforce BaseTask interface - timeout, retries, validate, execute`
+
+**Interface sorunları:** yok
+
+**OpenCode bilmeli:** yok
+
+**Sıradaki:** automations/ zone kontrolü (hardcoded koordinatlar mevcut)
+
+**Not:** automations/base.py'de hardcoded swipe koordinatları (500,1800,500,500) var - refactor gerekiyor ama P1. BaseTask interface'i mevcut tasklarla uyumlu.

@@ -9,6 +9,7 @@ Register via :class:`tasks.registry.TaskRegistry`::
 from __future__ import annotations
 
 import logging
+import time
 
 from core.mobile_ops import not_up, MobileOperations
 from core.adb import ADBClient
