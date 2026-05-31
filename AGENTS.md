@@ -3,13 +3,13 @@
 ## Ownership Map
 | Directory / File         | Owner       | Other agent |
 |--------------------------|-------------|-------------|
-| core/                    | Claude Code | READ-ONLY   |
-| config/                  | Claude Code | READ-ONLY   |
-| utils/                   | Claude Code | READ-ONLY   |
-| requirements.txt         | Claude Code | NO ACCESS   |
-| README.md                | Claude Code | NO ACCESS   |
-| AGENTS.md                | Claude Code | READ-ONLY   |
-| CLAUDE_LOG.md            | Claude Code | READ-ONLY   |
+| core/                    | OpenCode | READ-ONLY   |
+| config/                  | OpenCode | READ-ONLY   |
+| utils/                   | OpenCode | READ-ONLY   |
+| requirements.txt         | OpenCode | NO ACCESS   |
+| README.md                | OpenCode | NO ACCESS   |
+| AGENTS.md                | OpenCode | READ-ONLY   |
+| OPENCODE_LOG.md            | OpenCode | READ-ONLY   |
 | scheduler/               | Kilo Code   | NO ACCESS   |
 | automations/             | Kilo Code   | NO ACCESS   |
 | tasks/                   | Kilo Code   | NO ACCESS   |
@@ -25,7 +25,7 @@
 - `config.loader.load_config(path=None)` — returns typed config dict
 
 ## Pending Interface Changes
-> Kilo Code: write requests here. Claude Code: acknowledge and implement.
+> Kilo Code: write requests here. OpenCode: acknowledge and implement.
 
 ```
 REQUESTED BY: Kilo Code
@@ -44,5 +44,5 @@ NEED: [ACKNOWLEDGED — done by Kilo Code]
 ```
 
 ## Status
-- Claude Code: IDLE
+- OpenCode: IDLE
 - Kilo Code: IDLE

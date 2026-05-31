@@ -11,38 +11,3 @@ node_modules/
 dist/
 build/
 .pytest_cache/
-# OS / temp dirs — never commit
-AppData/
-Application Data/
-Belgelerim/
-Cookies/
-Local Settings/
-NetHood/
-PrintHood/
-Recent/
-SendTo/
-Start Menu/
-Templates/
-# Untracked sibling projects and downloads
-Downloads/
-../
-../test-projesi/
-../test3/
-../test5/
-../test6/
-../../tools/
-.safe-pay*/
-SafePay*/
-safepay*/
-Videos/
-Music/
-Pictures/
-Contacts/
-Favorites/
-Links/
-OneDrive/
-Saved Games/
-Searches/
-NTUSER*
-ntuser*
-piyasa_chat_bot/
