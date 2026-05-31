@@ -21,6 +21,7 @@
 
 - `core.device_manager.DeviceManager` — main class, all device ops
 - `core.adb.ADBClient` — raw ADB wrapper
+- `core.adb.ADBClient.run_command(args, device_id, timeout)` — public API for arbitrary ADB commands
 - `utils.logger.get_logger(name)` — standard logger factory
 - `config.loader.load_config(path=None)` — returns typed config dict
 

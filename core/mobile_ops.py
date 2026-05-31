@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Any, Dict, Optional, Tuple
 
 from core.adb import ADBClient
 
@@ -34,11 +35,11 @@ class MobileOperations:
 
     # helpers ------------------------------------------------------------------
     @staticmethod
-    def _result(ok: bool, **kwargs) -> dict:
+    def _result(ok: bool, **kwargs: Any) -> Dict[str, Any]:
         return {"ok": ok, **kwargs}
 
     def _safe_shell(self, cmd: str, timeout: int = 30,
-                    device_id: str | None = None) -> (str, bool):
+                    device_id: Optional[str] = None) -> Tuple[str, bool]:
         try:
             out = self.adb.shell_output(cmd, device_id=device_id, timeout=timeout)
             return out, True
@@ -46,18 +47,18 @@ class MobileOperations:
             self.log.warning("shell(%s) failed: %s", cmd, exc)
             return "", False
 
-    def alive(self, device_id: str | None = None) -> bool:
+    def alive(self, device_id: Optional[str] = None) -> bool:
         """Return ``True`` if ``adb get-state`` reports 'device'."""
         out, ok = self._safe_shell("get-state 2>/dev/null", device_id=device_id)
         return ok and out.strip() == "device"
 
     # screen & touch -----------------------------------------------------------
     def screenshot(self, remote: str = "/sdcard/screen.png",
-                   device_id: str | None = None) -> dict:
+                   device_id: Optional[str] = None) -> Dict[str, Any]:
         self.adb.screencap(remote, device_id=device_id)
         return self._result(True, remote=remote)
 
-    def tap(self, x: int, y: int, device_id: str | None = None) -> dict:
+    def tap(self, x: int, y: int, device_id: Optional[str] = None) -> Dict[str, Any]:
         self.adb.tap(x, y, device_id=device_id)
         return self._result(True, x=x, y=y)
 
@@ -66,25 +67,35 @@ class MobileOperations:
         x1: int, y1: int,
         x2: int, y2: int,
         duration_ms: int = 400,
-        device_id: str | None = None,
-    ) -> dict:
+        device_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
         self.adb.swipe(x1, y1, x2, y2, duration_ms=duration_ms,
                        device_id=device_id)
         return self._result(True, x1=x1, y1=y1, x2=x2, y2=y2)
 
-    def swipe_up(self, device_id: str | None = None,
-                 duration_ms: int = 400) -> dict:
-        return self.swipe(500, 1600, 500, 400, duration_ms=duration_ms,
-                          device_id=device_id)
+    def swipe_up(self, device_id: Optional[str] = None,
+                 duration_ms: int = 400,
+                 screen_height: int = 1600) -> Dict[str, Any]:
+        """Swipe up on screen.  Pass ``screen_height`` for non-default resolutions."""
+        mid_x = 500
+        start_y = int(screen_height * 0.75)
+        end_y = int(screen_height * 0.25)
+        return self.swipe(mid_x, start_y, mid_x, end_y,
+                          duration_ms=duration_ms, device_id=device_id)
 
-    def swipe_down(self, device_id: str | None = None,
-                   duration_ms: int = 400) -> dict:
-        return self.swipe(500, 400, 500, 1600, duration_ms=duration_ms,
-                          device_id=device_id)
+    def swipe_down(self, device_id: Optional[str] = None,
+                   duration_ms: int = 400,
+                   screen_height: int = 1600) -> Dict[str, Any]:
+        """Swipe down on screen.  Pass ``screen_height`` for non-default resolutions."""
+        mid_x = 500
+        start_y = int(screen_height * 0.25)
+        end_y = int(screen_height * 0.75)
+        return self.swipe(mid_x, start_y, mid_x, end_y,
+                          duration_ms=duration_ms, device_id=device_id)
 
     # apps ---------------------------------------------------------------------
     def install_apk(self, apk_path: str,
-                    device_id: str | None = None) -> dict:
+                    device_id: Optional[str] = None) -> Dict[str, Any]:
         try:
             self.adb.install(apk_path, device_id=device_id)
             return self._result(True, apk=apk_path)
@@ -92,7 +103,7 @@ class MobileOperations:
             return self._result(False, error=str(exc))
 
     def uninstall_pkg(self, package: str,
-                      device_id: str | None = None) -> dict:
+                      device_id: Optional[str] = None) -> Dict[str, Any]:
         try:
             self.adb.uninstall(package, device_id=device_id)
             return self._result(True, package=package)
@@ -102,7 +113,7 @@ class MobileOperations:
             return self._result(True, package=package)
 
     def launch(self, package: str, activity: str,
-               device_id: str | None = None) -> dict:
+               device_id: Optional[str] = None) -> Dict[str, Any]:
         try:
             self.adb.launch(package, activity, device_id=device_id)
             return self._result(True, package=package, activity=activity)
@@ -110,20 +121,20 @@ class MobileOperations:
             return self._result(False, error=str(exc))
 
     # ui automation ------------------------------------------------------------
-    def dump_ui(self, device_id: str | None = None) -> dict:
+    def dump_ui(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         out, ok = self._safe_shell(
             "uiautomator dump /sdcard/dump.xml 2>/dev/null; "
-            "cat /sdcard/dump.xml 2>/dev/null | head -200",
+            "cat /sdcard/dump.xml 2>/dev/null",
             device_id=device_id,
         )
-        return self._result(ok, xml=out.strip()[:200])
+        return self._result(ok, xml=out.strip())
 
-    def get_text(self, device_id: str | None = None) -> str:
+    def get_text(self, device_id: Optional[str] = None) -> str:
         out, _ = self._safe_shell("dumpsys window | grep mCurrentFocus",
                                    device_id=device_id)
         return out.strip()
 
-    def current_focus(self, device_id: str | None = None) -> str:
+    def current_focus(self, device_id: Optional[str] = None) -> str:
         out, _ = self._safe_shell(
             "dumpsys window | grep mCurrentFocus", device_id=device_id
         )
@@ -144,7 +155,7 @@ class MobileOperations:
     }
 
     def press_key(self, key_name: str,
-                  device_id: str | None = None) -> dict:
+                  device_id: Optional[str] = None) -> Dict[str, Any]:
         """Send a hardware key event (home / back / recent / volume_up / …).
 
         Parameters
@@ -155,29 +166,29 @@ class MobileOperations:
             ADB serial ID.
         """
         code = self._KEYEVENT.get(key_name.lower(), key_name)
-        self.adb._run(["shell", "input", "keyevent", code],
-                      device_id=device_id)
+        self.adb.run_command(["shell", "input", "keyevent", code],
+                             device_id=device_id)
         return self._result(True, key=key_name, code=code)
 
-    def press_home(self, device_id: str | None = None) -> dict:
+    def press_home(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         return self.press_key("home", device_id=device_id)
 
-    def press_back(self, device_id: str | None = None) -> dict:
+    def press_back(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         return self.press_key("back", device_id=device_id)
 
-    def press_recent(self, device_id: str | None = None) -> dict:
+    def press_recent(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         return self.press_key("recent", device_id=device_id)
 
-    def volume_up(self, device_id: str | None = None) -> dict:
+    def volume_up(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         return self.press_key("volume_up", device_id=device_id)
 
-    def volume_down(self, device_id: str | None = None) -> dict:
+    def volume_down(self, device_id: Optional[str] = None) -> Dict[str, Any]:
         return self.press_key("volume_down", device_id=device_id)
 
-    # ── browser / URL ─────────────────────────────────────────────────────────
+    # ── browser / URL ────────────────────────────────────────────────────────
 
-    def open_url(self, url: str, browser_package: str | None = None,
-                 device_id: str | None = None) -> dict:
+    def open_url(self, url: str, browser_package: Optional[str] = None,
+                 device_id: Optional[str] = None) -> Dict[str, Any]:
         """Open *url* in the given browser (or Chrome if none given).
 
         Parameters
@@ -191,7 +202,7 @@ class MobileOperations:
         """
         pkg = browser_package or "com.android.chrome"
         safe = url.replace("&", "\\&").replace("|", "\\|")
-        self.adb._run([
+        self.adb.run_command([
             "shell", "am", "start", "-a", "android.intent.action.VIEW",
             "-d", safe, pkg,
         ], device_id=device_id)
@@ -202,7 +213,7 @@ class MobileOperations:
     def scroll_swipe(self, direction: str = "down",
                      steps: int = 3,
                      duration_ms: int = 300,
-                     device_id: str | None = None) -> dict:
+                     device_id: Optional[str] = None) -> Dict[str, Any]:
         """Fling-style scroll in *direction* ('up', 'down', 'left', 'right').
 
         Uses ``input fling`` for a natural fling gesture (Android 10+).
