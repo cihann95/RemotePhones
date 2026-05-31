@@ -104,3 +104,19 @@
 - AGENTS.md'de `run_command(cmd: str, ...)` imza hatası (INTERFACE_SPEC.md'deki doğru imza: `run_command(args: List[str], device_id, timeout)`)
 
 **Sıradaki:** AGENTS.md status kontrolü (OpenCode bekliyor)
+
+---
+
+## 2026-05-31 14:53 — Architecture Docs Update
+
+**Yaptım:**
+- docs/architecture/RISK_REGISTER.md: RESOLVED riskleri güncellendi (Protocol mismatch, cross-zone imports, hardcoded coordinates)
+- docs/architecture/SYSTEM_MAP.md: Kırılma noktaları güncellendi (P0/P1/P2 durumları)
+
+**Commitler:** `docs(architecture): update RISK_REGISTER.md and SYSTEM_MAP.md - resolve completed risks`
+
+**Interface sorunları:** yok
+
+**OpenCode bilmeli:** yok
+
+**Sıradaki:** İlave görev yok — tüm P0/P1 görevler tamamlandı
