@@ -86,3 +86,21 @@
 **Sıradaki:** AGENTS.md ve OPENCODE_LOG.md güncelleme (interface onayı)
 
 **Not:** automations/base.py'de hardcoded koordinatlar (500,1800,500,500) hâlâ var ama P1. relative hesaplama veya config'den alınması gerekiyor.
+
+---
+
+## 2026-05-31 14:43 — automations/base.py Hardcoded Coordinate Fix
+
+**Yaptım:**
+- automations/base.py: `swipe_up()`, `swipe_down()`, `tap_center()` metodlarına `screen_width`, `screen_height` parametreleri eklendi
+- Koordinatlar proportional olarak hesaplanıyor: `%50`, `%75`, `%25` gibi oranlar kullanıldı
+
+**Commitler:** `refactor(automations): remove hardcoded coordinates - use proportional screen dimensions`
+
+**Interface sorunları:** yok
+
+**OpenCode bilmeli:**
+- AGENTS.md Status: OpenCode WORKING → IDLE (Cross-zone Protocol refactor bitti)
+- AGENTS.md'de `run_command(cmd: str, ...)` imza hatası (INTERFACE_SPEC.md'deki doğru imza: `run_command(args: List[str], device_id, timeout)`)
+
+**Sıradaki:** AGENTS.md status kontrolü (OpenCode bekliyor)
