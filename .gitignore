@@ -38,15 +38,6 @@ package-lock.json
 # Build
 *.egg-info/
 
-# Misc
-*.dat
-Product.dat
-
-# License (Cryptlex)
-src/main/Product.dat
-src/main/license.js
-src/renderer/license.js
-
 # OpenCode
 .omo/
 .kilo/
