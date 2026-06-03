@@ -3,6 +3,13 @@
 // Device health monitoring with auto-refresh
 // =====================================================
 
+function _escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 window.HealthDashboard = (function () {
   const REFRESH_INTERVAL = 30000;
   const BATTERY_LOW = 15;
@@ -107,10 +114,10 @@ window.HealthDashboard = (function () {
     var deviceName = device.name || device.model || device.id || 'Unknown';
     var deviceId = device.id || '';
 
-    return '<div class="health-card" data-device-id="' + deviceId + '">' +
+    return '<div class="health-card" data-device-id="' + _escapeHtml(deviceId) + '">' +
       '<div class="health-card-header">' +
-        '<span class="health-card-name">' + deviceName + '</span>' +
-        '<span class="health-card-id">' + deviceId + '</span>' +
+        '<span class="health-card-name">' + _escapeHtml(deviceName) + '</span>' +
+        '<span class="health-card-id">' + _escapeHtml(deviceId) + '</span>' +
       '</div>' +
       alertHtml +
       '<div class="health-metrics">' + metrics + '</div>' +

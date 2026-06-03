@@ -2,6 +2,13 @@
 // PHONE FARM V2 - OFFICE MODE RENDERER
 // =====================================================
 
+function _escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // Elements
 const elements = {
   btnBack: document.getElementById('btn-back'),
@@ -33,7 +40,7 @@ async function refreshStatus() {
     if (status.tailscale.loggedIn) {
       elements.tailscaleStatus.innerHTML = `
         <span class="status-badge status-online">Bagli</span>
-        <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${status.tailscale.ip || ''}</span>
+        <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${_escapeHtml(status.tailscale.ip || '')}</span>
       `;
     } else if (status.tailscale.running) {
       elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Giris Gerekli</span>';

@@ -62,7 +62,6 @@ async function checkLicenseStatus() {
 
   try {
     const result = await window.electronAPI.checkLicense();
-    if (typeof process !== 'undefined') console.log('License check result:', result);
 
     if (result.isValid) {
       showActivatedState(result);
@@ -126,7 +125,6 @@ async function handleDeactivate() {
 
   try {
     const result = await window.electronAPI.deactivateLicense();
-    if (typeof process !== 'undefined') console.log('Deactivation result:', result);
 
     if (result.success) {
       showSuccess('Lisans deaktif edildi');

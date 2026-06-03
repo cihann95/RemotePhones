@@ -2,6 +2,13 @@
 // PHONE FARM V2 - MODE SELECTION RENDERER
 // =====================================================
 
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 // License info cache
 let licenseInfo = null;
 
@@ -65,7 +72,6 @@ async function checkStatus() {
 async function checkLicenseInfo() {
   try {
     licenseInfo = await window.electronAPI.getLicenseInfo();
-    if (typeof process !== 'undefined') console.log('License info:', licenseInfo);
 
     // Validate licenseInfo is a non-null object with expected fields
     if (!licenseInfo || typeof licenseInfo !== 'object') {
@@ -84,7 +90,7 @@ async function checkLicenseInfo() {
     const licenseEl = document.getElementById('license-info');
     if (licenseEl) {
       licenseEl.innerHTML = `
-        <span>Telefon: ${licenseInfo.maxPhones}</span>
+        <span>Telefon: ${escapeHtml(String(licenseInfo.maxPhones || ''))}</span>
         <span class="footer-divider"></span>
         <span>Uzaktan: ${licenseInfo.remoteAccess ? 'Aktif' : 'Pasif'}</span>
       `;
@@ -120,7 +126,6 @@ document.getElementById('btn-deactivate-license').addEventListener('click', asyn
 
   try {
     const result = await window.electronAPI.deactivateLicense();
-    if (typeof process !== 'undefined') console.log('Deactivation result:', result);
 
     if (result.success) {
       PhoneFarmNotification.show('License deactivated successfully. Redirecting to license page.', 'success');

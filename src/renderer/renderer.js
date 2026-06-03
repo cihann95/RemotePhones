@@ -235,8 +235,8 @@ async function showShortcuts() {
     const shortcuts = await window.electronAPI.getShortcuts();
     elements.shortcutList.innerHTML = shortcuts.map(s => `
       <div class="shortcut-item">
-        <span class="shortcut-key">${s.key}</span>
-        <span class="shortcut-action">${s.action}</span>
+        <span class="shortcut-key">${escapeHtml(s.key)}</span>
+        <span class="shortcut-action">${escapeHtml(s.action)}</span>
       </div>
     `).join('');
     elements.shortcutsModal.classList.remove('hidden');
@@ -256,11 +256,8 @@ async function refreshDevicesWithMerge() {
   _lastDeviceScan = Date.now();
 
   PhoneFarmLoading.show('Refreshing devices...');
-  if (typeof process !== 'undefined') console.log('[Renderer] refreshDevicesWithMerge called');
   try {
     const mergedDevices = await window.electronAPI.getMergedDevices();
-    if (typeof process !== 'undefined') console.log('[Renderer] getMergedDevices result:', mergedDevices);
-    if (typeof process !== 'undefined') console.log('[Renderer] Devices count:', mergedDevices ? mergedDevices.length : 0);
     if (mergedDevices && Array.isArray(mergedDevices)) {
       devices = mergedDevices;
     } else {
@@ -276,13 +273,10 @@ async function refreshDevicesWithMerge() {
 }
 
 async function refreshDevices() {
-  if (typeof process !== 'undefined') console.log('[Renderer] refreshDevices called');
   try {
     const result = await window.electronAPI.refreshDevices();
-    if (typeof process !== 'undefined') console.log('[Renderer] refreshDevices result:', result);
     if (result && result.success) {
       devices = result.devices || [];
-      if (typeof process !== 'undefined') console.log('[Renderer] Devices loaded:', devices.length);
       updateDevicesUI();
     } else {
       console.error('[Renderer] refreshDevices failed:', result.error);
@@ -332,7 +326,7 @@ function updateDevicesList() {
 
       html += `
         <div class="connected-device-item ${isActive ? 'active' : ''}">
-          <span class="device-emoji">${emoji}</span>
+          <span class="device-emoji">${escapeHtml(emoji)}</span>
           <div class="device-info-compact">
             <span class="device-name-compact">${escapeHtml(displayName)}</span>
             <span class="device-battery-compact">${getBatteryIcon(device.battery)} ${device.battery ?? '?'}%</span>
@@ -360,7 +354,7 @@ function renderDeviceCards() {
     if (isSelected) cardClasses.push('selected');
     if (device.color) cardClasses.push('has-color');
 
-    const colorStyle = device.color ? `border-left: 4px solid ${device.color}` : '';
+    const colorStyle = device.color && /^#[0-9a-fA-F]{3,8}$/.test(device.color) ? `border-left: 4px solid ${device.color}` : '';
     const batteryIcon = getBatteryIcon(device.battery);
     const batteryLevel = device.battery;
     const batteryClass = batteryLevel == null
@@ -371,10 +365,10 @@ function renderDeviceCards() {
     const originalName = device.customName ? device.model : '';
 
     html += `
-      <div class="${cardClasses.join(' ')}" data-device-id="${device.id}" data-index="${i}" role="listitem" aria-label="${escapeHtml(displayName)} device, ${isActive ? 'active' : 'ready'}" style="${colorStyle}">
+      <div class="${cardClasses.join(' ')}" data-device-id="${escapeHtml(device.id)}" data-index="${i}" role="listitem" aria-label="${escapeHtml(displayName)} device, ${isActive ? 'active' : 'ready'}" style="${colorStyle}">
         <span class="edit-hint">Double click: Edit</span>
         <div class="device-header">
-          <span class="device-icon">${emoji || '📱'}</span>
+          <span class="device-icon">${escapeHtml(emoji) || '📱'}</span>
           <span class="status-badge ${isActive ? 'status-online' : 'status-unknown'}">
             ${isActive ? 'Active' : 'Ready'}
           </span>
@@ -388,10 +382,10 @@ function renderDeviceCards() {
         </div>
         <div class="device-actions">
           ${isActive
-            ? `<button class="btn btn-sm btn-danger btn-block device-stop-btn" data-device-id="${device.id}">Stop</button>`
-            : `<button class="btn btn-sm btn-primary btn-block device-start-btn" data-device-id="${device.id}">Start</button>`
+            ? `<button class="btn btn-sm btn-danger btn-block device-stop-btn" data-device-id="${escapeHtml(device.id)}">Stop</button>`
+            : `<button class="btn btn-sm btn-primary btn-block device-start-btn" data-device-id="${escapeHtml(device.id)}">Start</button>`
           }
-          <button class="btn btn-sm device-text-btn device-send-text-btn" data-device-id="${device.id}" title="Send Text">Text</button>
+          <button class="btn btn-sm device-text-btn device-send-text-btn" data-device-id="${escapeHtml(device.id)}" title="Send Text">Text</button>
         </div>
       </div>
     `;
@@ -764,7 +758,7 @@ async function refreshStatus() {
     if (status.tailscale.loggedIn) {
       elements.tailscaleStatus.innerHTML = `
         <span class="status-badge status-online">Connected</span>
-        <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${status.tailscale.ip || ''}</span>
+        <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${escapeHtml(status.tailscale.ip || '')}</span>
       `;
     } else if (status.tailscale.running) {
       elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Login Required</span>';
@@ -1056,14 +1050,12 @@ function escapeHtml(text) {
 async function loadLicenseInfo() {
   try {
     licenseInfo = await window.electronAPI.getLicenseInfo();
-    if (typeof process !== 'undefined') console.log('[Renderer] License info:', licenseInfo);
   } catch (e) {
     console.error('[Renderer] License info error:', e);
   }
 }
 
 async function init() {
-   if (typeof process !== 'undefined') console.log('[Renderer] Initializing home mode...');
 
    // Load license info first
    await loadLicenseInfo();
@@ -1132,7 +1124,6 @@ async function init() {
      }
    });
 
-   if (typeof process !== 'undefined') console.log('[Renderer] Home mode initialized');
  }
 
 init();
