@@ -18,14 +18,40 @@ const DeviceStore = require('./device-store');
 const AutostartManager = require('./autostart');
 const NotificationManager = require('./notifications');
 const ShortcutManager = require('./shortcuts');
-const LicenseManager = require('./license');
+let LicenseManager;
+try {
+  LicenseManager = require('./license');
+  if (!LicenseManager || typeof LicenseManager.checkLicense !== 'function') {
+    console.warn('[Main] License module loaded but checkLicense not available, using fallback');
+    LicenseManager = {
+      checkLicense: async () => ({ isValid: false, error: 'License module incomplete' }),
+      cleanup: async () => {},
+      getLicenseInfo: () => ({ isValid: false, maxPhones: 5, remoteAccess: false }),
+      activateLicense: async () => ({ success: false, error: 'Not available' }),
+      deactivateLicense: async () => ({ success: false, error: 'Not available' }),
+      canAddPhone: () => ({ allowed: false, reason: 'License module unavailable' }),
+      isRemoteAccessAllowed: () => ({ allowed: false, reason: 'License module unavailable' })
+    };
+  }
+} catch (e) {
+  console.error('[Main] Failed to load license module:', e.message);
+  LicenseManager = {
+    checkLicense: async () => ({ isValid: false, error: e.message }),
+    cleanup: async () => {},
+    getLicenseInfo: () => ({ isValid: false, maxPhones: 5, remoteAccess: false }),
+    activateLicense: async () => ({ success: false, error: e.message }),
+    deactivateLicense: async () => ({ success: false, error: e.message }),
+    canAddPhone: () => ({ allowed: false, reason: e.message }),
+    isRemoteAccessAllowed: () => ({ allowed: false, reason: e.message })
+  };
+}
 const Paths = require('./paths');
 const { ipcDeviceId, ipcDeviceText } = require('./ipc-validators');
 const HealthMonitor = require('./health-monitor');
 const Updater = require('./updater');
 
 // Version from package.json
-const appPkg = require(path.join(__dirname, '..', 'package.json'));
+const appPkg = require(path.join(__dirname, '..', '..', 'package.json'));
 const APP_VERSION = appPkg.version;
 
 // =====================================================
@@ -47,7 +73,7 @@ const deviceStore = new DeviceStore();
 const autostartManager = new AutostartManager();
 const notificationManager = new NotificationManager();
 const shortcutManager = new ShortcutManager();
-const licenseManager = new LicenseManager(); // Assuming LicenseManager needs instantiation
+const licenseManager = require('./license');
 let deviceMonitor = null;
 let healthMonitor = null;
 
@@ -1243,9 +1269,6 @@ ipcMain.handle('get-app-info', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<{timestamp:string,number:string,duration:number,status:string}>>}
  */
-ipcMain.handle('call-history:get', async () => {
-});
-
 ipcMain.handle('phone:call-bulk', async (event, numbers) => {
   if (!Array.isArray(numbers) || numbers.length === 0) {
     return { success: false, error: 'No numbers provided for bulk call' };
