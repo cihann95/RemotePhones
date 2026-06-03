@@ -42,6 +42,11 @@ package-lock.json
 *.dat
 Product.dat
 
+# License (Cryptlex)
+src/main/Product.dat
+src/main/license.js
+src/renderer/license.js
+
 # OpenCode
 .omo/
 .kilo/
