@@ -116,12 +116,11 @@ class PhoneOperations:
                 state = self._parse_call_state(out) if ok else -1
                 return self._result(
                     True,
-                    number=number,
                     state=state,
                     state_name=_CALL_STATE_NAMES.get(state, "unknown"),
                 )
             except Exception as exc:
-                self.log.error("call(%s) failed: %s", number, exc)
+                self.log.error("call(***) failed: %s", exc)
                 return self._result(False, error=str(exc))
             finally:
                 # Cleanup: if call is still active, hang up without re-acquiring lock
@@ -337,7 +336,7 @@ class PhoneOperations:
                 if _NUMBER_PATTERN.match(num):
                     numbers.append({"number": num, "name": name})
                 else:
-                    warnings.append(f"Line {idx}: Invalid number format: {num}")
+                    warnings.append(f"Line {idx}: Invalid number format")
         except FileNotFoundError:
             warnings.append(f"CSV file not found: {csv_path}")
         except Exception as exc:
@@ -381,7 +380,7 @@ class PhoneOperations:
                 if _NUMBER_PATTERN.match(num):
                     numbers.append({"number": num, "name": name})
                 else:
-                    warnings.append(f"Line {idx}: Invalid number format: {num}")
+                    warnings.append(f"Line {idx}: Invalid number format")
         except Exception as exc:
             warnings.append(f"CSV read error: {exc}")
 

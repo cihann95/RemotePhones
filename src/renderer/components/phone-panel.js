@@ -10,7 +10,13 @@ class PhonePanel {
         this.init();
     }
 
-    init() {
+    init(host) {
+        if (host) {
+            this.host = host;
+        }
+        if (this._initialized) return;
+        this._initialized = true;
+
         // Bind events
         document.getElementById('phone-call-btn').addEventListener('click', () => this.handleCall());
         document.getElementById('phone-answer-btn').addEventListener('click', () => this.handleAnswer());
@@ -20,7 +26,7 @@ class PhonePanel {
         document.getElementById('phone-number-input').addEventListener('input', (e) => this.handleNumberInput(e));
 
         // Set up IPC listeners for call state updates
-        window.api.on('phone-state-update', (event, state) => {
+        window.electronAPI.on('phone-state-update', (event, state) => {
             this.updateCallState(state);
         });
 
@@ -129,7 +135,7 @@ class PhonePanel {
 
         try {
             // Send IPC to main to initiate call
-            await window.api.invoke('phone:call', { deviceId: this.deviceId, number });
+            await window.electronAPI.invoke('phone:call', { deviceId: this.deviceId, number });
             // Update UI to calling state
             this.setCallState('ringing');
         } catch (error) {
@@ -142,7 +148,7 @@ class PhonePanel {
     async handleAnswer() {
         if (!this.deviceId) return;
         try {
-            await window.api.invoke('phone:answer', { deviceId: this.deviceId });
+            await window.electronAPI.invoke('phone:answer', { deviceId: this.deviceId });
             this.setCallState('active');
         } catch (error) {
             console.error('Answer failed:', error);
@@ -154,7 +160,7 @@ class PhonePanel {
     async handleHangup() {
         if (!this.deviceId) return;
         try {
-            await window.api.invoke('phone:hangup', { deviceId: this.deviceId });
+            await window.electronAPI.invoke('phone:hangup', { deviceId: this.deviceId });
             this.setCallState('ended');
         } catch (error) {
             console.error('Hangup failed:', error);
@@ -166,7 +172,7 @@ class PhonePanel {
     async handleReject() {
         if (!this.deviceId) return;
         try {
-            await window.api.invoke('phone:hangup', { deviceId: this.deviceId }); // Reject is same as hangup for now
+            await window.electronAPI.invoke('phone:hangup', { deviceId: this.deviceId }); // Reject is same as hangup for now
             this.setCallState('ended');
         } catch (error) {
             console.error('Reject failed:', error);
@@ -212,7 +218,7 @@ class PhonePanel {
         this.updateCallStateIndicator();
         this.updateButtonVisibility();
         // Notify main process of state change (if needed)
-        window.api.send('phone:state-change', { deviceId: this.deviceId, state });
+        window.electronAPI.send('phone:state-change', { deviceId: this.deviceId, state });
     }
 
     // Update call state indicator display
@@ -280,14 +286,6 @@ class PhonePanel {
     // Update call state from IPC (incoming call state changes)
     updateCallState(state) {
         this.setCallState(state);
-    }
-
-    init(host) {
-        if (!host) return;
-        this.host = host;
-        if (!this._initialized) {
-            this._initialized = true;
-        }
     }
 }
 

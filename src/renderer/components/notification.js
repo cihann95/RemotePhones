@@ -21,7 +21,19 @@ window.PhoneFarmNotification = (function() {
     const id = Date.now() + Math.random();
     const el = document.createElement('div');
     el.className = `notification-item notification-${type}`;
-    el.innerHTML = `<span class="notification-icon">${ICONS[type] || ''}</span><span class="notification-message">${message}</span><button class="notification-btn-close" onclick="PhoneFarmNotification.dismiss(${id})">&times;</button>`;
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'notification-icon';
+    iconSpan.textContent = ICONS[type] || '';
+    const msgSpan = document.createElement('span');
+    msgSpan.className = 'notification-message';
+    msgSpan.textContent = message;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'notification-btn-close';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.addEventListener('click', () => dismiss(id));
+    el.appendChild(iconSpan);
+    el.appendChild(msgSpan);
+    el.appendChild(closeBtn);
     el.dataset.id = id;
     
     if (visible.length >= MAX_VISIBLE) {

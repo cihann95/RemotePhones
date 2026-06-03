@@ -45,7 +45,7 @@
         "to": "Product.dat"
       }
     ],
-    "asar": false,
+    "asar": true,
     "win": {
       "target": [
         {

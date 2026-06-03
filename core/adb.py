@@ -26,8 +26,9 @@ class ADBClient:
             return [self.adb_path, "-s", self.default_device]
         return [self.adb_path]
 
-    def _run(self, args: List[str], timeout: int = 30) -> str:
-        cmd = self._device_prefix() + args
+    def _run(self, args: List[str], device_id: Optional[str] = None,
+             timeout: int = 30) -> str:
+        cmd = self._device_prefix(device_id) + args
         logger.debug("RUN: %s", " ".join(cmd))
         last_exc = None
         for attempt in range(1, self.max_retries + 1):
@@ -78,7 +79,7 @@ class ADBClient:
 
     def tap(self, x: int, y: int, device_id: Optional[str] = None) -> None:
         """Tap at screen coordinates (x, y)."""
-        self._run(["shell", "input", "tap", str(x), str(y)])
+        self._run(["shell", "input", "tap", str(x), str(y)], device_id=device_id)
 
     def swipe(self, x1: int, y1: int, x2: int, y2: int,
               duration_ms: int = 300, device_id: Optional[str] = None) -> None:
@@ -86,28 +87,28 @@ class ADBClient:
         self._run([
             "shell", "input", "swipe",
             str(x1), str(y1), str(x2), str(y2), str(duration_ms),
-        ])
+        ], device_id=device_id)
 
     def screencap(self, path: str = "/sdcard/screen.png",
                   device_id: Optional[str] = None) -> None:
         """Capture a screenshot and save it to *path* on the device."""
-        self._run(["shell", "screencap", "-p", path])
+        self._run(["shell", "screencap", "-p", path], device_id=device_id)
 
     def pull(self, remote: str, local: str, device_id: Optional[str] = None) -> None:
         """Pull a file from the device (*remote*) to the host (*local*)."""
-        self._run(["pull", remote, local])
+        self._run(["pull", remote, local], device_id=device_id)
 
     def push(self, local: str, remote: str, device_id: Optional[str] = None) -> None:
         """Push a file from the host (*local*) to the device (*remote*)."""
-        self._run(["push", local, remote])
+        self._run(["push", local, remote], device_id=device_id)
 
     def install(self, apk_path: str, device_id: Optional[str] = None) -> None:
         """Install an APK on the device (replace if already installed)."""
-        self._run(["install", "-r", apk_path])
+        self._run(["install", "-r", apk_path], device_id=device_id)
 
     def uninstall(self, package: str, device_id: Optional[str] = None) -> None:
         """Uninstall a package from the device."""
-        self._run(["uninstall", package])
+        self._run(["uninstall", package], device_id=device_id)
 
     def launch(self, package: str, activity: str,
                device_id: Optional[str] = None) -> None:
@@ -115,14 +116,13 @@ class ADBClient:
         self._run([
             "shell", "am", "start", "-n",
             f"{package}/{activity}",
-        ])
+        ], device_id=device_id)
 
     def shell_output(self, command: str,
                      device_id: Optional[str] = None,
                      timeout: int = 30) -> str:
         """Execute a shell command on the device and return stdout."""
-        prefix = self._device_prefix(device_id)
-        return self._run(prefix + ["shell", command], timeout=timeout)
+        return self._run(["shell", command], device_id=device_id, timeout=timeout)
 
     def run_command(self, args: List[str], device_id: Optional[str] = None,
                     timeout: int = 30) -> str:
@@ -142,5 +142,4 @@ class ADBClient:
         str
             Captured stdout.
         """
-        prefix = self._device_prefix(device_id)
-        return self._run(prefix + args, timeout=timeout)
+        return self._run(args, device_id=device_id, timeout=timeout)

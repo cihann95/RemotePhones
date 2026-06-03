@@ -98,6 +98,8 @@ class JobQueue:
                 logger.info("Job %s completed", job_id)
 
     def fail(self, job_id: str, error: str | None = None) -> bool:
+        requeue_delay = 0.0
+        requeue_entry = None
         with self._lock:
             record = self._store.get(job_id)
             if not record:
@@ -111,14 +113,11 @@ class JobQueue:
                 )
                 record["status"] = JobStatus.RETRY
                 record["error"] = error
-                time.sleep(delay)
-                record["status"] = JobStatus.QUEUED
-                entry = _JobEntry(
+                requeue_delay = delay
+                requeue_entry = _JobEntry(
                     priority=record["priority"],
                     job_id=job_id,
                 )
-                heapq.heappush(self._heap, entry)
-                return True
             else:
                 record["status"] = JobStatus.FAILED
                 record["error"] = error
@@ -128,6 +127,16 @@ class JobQueue:
                     job_id, record["retries"], error,
                 )
                 return False
+        # Sleep OUTSIDE the lock so other threads are not blocked
+        time.sleep(requeue_delay)
+        if requeue_entry is not None:
+            with self._lock:
+                record = self._store.get(job_id)
+                if record and record["status"] == JobStatus.RETRY:
+                    record["status"] = JobStatus.QUEUED
+                    heapq.heappush(self._heap, requeue_entry)
+            return True
+        return False
 
     def cancel(self, job_id: str) -> bool:
         with self._lock:

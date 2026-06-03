@@ -100,7 +100,7 @@ class CSVUpload {
 
       try {
         // Send numbers to main process via IPC
-        await window.api.invoke('phone:call-bulk', this.numbers);
+        await window.electronAPI.invoke('phone:call-bulk', this.numbers);
         this.showSuccess(`Bulk call initiated for ${this.numbers.length} numbers`);
       } catch (error) {
         this.showError(`Bulk call failed: ${error.message}`);
@@ -203,18 +203,34 @@ class CSVUpload {
 
   updateStats(validCount, errorCount) {
     const statsEl = this.element.querySelector('#csv-stats');
-    statsEl.innerHTML = `
-      <strong>${validCount}</strong> valid numbers, 
-      <strong>${errorCount}</strong> invalid rows skipped
-    `;
+    statsEl.textContent = '';
+    const strong1 = document.createElement('strong');
+    strong1.textContent = String(validCount);
+    const strong2 = document.createElement('strong');
+    strong2.textContent = String(errorCount);
+    statsEl.appendChild(strong1);
+    statsEl.appendChild(document.createTextNode(' valid numbers, '));
+    statsEl.appendChild(strong2);
+    statsEl.appendChild(document.createTextNode(' invalid rows skipped'));
     
     const errorListEl = this.element.querySelector('#csv-error-list');
     if (this.errors.length > 0) {
-      errorListEl.innerHTML = '<strong>Errors:</strong><br>' + 
-        this.errors.slice(0, 5).map(err => `• ${err}`).join('<br>') +
-        (this.errors.length > 5 ? `<br>• and ${this.errors.length - 5} more...` : '');
+      errorListEl.textContent = '';
+      const strong = document.createElement('strong');
+      strong.textContent = 'Errors:';
+      errorListEl.appendChild(strong);
+      errorListEl.appendChild(document.createElement('br'));
+      this.errors.slice(0, 5).forEach(err => {
+        const bullet = document.createTextNode('• ' + err);
+        errorListEl.appendChild(bullet);
+        errorListEl.appendChild(document.createElement('br'));
+      });
+      if (this.errors.length > 5) {
+        const more = document.createTextNode(`• and ${this.errors.length - 5} more...`);
+        errorListEl.appendChild(more);
+      }
     } else {
-      errorListEl.innerHTML = '';
+      errorListEl.textContent = '';
     }
   }
 
@@ -225,19 +241,26 @@ class CSVUpload {
 
   showError(message) {
     const errorListEl = this.element.querySelector('#csv-error-list');
-    errorListEl.innerHTML = `<strong>Error:</strong> ${message}`;
+    errorListEl.textContent = '';
+    const strong = document.createElement('strong');
+    strong.textContent = 'Error: ';
+    errorListEl.appendChild(strong);
+    errorListEl.appendChild(document.createTextNode(message));
     this.element.querySelector('#csv-preview-wrapper').style.display = 'none';
     this.element.querySelector('#start-bulk-btn').disabled = true;
   }
 
   showSuccess(message) {
     const errorListEl = this.element.querySelector('#csv-error-list');
-    errorListEl.innerHTML = `<strong>Success:</strong> ${message}`;
+    errorListEl.textContent = '';
+    const strong = document.createElement('strong');
+    strong.textContent = 'Success: ';
+    errorListEl.appendChild(strong);
+    errorListEl.appendChild(document.createTextNode(message));
     errorListEl.style.color = '#28a745';
-    // Reset after 3 seconds
     setTimeout(() => {
       errorListEl.style.color = '#dc3545';
-      errorListEl.innerHTML = '';
+      errorListEl.textContent = '';
     }, 3000);
   }
 

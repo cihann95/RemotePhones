@@ -1544,16 +1544,14 @@ ipcMain.handle('phone:call', async (event, params) => {
    assertValidDeviceId(deviceId, 'deviceId');
    assertValidPhoneNumber(number);
    try {
-      // Execute phone_farm_cli.py call command
-      const { exec } = require('child_process');
+      const { execFile } = require('child_process');
       const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
       return new Promise((resolve) => {
-         exec(`python "${cliPath}" call "${deviceId}" --number "${number}"`, (error, stdout, stderr) => {
+         execFile('python', [cliPath, 'call', deviceId, '--number', number], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:call error:', error);
                resolve({ success: false, error: error.message });
             } else {
-               // Notify renderer of call state change
                mainWindow?.webContents?.send('phone-state-update', 'ringing');
                resolve({ success: true, output: stdout });
             }
@@ -1584,16 +1582,14 @@ ipcMain.handle('phone:answer', async (event, params) => {
    }
    assertValidDeviceId(deviceId, 'deviceId');
    try {
-      // Execute phone_farm_cli.py answer command
-      const { exec } = require('child_process');
+      const { execFile } = require('child_process');
       const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
       return new Promise((resolve) => {
-         exec(`python "${cliPath}" run "${deviceId}" answer`, (error, stdout, stderr) => {
+         execFile('python', [cliPath, 'run', deviceId, 'answer'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:answer error:', error);
                resolve({ success: false, error: error.message });
             } else {
-               // Notify renderer of call state change
                mainWindow?.webContents?.send('phone-state-update', 'active');
                resolve({ success: true, output: stdout });
             }
@@ -1624,16 +1620,14 @@ ipcMain.handle('phone:hangup', async (event, params) => {
    }
    assertValidDeviceId(deviceId, 'deviceId');
    try {
-      // Execute phone_farm_cli.py hangup command
-      const { exec } = require('child_process');
+      const { execFile } = require('child_process');
       const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
       return new Promise((resolve) => {
-         exec(`python "${cliPath}" run "${deviceId}" hangup`, (error, stdout, stderr) => {
+         execFile('python', [cliPath, 'run', deviceId, 'hangup'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:hangup error:', error);
                resolve({ success: false, error: error.message });
             } else {
-               // Notify renderer of call state change
                mainWindow?.webContents?.send('phone-state-update', 'ended');
                resolve({ success: true, output: stdout });
             }

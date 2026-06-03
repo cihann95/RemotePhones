@@ -31,27 +31,27 @@ async function refreshStatus() {
 
     // Tailscale
     if (status.tailscale.loggedIn) {
-      elements.tailscaleStatus?.setAttribute('innerHTML', `
+      elements.tailscaleStatus.innerHTML = `
         <span class="status-badge status-online">Bagli</span>
         <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${status.tailscale.ip || ''}</span>
-      `);
+      `;
     } else if (status.tailscale.running) {
-      elements.tailscaleStatus?.setAttribute('innerHTML', '<span class="status-badge status-warning">Giris Gerekli</span>');
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Giris Gerekli</span>';
     } else if (status.tailscale.installed) {
-      elements.tailscaleStatus?.setAttribute('innerHTML', '<span class="status-badge status-warning">Calismiyor</span>');
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Calismiyor</span>';
     } else {
-      elements.tailscaleStatus?.setAttribute('innerHTML', '<span class="status-badge status-offline">Kurulu Degil</span>');
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-offline">Kurulu Degil</span>';
     }
 
     // Parsec
     if (status.parsec.loggedIn) {
-      elements.parsecStatus?.setAttribute('innerHTML', '<span class="status-badge status-online">Hazir</span>');
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-online">Hazir</span>';
     } else if (status.parsec.running) {
-      elements.parsecStatus?.setAttribute('innerHTML', '<span class="status-badge status-warning">Giris Gerekli</span>');
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Giris Gerekli</span>';
     } else if (status.parsec.installed) {
-      elements.parsecStatus?.setAttribute('innerHTML', '<span class="status-badge status-warning">Calismiyor</span>');
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Calismiyor</span>';
     } else {
-      elements.parsecStatus?.setAttribute('innerHTML', '<span class="status-badge status-offline">Kurulu Degil</span>');
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-offline">Kurulu Degil</span>';
     }
 
     // Update connect button state
