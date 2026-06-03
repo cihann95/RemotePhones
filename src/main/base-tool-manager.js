@@ -9,6 +9,8 @@ const fs = require('fs');
 const { exec, execFile, spawn } = require('child_process');
 const { app } = require('electron');
 
+const DEBUG = process.env.NODE_ENV === 'development';
+
 /**
  * BaseToolManager
  *
@@ -33,12 +35,12 @@ class BaseToolManager {
    * Checks production path FIRST, then CWD relatives, then env var.
    */
   findToolsPath() {
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' ========== FIND TOOLS PATH ==========');
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' app.isPackaged:', app.isPackaged);
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' process.resourcesPath:', process.resourcesPath);
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' __dirname:', __dirname);
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' process.cwd():', process.cwd());
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' PHONE_FARM_TOOLS env:', process.env.PHONE_FARM_TOOLS);
+    if (DEBUG) console.log(this.logPrefix + ' ========== FIND TOOLS PATH ==========');
+    if (DEBUG) console.log(this.logPrefix + ' app.isPackaged:', app.isPackaged);
+    if (DEBUG) console.log(this.logPrefix + ' process.resourcesPath:', process.resourcesPath);
+    if (DEBUG) console.log(this.logPrefix + ' __dirname:', __dirname);
+    if (DEBUG) console.log(this.logPrefix + ' process.cwd():', process.cwd());
+    if (DEBUG) console.log(this.logPrefix + ' PHONE_FARM_TOOLS env:', process.env.PHONE_FARM_TOOLS);
 
     const isProd = app.isPackaged;
     let possiblePaths = [];
@@ -58,21 +60,21 @@ class BaseToolManager {
       ].filter(Boolean);
     }
 
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' Checking paths:', possiblePaths);
+    if (DEBUG) console.log(this.logPrefix + ' Checking paths:', possiblePaths);
 
     for (const p of possiblePaths) {
       const checkPath = path.join(p, this.subPath);
       const exists = fs.existsSync(checkPath);
-      if (process.env?.DEBUG) console.log(this.logPrefix + ' Checking: ' + checkPath + ' => ' + (exists ? 'EXISTS' : 'NOT FOUND'));
+      if (DEBUG) console.log(this.logPrefix + ' Checking: ' + checkPath + ' => ' + (exists ? 'EXISTS' : 'NOT FOUND'));
       if (exists) {
-        if (process.env?.DEBUG) console.log(this.logPrefix + ' Found tools at:', p);
-        if (process.env?.DEBUG) console.log(this.logPrefix + ' ==========================================');
+        if (DEBUG) console.log(this.logPrefix + ' Found tools at:', p);
+        if (DEBUG) console.log(this.logPrefix + ' ==========================================');
         return p;
       }
     }
 
     console.error(this.logPrefix + ' ERROR: Tools not found in any path!');
-    if (process.env?.DEBUG) console.log(this.logPrefix + ' ==========================================');
+    if (DEBUG) console.log(this.logPrefix + ' ==========================================');
     return null;
   }
 

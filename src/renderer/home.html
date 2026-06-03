@@ -11,9 +11,9 @@
   <!-- Header -->
   <header class="app-header">
     <div style="display: flex; align-items: center; gap: 16px;">
-      <button class="back-btn" id="btn-back">
-        ← Geri
-      </button>
+       <button class="back-btn" id="btn-back" aria-label="Geri dön">
+         ← Geri
+       </button>
       <h1>
         <span class="logo-icon">🏠</span>
         <span>Phone Farm Ev</span>
@@ -21,9 +21,9 @@
       </h1>
     </div>
     <div class="header-actions">
-      <button class="btn btn-sm btn-outline" id="btn-about" title="Hakkinda">ℹ️</button>
-      <button class="btn btn-sm btn-outline" id="btn-settings" title="Ayarlar">⚙️</button>
-      <button class="btn btn-sm btn-outline" id="btn-minimize" title="Kucult">➖</button>
+       <button class="btn btn-sm btn-outline" id="btn-about" title="Hakkinda" aria-label="Hakkında">ℹ️</button>
+       <button class="btn btn-sm btn-outline" id="btn-settings" title="Ayarlar" aria-label="Ayarlar">⚙️</button>
+       <button class="btn btn-sm btn-outline" id="btn-minimize" title="Kucult" aria-label="Pencereyi küçült">➖</button>
     </div>
   </header>
 
@@ -33,16 +33,16 @@
     <section class="control-panel">
       <h2 id="control-title">Telefon Kontrolu</h2>
       <p id="control-description">Telefonlari gostermek veya gizlemek icin asagidaki dugmeleri kullanin.</p>
-      <div class="control-buttons">
-        <button class="btn btn-success big-button" id="btn-start">
-          <span>▶️</span>
-          <span>BASLAT</span>
-        </button>
-        <button class="btn btn-danger big-button" id="btn-stop" disabled>
-          <span>⏹️</span>
-          <span>DURDUR</span>
-        </button>
-      </div>
+       <div class="control-buttons">
+         <button class="btn btn-success big-button" id="btn-start" aria-label="Başlat">
+           <span>▶️</span>
+           <span>BASLAT</span>
+         </button>
+         <button class="btn btn-danger big-button" id="btn-stop" disabled aria-label="Durdur">
+           <span>⏹️</span>
+           <span>DURDUR</span>
+         </button>
+       </div>
     </section>
 
     <!-- Dashboard Grid -->
@@ -52,16 +52,16 @@
         <div class="card-header">
           <h2 class="card-title">
             <span class="icon">📱</span>
-            <span>Bagli Telefonlar</span>
+            <span>Bağlı Telefonlar</span>
           </h2>
-          <button class="btn btn-sm btn-outline" id="btn-refresh-devices">🔄 Yenile</button>
+           <button class="btn btn-sm btn-outline" id="btn-refresh-devices" aria-label="Cihaz listesini yenile">🔄 Yenile</button>
         </div>
         <div class="card-body">
           <div id="devices-list">
             <div class="empty-state">
               <div class="empty-state-icon">📱</div>
               <h3>Telefon Bekleniyor</h3>
-              <p>USB ile telefon baglayin ve USB hata ayiklama modunu acin.</p>
+              <p>USB ile telefon bağlayın ve USB hata ayıklama modunu açın.</p>
             </div>
           </div>
         </div>
@@ -74,7 +74,7 @@
             <span class="icon">📊</span>
             <span>Sistem Durumu</span>
           </h2>
-          <button class="btn btn-sm btn-outline" id="btn-refresh-status">🔄 Yenile</button>
+           <button class="btn btn-sm btn-outline" id="btn-refresh-status" aria-label="Sistem durumunu yenile">🔄 Yenile</button>
         </div>
         <div class="card-body">
           <div class="status-row">
@@ -94,7 +94,7 @@
             <span class="status-value" id="scrcpy-status">0 aktif</span>
           </div>
           <div class="status-row">
-            <span class="status-label"><span>🚀</span><span>Otomatik Baslat</span></span>
+            <span class="status-label"><span>🚀</span><span>Otomatik Başlat</span></span>
             <span class="status-value">
               <label class="toggle">
                 <input type="checkbox" id="toggle-autostart">
@@ -116,24 +116,60 @@
         <span class="status-badge status-unknown" id="device-count">0 telefon</span>
       </div>
       <div class="card-body">
-        <div class="devices-grid" id="devices-grid"></div>
+        <div class="devices-grid" id="devices-grid" role="list"></div>
         <div class="empty-state hidden" id="devices-empty">
           <div class="empty-state-icon">📱</div>
           <h3>Telefon Bulunamadi</h3>
-          <p>Telefonlarinizi USB ile baglayin ve USB hata ayiklama modunun acik oldugundan emin olun.</p>
-          <button class="btn btn-primary mt-2" id="btn-scan-devices">🔍 Tekrar Tara</button>
+          <p>Telefonlarınızı USB ile bağlayın ve USB hata ayıklama modunun açık olduğundan emin olun.</p>
+           <button class="btn btn-primary mt-2" id="btn-scan-devices" aria-label="Cihazları yeniden tara">🔍 Tekrar Tara</button>
         </div>
       </div>
     </section>
+
+     <!-- Health Dashboard -->
+     <section class="card mt-3" id="health-dashboard-section">
+       <div class="card-header">
+         <h2 class="card-title">
+           <span class="icon">🩺</span>
+           <span>Sağlık Paneli</span>
+         </h2>
+         <div class="health-refresh-indicator">
+           <span class="health-refresh-dot"></span>
+           <span>Otomatik yenileme: 30s</span>
+           <button class="btn btn-sm btn-outline" id="btn-refresh-health" aria-label="Sağlık verilerini yenile">🔄 Yenile</button>
+         </div>
+       </div>
+       <div class="card-body">
+         <div class="health-panel" id="health-panel" role="list"></div>
+       </div>
+     </section>
+
+     <!-- Phone Panel -->
+     <section class="card mt-3" id="phone-panel-section">
+       <div class="card-header">
+         <h2 class="card-title">
+           <span class="icon">📞</span>
+           <span>Telefon Arama Paneli</span>
+         </h2>
+         <button class="btn btn-sm btn-outline" id="btn-toggle-phone-panel" aria-label="Telefon arama panelini aç/kapa">📞</button>
+       </div>
+       <div class="card-body" id="phone-panel-body">
+         <!-- Phone Panel Content will be loaded here by JavaScript -->
+         <div id="phone-panel-host"></div>
+       </div>
+     </section>
+
+     <!-- Call History -->
+     <div id="call-history-container" class="mt-3"></div>
   </main>
 
-  <!-- Settings Modal -->
-  <div class="loading-overlay hidden" id="settings-modal">
-    <div class="card modal-card" style="max-width: 500px; margin: 24px;">
-      <div class="card-header">
-        <h2 class="card-title">⚙️ Ayarlar</h2>
-        <button class="btn btn-sm btn-outline" id="btn-close-settings">✕</button>
-      </div>
+   <!-- Settings Modal -->
+   <div class="loading-overlay hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+     <div class="card modal-card" style="max-width: 500px; margin: 24px;">
+       <div class="card-header">
+         <h2 class="card-title" id="settings-modal-title">⚙️ Ayarlar</h2>
+         <button class="btn btn-sm btn-outline" id="btn-close-settings" aria-label="Ayarlar penceresini kapat">✕</button>
+       </div>
       <div class="card-body">
         <div class="status-row">
           <span class="status-label">Maksimum Boyut</span>
@@ -175,20 +211,45 @@
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <hr class="settings-divider">
+        <h3 class="settings-subtitle">🔄 Güncellemeler</h3>
+        <div class="status-row">
+          <span class="status-label">Otomatik Güncelleme Kontrolü</span>
+          <label class="toggle">
+            <input type="checkbox" id="setting-auto-update">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Güncelleme Kanalı</span>
+          <select id="setting-update-channel" class="btn btn-outline">
+            <option value="stable">Stable</option>
+            <option value="beta">Beta</option>
+          </select>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Şu anki sürüm</span>
+          <span class="status-value" id="update-current-version">v2.0.0</span>
+        </div>
+        <div class="mt-2">
+          <button class="btn btn-outline btn-block" id="btn-check-update-now">🔍 Şimdi Kontrol Et</button>
+        </div>
+        <div id="update-status-message" class="update-status-message hidden"></div>
+        <hr class="settings-divider">
         <div class="mt-3">
-          <button class="btn btn-primary btn-block" id="btn-save-settings">💾 Ayarlari Kaydet</button>
+          <button class="btn btn-primary btn-block" id="btn-save-settings">💾 Ayarları Kaydet</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Device Edit Modal -->
-  <div class="loading-overlay hidden" id="device-edit-modal">
-    <div class="card modal-card" style="max-width: 440px; margin: 24px;">
-      <div class="card-header">
-        <h2 class="card-title" id="device-edit-title">Telefon Duzenle</h2>
-        <button class="btn btn-sm btn-outline" id="btn-close-device-edit">✕</button>
-      </div>
+   <!-- Device Edit Modal -->
+   <div class="loading-overlay hidden" id="device-edit-modal" role="dialog" aria-modal="true" aria-labelledby="device-edit-title">
+     <div class="card modal-card" style="max-width: 440px; margin: 24px;">
+       <div class="card-header">
+         <h2 class="card-title" id="device-edit-title">Telefon Düzenle</h2>
+         <button class="btn btn-sm btn-outline" id="btn-close-device-edit" aria-label="Cihaz düzenleme penceresini kapat">✕</button>
+       </div>
       <div class="card-body">
         <div class="form-group">
           <label>Isim</label>
@@ -196,30 +257,30 @@
         </div>
         <div class="form-group">
           <label>Emoji</label>
-          <div class="emoji-picker" id="emoji-picker">
-            <button class="emoji-btn" data-emoji="">Yok</button>
-            <button class="emoji-btn selected" data-emoji="📱">📱</button>
-            <button class="emoji-btn" data-emoji="📞">📞</button>
-            <button class="emoji-btn" data-emoji="💬">💬</button>
-            <button class="emoji-btn" data-emoji="📸">📸</button>
-            <button class="emoji-btn" data-emoji="🎮">🎮</button>
-            <button class="emoji-btn" data-emoji="🎵">🎵</button>
-            <button class="emoji-btn" data-emoji="💼">💼</button>
-            <button class="emoji-btn" data-emoji="🛒">🛒</button>
-            <button class="emoji-btn" data-emoji="📧">📧</button>
-          </div>
+           <div class="emoji-picker" id="emoji-picker">
+             <button class="emoji-btn" data-emoji="" aria-label="Emoji yok">Yok</button>
+             <button class="emoji-btn selected" data-emoji="📱" aria-label="Emoji seçili: 📱">📱</button>
+             <button class="emoji-btn" data-emoji="📞" aria-label="Emoji: 📞">📞</button>
+             <button class="emoji-btn" data-emoji="💬" aria-label="Emoji: 💬">💬</button>
+             <button class="emoji-btn" data-emoji="📸" aria-label="Emoji: 📸">📸</button>
+             <button class="emoji-btn" data-emoji="🎮" aria-label="Emoji: 🎮">🎮</button>
+             <button class="emoji-btn" data-emoji="🎵" aria-label="Emoji: 🎵">🎵</button>
+             <button class="emoji-btn" data-emoji="💼" aria-label="Emoji: 💼">💼</button>
+             <button class="emoji-btn" data-emoji="🛒" aria-label="Emoji: 🛒">🛒</button>
+             <button class="emoji-btn" data-emoji="📧" aria-label="Emoji: 📧">📧</button>
+           </div>
         </div>
         <div class="form-group">
           <label>Renk</label>
-          <div class="color-picker" id="color-picker">
-            <button class="color-btn selected" data-color="" title="Yok">Yok</button>
-            <button class="color-btn" data-color="#f87171" style="background: #f87171;"></button>
-            <button class="color-btn" data-color="#fb923c" style="background: #fb923c;"></button>
-            <button class="color-btn" data-color="#fbbf24" style="background: #fbbf24;"></button>
-            <button class="color-btn" data-color="#34d399" style="background: #34d399;"></button>
-            <button class="color-btn" data-color="#60a5fa" style="background: #60a5fa;"></button>
-            <button class="color-btn" data-color="#a78bfa" style="background: #a78bfa;"></button>
-          </div>
+           <div class="color-picker" id="color-picker">
+             <button class="color-btn selected" data-color="" title="Yok" aria-label="Renk yok">Yok</button>
+             <button class="color-btn" data-color="#f87171" style="background: #f87171;" aria-label="Kırmızı renk"></button>
+             <button class="color-btn" data-color="#fb923c" style="background: #fb923c;" aria-label="Turuncu renk"></button>
+             <button class="color-btn" data-color="#fbbf24" style="background: #fbbf24;" aria-label="Sarı renk"></button>
+             <button class="color-btn" data-color="#34d399" style="background: #34d399;" aria-label="Yeşil renk"></button>
+             <button class="color-btn" data-color="#60a5fa" style="background: #60a5fa;" aria-label="Mavi renk"></button>
+             <button class="color-btn" data-color="#a78bfa" style="background: #a78bfa;" aria-label="Mor renk"></button>
+           </div>
         </div>
         <div class="form-group">
           <label>Grup</label>
@@ -228,27 +289,27 @@
           </select>
         </div>
         <div class="form-actions">
-          <button class="btn btn-outline" id="btn-reset-device">Sifirla</button>
+          <button class="btn btn-outline" id="btn-reset-device">Sıfırla</button>
           <button class="btn btn-primary" id="btn-save-device">Kaydet</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Text Input Modal -->
-  <div class="loading-overlay hidden" id="text-input-modal">
-    <div class="card modal-card" style="max-width: 440px; margin: 24px;">
-      <div class="card-header">
-        <h2 class="card-title" id="text-modal-title">Metin Gonder</h2>
-        <button class="btn btn-sm btn-outline" id="btn-close-text-modal">✕</button>
-      </div>
+   <!-- Text Input Modal -->
+   <div class="loading-overlay hidden" id="text-input-modal" role="dialog" aria-modal="true" aria-labelledby="text-modal-title">
+     <div class="card modal-card" style="max-width: 440px; margin: 24px;">
+       <div class="card-header">
+         <h2 class="card-title" id="text-modal-title">Metin Gönder</h2>
+         <button class="btn btn-sm btn-outline" id="btn-close-text-modal" aria-label="Metin gönderme penceresini kapat">✕</button>
+       </div>
       <div class="card-body">
         <div class="form-group">
-          <label>Metin (telefon numarasi veya dogrulama kodu)</label>
+          <label>Metin (telefon numarası veya doğrulama kodu)</label>
           <input type="text" id="text-input-field" placeholder="Orn: 5551234567" autocomplete="off">
         </div>
         <div class="text-modal-actions">
-          <button class="btn btn-primary btn-block" id="btn-send-text">Gonder</button>
+          <button class="btn btn-primary btn-block" id="btn-send-text">Gönder</button>
           <div class="text-modal-keys">
             <button class="btn btn-outline" id="btn-send-enter" title="Enter Tusu">Enter</button>
             <button class="btn btn-outline" id="btn-send-backspace" title="Silme Tusu">Sil</button>
@@ -263,7 +324,7 @@
   <div class="loading-overlay hidden" id="shortcuts-modal">
     <div class="card modal-card" style="max-width: 480px; margin: 24px;">
       <div class="card-header">
-        <h2 class="card-title">Klavye Kisayollari</h2>
+        <h2 class="card-title">Klavye Kısayolları</h2>
         <button class="btn btn-sm btn-outline" id="btn-close-shortcuts">✕</button>
       </div>
       <div class="card-body">
@@ -273,14 +334,30 @@
   </div>
 
   <!-- Footer -->
-  <footer class="app-footer">
-    <div class="footer-brand">
-      <span class="sergio">SERGIO</span>
-      <span class="footer-divider"></span>
-      <span class="footer-version">v2.0</span>
-    </div>
-  </footer>
+   <footer class="app-footer">
+     <div class="footer-brand">
+       <span class="sergio">SERGIO</span>
+       <span class="footer-divider"></span>
+       <span class="footer-version">v2.0</span>
+     </div>
+   </footer>
+   <div id="notification-container" class="notification-container" aria-live="polite"></div>
 
-  <script src="renderer.js"></script>
+    <script src="components/error-boundary.js"></script>
+    <script src="components/notification.js"></script>
+    <script src="components/loading.js"></script>
+    <script src="components/csv-upload.js"></script>
+    <script src="components/call-history.js"></script>
+    <script src="components/phone-panel.js"></script>
+    <script src="components/health-dashboard.js"></script>
+    <script src="renderer.js"></script>
+    <script>
+      (function() {
+        var host = document.getElementById('phone-panel-host');
+        if (host && window.PhonePanel && typeof window.PhonePanel.init === 'function') {
+          window.PhonePanel.init(host);
+        }
+      })();
+    </script>
 </body>
 </html>

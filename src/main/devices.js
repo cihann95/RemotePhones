@@ -4,6 +4,7 @@
 // =====================================================
 
 const EventEmitter = require('events');
+const DEBUG = process.env.NODE_ENV === 'development';
 
 class DeviceMonitor extends EventEmitter {
   constructor(adbManager, autostartManager, scrcpyManager) {
@@ -25,7 +26,7 @@ class DeviceMonitor extends EventEmitter {
       return;
     }
 
-    if (process.env?.DEBUG) console.log('[DeviceMonitor] Starting...');
+    if (DEBUG) console.log('[DeviceMonitor] Starting...');
     this.poll();
     this.pollInterval = setInterval(() => this.poll(), this.pollDelay);
   }
@@ -38,7 +39,7 @@ class DeviceMonitor extends EventEmitter {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
-    if (process.env?.DEBUG) console.log('[DeviceMonitor] Stopped');
+    if (DEBUG) console.log('[DeviceMonitor] Stopped');
   }
 
   /**
@@ -61,11 +62,11 @@ class DeviceMonitor extends EventEmitter {
     }
 
     this.isPolling = true;
-    if (process.env?.DEBUG) console.log('[DeviceMonitor] Polling for devices...');
+    if (DEBUG) console.log('[DeviceMonitor] Polling for devices...');
 
     try {
       const result = await this.adb.getEnrichedDevices();
-      if (process.env?.DEBUG) console.log('[DeviceMonitor] Poll result:', JSON.stringify(result, null, 2));
+      if (DEBUG) console.log('[DeviceMonitor] Poll result:', JSON.stringify(result, null, 2));
 
       if (!result.success) {
         console.error('[DeviceMonitor] Poll error:', result.error);
@@ -103,7 +104,7 @@ class DeviceMonitor extends EventEmitter {
       }
 
       for (const device of newDevices) {
-        if (process.env?.DEBUG) console.log('[DeviceMonitor] Device connected:', device.id);
+        if (DEBUG) console.log('[DeviceMonitor] Device connected:', device.id);
         this.emit('device-connected', device);
       }
 
@@ -113,7 +114,7 @@ class DeviceMonitor extends EventEmitter {
         const newIds = newDevices.filter(d => !active.includes(d.id)).map(d => d.id);
 
         if (newIds.length > 0) {
-          if (process.env?.DEBUG) console.log('[DeviceMonitor] Auto-start farm in', delay, 'ms for', newIds.length, 'devices');
+          if (DEBUG) console.log('[DeviceMonitor] Auto-start farm in', delay, 'ms for', newIds.length, 'devices');
           setTimeout(() => {
             for (const id of newIds) {
               this.scrcpyManager?.startDevice(id).catch(e =>
@@ -125,7 +126,7 @@ class DeviceMonitor extends EventEmitter {
       }
 
       for (const device of disconnectedDevices) {
-        if (process.env?.DEBUG) console.log('[DeviceMonitor] Device disconnected:', device.id);
+        if (DEBUG) console.log('[DeviceMonitor] Device disconnected:', device.id);
         this.emit('device-disconnected', device);
       }
 

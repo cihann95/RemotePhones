@@ -11,3 +11,37 @@ node_modules/
 dist/
 build/
 .pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Python
+.venv/
+venv/
+ajan-ortam/
+
+# Node
+package-lock.json
+
+# Build
+*.egg-info/
+
+# Misc
+*.dat
+Product.dat
+
+# OpenCode
+.omo/
+.kilo/

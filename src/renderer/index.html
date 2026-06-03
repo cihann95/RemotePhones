@@ -19,36 +19,36 @@
       <p class="subtitle">Profesyonel Telefon Yonetim Sistemi</p>
     </header>
 
-    <!-- Mode Cards -->
-    <main class="mode-cards">
-      <div class="mode-card" id="mode-home">
-        <div class="mode-icon">🏠</div>
-        <h2>EV</h2>
-        <p>Telefonlarin bagli oldugu bilgisayar</p>
-        <ul class="mode-features">
-          <li>Telefonlari USB ile bagla</li>
-          <li>Ekranlari goruntule ve kontrol et</li>
-          <li>Parsec ile uzaktan erisime ac</li>
-        </ul>
-        <button class="btn btn-primary btn-lg mode-btn">
-          EV Modunu Baslat
-        </button>
-      </div>
+     <!-- Mode Cards -->
+     <main class="mode-cards">
+       <div class="mode-card" id="mode-home" role="button" tabindex="0" aria-label="Ev modunu seç - Telefonların bağlı olduğu bilgisayar">
+         <div class="mode-icon">🏠</div>
+         <h2>EV</h2>
+         <p>Telefonlarin bagli oldugu bilgisayar</p>
+         <ul class="mode-features">
+           <li>Telefonlari USB ile bagla</li>
+           <li>Ekranlari goruntule ve kontrol et</li>
+           <li>Parsec ile uzaktan erisime ac</li>
+         </ul>
+         <button class="btn btn-primary btn-lg mode-btn">
+           EV Modunu Başlat
+         </button>
+       </div>
 
-      <div class="mode-card" id="mode-office">
-        <div class="mode-icon">🏢</div>
-        <h2>OFIS</h2>
-        <p>Uzaktan baglanan bilgisayar</p>
-        <ul class="mode-features">
-          <li>Ev bilgisayarina baglan</li>
-          <li>Parsec ile uzaktan eris</li>
-          <li>Telefonlari ofisten kontrol et</li>
-        </ul>
-        <button class="btn btn-primary btn-lg mode-btn">
-          OFIS Modunu Baslat
-        </button>
-      </div>
-    </main>
+       <div class="mode-card" id="mode-office" role="button" tabindex="0" aria-label="Ofis modunu seç - Uzaktan bağlanan bilgisayar">
+         <div class="mode-icon">🏢</div>
+         <h2>OFIS</h2>
+         <p>Uzaktan baglanan bilgisayar</p>
+         <ul class="mode-features">
+           <li>Ev bilgisayarina baglan</li>
+           <li>Parsec ile uzaktan eris</li>
+           <li>Telefonlari ofisten kontrol et</li>
+         </ul>
+         <button class="btn btn-primary btn-lg mode-btn">
+           OFIS Modunu Başlat
+         </button>
+       </div>
+     </main>
 
     <!-- Status Bar -->
     <section class="status-bar">
@@ -86,6 +86,7 @@
     </footer>
   </div>
 
+  <script src="components/notification.js"></script>
   <script src="index.js"></script>
 </body>
 </html>

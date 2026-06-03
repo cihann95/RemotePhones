@@ -206,14 +206,14 @@ class TestKeyEvents:
     def test_press_key_home(self):
         r = self.m.press_key("home", "dev-1")
         assert r["ok"] is True
-        self.adb._run.assert_called_with(
+        self.adb.run_command.assert_called_with(
             ["shell", "input", "keyevent", "3"], device_id="dev-1"
         )
 
     def test_press_key_back(self):
         r = self.m.press_key("back", "dev-1")
         assert r["ok"] is True
-        self.adb._run.assert_called_with(
+        self.adb.run_command.assert_called_with(
             ["shell", "input", "keyevent", "4"], device_id="dev-1"
         )
 
@@ -240,7 +240,7 @@ class TestKeyEvents:
     def test_press_key_unknown_passthrough(self):
         r = self.m.press_key("my_custom_key", "dev-1")
         assert r["ok"] is True
-        self.adb._run.assert_called_with(
+        self.adb.run_command.assert_called_with(
             ["shell", "input", "keyevent", "my_custom_key"], device_id="dev-1"
         )
 
@@ -256,7 +256,7 @@ class TestOpenUrl:
     def test_open_url_default_chrome(self):
         r = self.m.open_url("https://example.com", device_id="dev-1")
         assert r["ok"] is True
-        self.adb._run.assert_called_with(
+        self.adb.run_command.assert_called_with(
             ["shell", "am", "start", "-a", "android.intent.action.VIEW",
              "-d", "https://example.com", "com.android.chrome"],
             device_id="dev-1",
@@ -267,7 +267,7 @@ class TestOpenUrl:
                             browser_package="com.brave.browser",
                             device_id="dev-1")
         assert r["ok"] is True
-        self.adb._run.assert_called_with(
+        self.adb.run_command.assert_called_with(
             ["shell", "am", "start", "-a", "android.intent.action.VIEW",
              "-d", "https://foo.bar", "com.brave.browser"],
             device_id="dev-1",
@@ -278,7 +278,7 @@ class TestOpenUrl:
                             browser_package="com.android.chrome",
                             device_id="dev-1")
         assert r["ok"] is True
-        args = self.adb._run.call_args[0][0]
+        args = self.adb.run_command.call_args[0][0]
         # & should be escaped with backslash
         assert "-d" in args
         url_arg = args[args.index("-d") + 1]

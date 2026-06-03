@@ -1,1 +1,3 @@
-# automations package — per-device automation sequences, click/swipe flows
+from automations.base import AutomationBase, AutomationFlow
+
+__all__ = ["AutomationBase", "AutomationFlow"]

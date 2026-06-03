@@ -1,50 +1,132 @@
 # Phone Farm — Agent Coordination
 
-## Agent Roster
-| Agent               | Tool      | Model           | Birincil Mod       |
-|---------------------|-----------|-----------------|--------------------|
-| Infrastructure      | OpenCode  | MiMo V2.5       | Otonom koşu        |
-| Automation Coder    | Kilo Code | Laguna M.1      | Code               |
-| Architect           | Kilo Code | Nemotron 3 Super| Architect          |
-| Debug & Monitor     | Kilo Code | Step 3.7 Flash  | Debug              |
+**Generated:** 2026-06-01T00:00:00Z
+**Commit:** 828a23d
+**Branch:** main
 
-## Ownership Map
-| Dizin / Dosya         | Sahip               | Diğerleri       |
-|-----------------------|---------------------|-----------------|
-| core/                 | OpenCode (MiMo)     | READ-ONLY       |
-| config/               | OpenCode (MiMo)     | READ-ONLY       |
-| utils/                | OpenCode (MiMo)     | READ-ONLY       |
-| requirements.txt      | OpenCode (MiMo)     | YASAK           |
-| README.md             | OpenCode (MiMo)     | YASAK           |
-| AGENTS.md             | OpenCode (MiMo)     | READ-ONLY       |
-| OPENCODE_LOG.md       | OpenCode (MiMo)     | READ-ONLY       |
-| scheduler/            | Kilo/Laguna         | YASAK (OpenCode)|
-| automations/          | Kilo/Laguna         | YASAK (OpenCode)|
-| tasks/                | Kilo/Laguna         | YASAK (OpenCode)|
-| monitor/              | Kilo/Step           | YASAK (OpenCode)|
-| docs/architecture/    | Kilo/Nemotron       | READ-ONLY       |
-| LAGUNA_LOG.md         | Kilo/Laguna         | READ-ONLY       |
-| NEMOTRON_LOG.md       | Kilo/Nemotron       | READ-ONLY       |
-| STEP_LOG.md           | Kilo/Step           | READ-ONLY       |
+## OVERVIEW
+The Phone Farm Backup project is a comprehensive automation platform for managing and controlling fleets of Android devices via ADB. It combines a Python-based backend for device management, task scheduling, and automation with an Electron-based desktop GUI for real-time monitoring and control.
 
-## Shared Interface Contract
-> Aşağıdaki API'lar tüm ajanlar arası sınırdır.
-> İmza değişikliği → önce AGENTS.md güncelle, sonra tüm ajanlara bildir.
+## STRUCTURE
+```
+Phone Farm Backup/
+├── core/          # Core device management and ADB communication
+├── scheduler/     # Job queue and task scheduling system
+├── tasks/         # Concrete automation task implementations
+├── automations/   # Pre-built automation task bundles
+├── monitor/       # REST API for health monitoring and device status
+├── utils/         # Utility functions and helpers
+├── src/           # Electron frontend (main and renderer processes)
+├── tests/         # Test suite for Python backend
+└── caveman/       # Embedded caveman skill for output compression (vendor)
+```
 
-- `core.device_manager.DeviceManager`
-- `core.adb.ADBClient` + `AsyncADBClient`
-- `core.adb.ADBClient.run_command(cmd: str, timeout: int, retries: int) -> str`
-- `core.adb.ADBClient.shell_output(command: str, device_id: str | None, timeout: int) -> str`
-- `utils.logger.get_logger(name: str) -> Logger`
-- `config.loader.load_config(path: str | None) -> dict`
-- `core.plugins.base_plugin.ManagerProtocol` (Kilo/Laguna implement etmeli)
-- `core.plugins.base_plugin.RegistryProtocol` (Kilo/Laguna implement etmeli)
+## WHERE TO LOOK
+| Task | Location | Notes |
+|------|----------|-------|
+| Run health check on a device | `phone_farm_cli.py health <device_id>` | CLI command |
+| View real-time device status | `launch.bat` or `npm start` | Starts Electron GUI |
+| Add a new automation task | `tasks/` directory | Implement BaseTask subclass |
+| Configure device polling intervals | `config/phone_farm_farm.yaml` | Main configuration file |
+| Run the test suite | `python -m pytest tests/` | Execute all Python tests |
+| Build Docker image | `docker build -t phone-farm .` | From project root |
+| Modify caveman compression rules | `caveman/skills/caveman-compress/` | Skill implementation |
+| View agent coordination rules | `AGENTS.md` | This file |
+| Check forbidden zones between agents | `*_PROMPT.md` files | OpenCode, Kilo, Claude Code prompts |
 
-## Pending Interface Changes
-(yok)
+## CONVENTIONS
+- Python project lacks `pyproject.toml`, `setup.py`, or `setup.cfg` — no packaging configuration.
+- Line length is 88 (flake8) vs Python default 79.
+- MyPy strict mode enabled: `disallow_untyped_defs = true`, etc.
+- No JS/TS linting configuration (ESLint, Prettier) in the Electron app.
+- No EditorConfig file.
+- README.md has encoding corruption.
+- Virtual environment (`ajan-ortam/`) committed to the repo.
+- Build artifacts (`dist/`) present in the repo.
+- Empty directories committed without `.gitkeep`.
+- Duplicate caveman script tree.
+- Dead code in `phone_farm_cli.py` (`cmd_submit_file` function).
+- `__init__.py` files are mostly placeholders (only monitor/ and scheduler/ have proper exports).
+- `conftest.py` only adds project root to `sys.path`, no fixtures.
+- Test files use section comment banners with `──`.
+- Caveman tests use temporary directories and custom test runners.
+- Agent ownership is strictly enforced via PROMPT files and FORBIDDEN ZONES.
 
-## Status
-- OpenCode (MiMo):      WORKING
-- Kilo (Laguna):        IDLE
-- Kilo (Nemotron):      IDLE
-- Kilo (Step):          IDLE
+## ANTI-PATTERNS (THIS PROJECT)
+- Forbidden-Zone Bugs (Kilo Code territory — DO NOT FIX) logged in OPENCODE_LOG.md
+- NEVER TOUCH rules between agents in *_PROMPT.md files (core/, config/, utils/ vs scheduler/, automations/, tasks/, monitor/)
+- NEVER modify/compress certain file types (.py, .js, .ts, .json, .yaml, .yml, .toml, .env, .lock, .css, .html, .xml, .sql, .sh) in caveman-compress
+- NEVER redefine interface implementations from core/ in Kilo/Laguna agents
+- DO NOT edit requirements.txt directly; log dependency requests via KILO_LOG.md
+- No TODO/FIXME/HACK/XXX/TEMP markers allowed (CI enforcement via scripts/ci/checker-engine.js)
+- Never mix bug fixes and features in the same commit
+- Never use `git add -A` mid-session
+- STATUS_BOARD.md is FROZEN — never modify this file under any circumstances
+
+## UNIQUE STYLES
+- Section comment banners with `──` in test files.
+- Use of `setup_method()` alongside pytest class-style tests.
+- Inline mock classes (callable) in test files.
+- Caveman's custom JavaScript test runner (no Jest/Mocha).
+- Caveman's use of `node:test` for installer tests.
+- Caveman's verification script (`verify_repo.py`) that orchestrates checks.
+- Agent-specific PROMPT files that define ownership and forbidden zones.
+- The caveman skill itself embedded as a vendor directory.
+
+## COMMANDS
+```bash
+# Discover connected devices
+python phone_farm_cli.py discover
+
+# Run health check on a device
+python phone_farm_cli.py health <device_id>
+
+# Execute a task on a device
+python phone_farm_cli.py run <device_id> <task_name> [--param key=value]
+
+# View task status
+python phone_farm_cli.py status <job_id>
+
+# Start the Electron GUI
+launch.bat
+# or
+npm start
+
+# Run the REST API monitor
+uvicorn monitor.api:app --reload
+
+# Run all tests
+python -m pytest tests/
+
+# Run caveman tests
+python caveman/tests/test_compress_safety.py
+node caveman/tests/test_caveman_stats.js
+
+# Build Docker image
+docker build -t phone-farm .
+
+# Install caveman skill (for the caveman sub-project)
+caveman/install.sh
+# or
+caveman/install.ps1
+```
+
+## NOTES
+- The project consists of two main parts: the Python backend (device automation) and the Electron frontend (GUI). They are loosely coupled.
+- The `caveman/` directory is a vendored copy of the caveman skill and has its own AGENTS.md, package.json, etc.
+- Agent territories are strictly enforced: OpenCode must not touch Kilo/Laguna files (scheduler/, automations/, tasks/, monitor/) and vice versa.
+- The virtual environment `ajan-ortam/` is committed to the repo but should be ignored by git (it is, via .gitignore? Actually we saw it's not ignored but exists on disk). It's not tracked but takes up space.
+- The `dist/` directory contains build artifacts and is gitignored.
+- The `requirements.txt` file pins dependencies but lacks hashes.
+- The `launch.bat` file is Windows-specific; there's no equivalent for Linux/macOS.
+- The `phone_farm_cli.py` is the entry point for the Python backend; it's not installed as a package.
+- The `monitor/api.py` provides a REST API on port 8000 by default.
+- The `caveman` skill can be used independently; its tests are in `caveman/tests/`.
+- The project uses strict typing via MyPy; all Python functions must have type annotations.
+- Line length is set to 88 to match Black formatter.
+- The `conftest.py` only manipulates `sys.path` to allow imports from the project root.
+- Test files use a consistent structure with section headers separated by `──` lines.
+- The caveman tests use temporary directories for isolation and clean up after themselves.
+- The agent coordination is documented in `AGENTS.md` and the various `*_PROMPT.md` files.
+- The `empty_dir/`, `analytics/`, `cloud/`, `k8s/` directories are placeholders and currently empty.
+- The `docker/Dockerfile` has known issues: `scrcpy` is not a valid apt package and `curl` is missing for the HEALTHCHECK.

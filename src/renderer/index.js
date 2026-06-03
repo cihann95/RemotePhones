@@ -19,7 +19,7 @@ document.getElementById('mode-office').addEventListener('click', async () => {
     // Check if remote access is allowed
     const remoteCheck = await window.electronAPI.isRemoteAccessAllowed();
     if (!remoteCheck.allowed) {
-      alert(remoteCheck.reason || 'Uzaktan erisim bu lisansta aktif degil');
+      PhoneFarmNotification.show(remoteCheck.reason || 'Remote access is not enabled for this license.', 'warning');
       return;
     }
     await window.electronAPI.selectMode('office');
@@ -123,15 +123,15 @@ document.getElementById('btn-deactivate-license').addEventListener('click', asyn
     if (typeof process !== 'undefined') console.log('Deactivation result:', result);
 
     if (result.success) {
-      alert('Lisans basariyla deaktive edildi. Uygulama lisans ekranina yonlendirilecek.');
+      PhoneFarmNotification.show('License deactivated successfully. Redirecting to license page.', 'success');
       // Reload to license page
       window.location.href = 'license.html';
     } else {
-      alert('Lisans deaktive edilemedi: ' + (result.error || 'Bilinmeyen hata'));
+      PhoneFarmNotification.show('License could not be deactivated: ' + (result.error || 'Unknown error'), 'error');
     }
   } catch (error) {
     console.error('Deactivation error:', error);
-    alert('Lisans deaktive edilirken hata olustu: ' + error.message);
+    PhoneFarmNotification.show('An error occurred while deactivating license: ' + error.message, 'error');
   } finally {
     btn.disabled = false;
   }

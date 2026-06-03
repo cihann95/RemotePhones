@@ -10,14 +10,15 @@
   },
   "dependencies": {
     "@cryptlex/lexactivator": "^3.37.0",
-    "electron-store": "^8.1.0"
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.8.3"
   },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0"
   },
   "author": "SERGIO",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "build": {
     "appId": "com.sergio.phonefarm",
     "productName": "Phone Farm",
@@ -34,7 +35,9 @@
       {
         "from": "../tools",
         "to": "tools",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       },
       {
         "from": "src/main/Product.dat",
@@ -46,7 +49,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "assets/phoneFarm.ico",
@@ -60,7 +65,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Phone Farm",
       "installerIcon": "assets/phoneFarm.ico",
-      "uninstallerIcon": "assets/phoneFarm.ico"
+      "uninstallerIcon": "assets/phoneFarm.ico",
+      "runAfterFinish": true,
+      "script": "build/installer.nsh"
     }
   }
 }

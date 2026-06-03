@@ -23,6 +23,7 @@ const els = {
   stepParsecNumber: document.getElementById('step-parsec-number'),
 
   btnCompleteSetup: document.getElementById('btn-complete-setup'),
+  btnSkipSetup: document.getElementById('btn-skip-setup'),
   stepCompleteNumber: document.getElementById('step-complete-number')
 };
 
@@ -182,9 +183,19 @@ async function openParsec() {
 async function completeSetup() {
   try {
     await window.electronAPI.completeSetup();
-    await window.electronAPI.navigateToMain();
+    await window.electronAPI.selectMode('home');
   } catch (e) {
     console.error('Complete setup error:', e);
+  }
+}
+
+// Skip setup
+async function skipSetup() {
+  try {
+    await window.electronAPI.completeSetup();
+    await window.electronAPI.selectMode('home');
+  } catch (e) {
+    console.error('Skip setup error:', e);
   }
 }
 
@@ -196,6 +207,7 @@ els.btnParsecInstall.addEventListener('click', installParsec);
 els.btnParsecOpen.addEventListener('click', openParsec);
 els.btnParsecRefresh.addEventListener('click', checkStatus);
 els.btnCompleteSetup.addEventListener('click', completeSetup);
+els.btnSkipSetup.addEventListener('click', skipSetup);
 
 // Initialize
 checkStatus();

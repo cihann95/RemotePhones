@@ -138,7 +138,7 @@ class InstagramFollowTask(BaseTask):
 
     # ── helpers ─────────────────────────────────────────────────────────────
 
-@staticmethod
+    @staticmethod
     def _type_text(adb: MobileOperations, text: str,
                    device_id: str | None = None) -> None:
         """Type *text* character-by-character via ``adb shell input text``."""

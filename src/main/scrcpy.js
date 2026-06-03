@@ -56,6 +56,8 @@ const Store = require('electron-store');
 const { SCRCPY_SPAWN_TIMEOUT_MS } = require('./constants');
 const { STOP_DEVICE_TIMEOUT_MS: _STOP_TIMEOUT } = require('./constants');
 
+const DEBUG = process.env.NODE_ENV === 'development';
+
 class ScrcpyManager extends BaseToolManager {
   constructor() {
     super({ logPrefix: '[Scrcpy]', subPath: 'scrcpy/scrcpy.exe' });
@@ -180,12 +182,12 @@ class ScrcpyManager extends BaseToolManager {
 
     // Check if already running
     if (this.activeProcesses.has(deviceId)) {
-      if (process.env?.DEBUG) console.log(`[Scrcpy] Already running for device: ${deviceId}`);
+      if (DEBUG) console.log(`[Scrcpy] Already running for device: ${deviceId}`);
       return { success: true, alreadyRunning: true };
     }
 
     const args = this.buildArgs(deviceId, customOptions);
-    if (process.env?.DEBUG) console.log(`[Scrcpy] Starting for ${deviceId} with args:`, args);
+    if (DEBUG) console.log(`[Scrcpy] Starting for ${deviceId} with args:`, args);
 
     try {
       const proc = await spawnPromise(scrcpy, args, {
@@ -198,16 +200,16 @@ class ScrcpyManager extends BaseToolManager {
 
       proc.stderr.on('data', (data) => {
         const msg = data.toString();
-        if (process.env?.DEBUG) console.log(`[Scrcpy ${deviceId}] stderr:`, msg);
+        if (DEBUG) console.log(`[Scrcpy ${deviceId}] stderr:`, msg);
         startupError += msg;
       });
 
       proc.stdout.on('data', (data) => {
-        if (process.env?.DEBUG) console.log(`[Scrcpy ${deviceId}] stdout:`, data.toString());
+        if (DEBUG) console.log(`[Scrcpy ${deviceId}] stdout:`, data.toString());
       });
 
       proc.on('close', (code) => {
-        if (process.env?.DEBUG) console.log(`[Scrcpy] Process closed for ${deviceId} with code ${code}`);
+        if (DEBUG) console.log(`[Scrcpy] Process closed for ${deviceId} with code ${code}`);
         this.activeProcesses.delete(deviceId);
         if (global.mainWindow) {
           global.mainWindow.webContents.send('scrcpy-window-closed', { deviceId, code });
@@ -215,7 +217,7 @@ class ScrcpyManager extends BaseToolManager {
       });
 
       this.activeProcesses.set(deviceId, proc);
-      if (process.env?.DEBUG) console.log(`[Scrcpy] Process spawned for ${deviceId}`);
+      if (DEBUG) console.log(`[Scrcpy] Process spawned for ${deviceId}`);
       return { success: true, deviceId, pid: proc.pid };
 
     } catch (err) {

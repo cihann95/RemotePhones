@@ -45,7 +45,7 @@ class JobQueue:
 
     # ------------------------------------------------------------------
     def enqueue(
-        self, job_id: str, priority: int = Priority.NORMAL, payload: dict | None = None
+        self, job_id: str, priority: int | str = Priority.NORMAL, payload: dict | None = None
     ) -> dict:
         priority = Priority.parse(priority)
         if job_id in self._store and self._store[job_id]["status"] in {

@@ -38,6 +38,13 @@ class TaskRunnerProtocol(Protocol):
     def stop(self, timeout: float = 5.0) -> None: ...
 
 
+@runtime_checkable
+class StatusBoardProtocol(Protocol):
+    def write_entry(self, agent: str, message: str) -> None: ...
+    def read_entries(self) -> list[str]: ...
+    def clear(self) -> None: ...
+
+
 class BasePlugin(ABC):
     """Abstract base class for all Phone Farm plugins.
 

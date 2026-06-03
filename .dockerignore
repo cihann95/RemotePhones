@@ -1,0 +1,9 @@
+ajan-ortam/
+node_modules/
+__pycache__/
+.git/
+dist/
+.pytest_cache/
+.omo/
+*.pyc
+.env

@@ -121,7 +121,8 @@ class ADBClient:
                      device_id: Optional[str] = None,
                      timeout: int = 30) -> str:
         """Execute a shell command on the device and return stdout."""
-        return self._run(["shell", command], timeout=timeout)
+        prefix = self._device_prefix(device_id)
+        return self._run(prefix + ["shell", command], timeout=timeout)
 
     def run_command(self, args: List[str], device_id: Optional[str] = None,
                     timeout: int = 30) -> str:

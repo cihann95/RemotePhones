@@ -44,6 +44,16 @@
 - `get_task(self, task_id: str) -> object`
 - `list_tasks(self) -> list[str]`
 
+## core → scheduler (JobQueue & TaskRunner) (OpenCode → Kilo/Laguna)
+### JobQueueProtocol
+- enqueue(self, task_name: str, priority: int | str, payload: dict) -> dict
+- dequeue(self) -> dict | None
+- qsize(self) -> int
+
+### TaskRunnerProtocol
+- start(self) -> None
+- stop(self, timeout: float = 5.0) -> None
+
 ## core → monitor (OpenCode → Kilo/Step)
 ### ADBClient.run_command()
 - Parameters: `args: List[str], device_id: Optional[str] = None, timeout: int = 30`
@@ -58,7 +68,14 @@
 - Used by: monitor layer, device_manager, mobile_ops, platform.py
 - Note: Does NOT have retry logic (unlike run_command). Consider migrating callers to run_command for consistency.
 
+## core → tüm agentlar (OpenCode → Kilo/*)
+### StatusBoardProtocol
+- write_entry(self, agent: str, message: str) -> None
+- read_entries(self) -> list[str]
+- clear(self) -> None
+
 ## Eksik interface'ler
-- No explicit interface for the scheduler's JobQueue and TaskRunner to the core.
+- ~~No explicit interface for the scheduler's JobQueue and TaskRunner to the core.~~ **RESOLVED** — JobQueueProtocol and TaskRunnerProtocol added to core/plugins/base_plugin.py and AGENTS.md.
 - ~~The monitor layer uses `shell_output` which is not in the shared interface contract (only `run_command` is listed).~~ **RESOLVED** — `shell_output` added to AGENTS.md interface contract.
 - ~~The `ManagerProtocol` and `RegistryProtocol` in core/plugins/base_plugin.py are not implemented by the actual scheduler/manager.py and tasks/registry.py (they have different method names and signatures).~~ **RESOLVED** — Kilo/Laguna already implemented: `PhoneFarmManager(ManagerProtocol)` at scheduler/manager.py:41, `TaskRegistry(RegistryProtocol)` at tasks/registry.py:14.
+

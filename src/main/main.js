@@ -4,7 +4,7 @@
 // by SERGIO
 // =====================================================
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, session } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 
@@ -21,6 +21,8 @@ const ShortcutManager = require('./shortcuts');
 const LicenseManager = require('./license');
 const Paths = require('./paths');
 const { ipcDeviceId, ipcDeviceText } = require('./ipc-validators');
+const HealthMonitor = require('./health-monitor');
+const Updater = require('./updater');
 
 // Version from package.json
 const appPkg = require(path.join(__dirname, '..', 'package.json'));
@@ -45,7 +47,9 @@ const deviceStore = new DeviceStore();
 const autostartManager = new AutostartManager();
 const notificationManager = new NotificationManager();
 const shortcutManager = new ShortcutManager();
+const licenseManager = new LicenseManager(); // Assuming LicenseManager needs instantiation
 let deviceMonitor = null;
+let healthMonitor = null;
 
 // App settings store
 const appStore = new Store({
@@ -98,12 +102,15 @@ function createWindow() {
     }
   });
 
-  // Load appropriate screen based on license status
-  if (isLicenseValid) {
-    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'license.html'));
-  }
+   // Check if setup is completed first
+   const setupCompleted = appStore.get('setupCompleted', false);
+   if (!setupCompleted) {
+     mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'setup.html'));
+   } else if (isLicenseValid) {
+     mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+   } else {
+     mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'license.html'));
+   }
 
   // Handle window closed
   mainWindow.on('closed', () => {
@@ -132,7 +139,7 @@ function createAboutWindow() {
       nodeIntegration: false
     },
     autoHideMenuBar: true,
-    title: 'Hakkinda - Phone Farm',
+    title: 'About - Phone Farm',
     parent: mainWindow,
     modal: true
   });
@@ -145,22 +152,121 @@ function createAboutWindow() {
 }
 
 // =====================================================
+// APPLICATION MENU
+// =====================================================
+
+function buildAppMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Check for Updates',
+          click: () => Updater.checkForUpdates(),
+          accelerator: 'CmdOrCtrl+Shift+U'
+        }
+      ]
+    }
+  ];
+
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
+}
+
+// =====================================================
 // APP LIFECYCLE
 // =====================================================
 
+// ── Input validation helpers ─────────────────────────────────────────────────
+const VALID_DEVICE_ID_RE = /^[a-zA-Z0-9_\-]+$/;
+const VALID_PHONE_RE = /^\+?[0-9]{10,15}$/;
+const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
+const VALID_MODES = ['home', 'office'];
+
+function assertValidDeviceId(value, label) {
+  if (typeof value !== 'string' || !VALID_DEVICE_ID_RE.test(value)) {
+    throw new Error(`Invalid ${label || 'device ID'}: must match ^[a-zA-Z0-9_-]+$`);
+  }
+}
+
+function assertValidPhoneNumber(value) {
+  if (typeof value !== 'string' || !VALID_PHONE_RE.test(value)) {
+    throw new Error('Invalid phone number: must match ^+?[0-9]{10,15}$');
+  }
+}
+
+function sanitizeFilePath(filePath) {
+  if (typeof filePath !== 'string') throw new Error('File path must be a string');
+  const resolved = path.resolve(filePath);
+  const projectRoot = path.resolve(__dirname, '..', '..');
+  if (!resolved.startsWith(projectRoot + path.sep) && resolved !== projectRoot) {
+    throw new Error('File path must be within the project directory');
+  }
+  return resolved;
+}
+
+function assertJsonBodySize(data) {
+  if (data !== undefined && data !== null) {
+    const size = typeof data === 'string' ? data.length : JSON.stringify(data).length;
+    if (size > MAX_REQUEST_BODY_BYTES) {
+      throw new Error('Request body exceeds maximum allowed size');
+    }
+  }
+}
+
 app.whenReady().then(async () => {
-  if (process.env?.DEBUG) console.log('[App] Starting Phone Farm...');
-  if (process.env?.DEBUG) console.log('[App] App packaged:', app.isPackaged);
+  if (process.env?.DEBUG) console.debug('[App] Starting Phone Farm...');
+  if (process.env?.DEBUG) console.debug('[App] App packaged:', app.isPackaged);
+
+  // ── Content Security Policy ───────────────────────────────────────────────
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' http://localhost:*"
+        ]
+      }
+    });
+  });
 
   // Log all paths for debugging
   Paths.logPaths();
 
   // Check license first
-  if (process.env?.DEBUG) console.log('[App] Checking license...');
+  if (process.env?.DEBUG) console.debug('[App] Checking license...');
   try {
     const licenseResult = await LicenseManager.checkLicense();
     isLicenseValid = licenseResult.isValid;
-    if (process.env?.DEBUG) console.log('[App] License valid:', isLicenseValid);
+    if (process.env?.DEBUG) console.debug('[App] License valid:', isLicenseValid);
   } catch (e) {
     console.error('[App] License check error:', e.message);
     isLicenseValid = false;
@@ -168,6 +274,26 @@ app.whenReady().then(async () => {
 
   // Create window
   createWindow();
+
+  // Initialize auto-updater (checks for updates if autoCheck is enabled)
+  Updater.init();
+
+  // Build application menu with "Check for Updates" item
+  buildAppMenu();
+
+  // Initialize health monitor
+  healthMonitor = new HealthMonitor({
+    adbManager,
+    licenseManager,
+    deviceStore,
+    paths: Paths
+  });
+  healthMonitor.init();
+
+  // Wire critical health alerts to renderer
+  healthMonitor.onCritical((alerts) => {
+    try { mainWindow?.webContents?.send('health:system-critical', alerts); } catch (e) { console.debug('IPC handler error:', e.message); }
+  });
 
   // If license is valid, start normal services
   if (isLicenseValid) {
@@ -180,44 +306,44 @@ app.whenReady().then(async () => {
 
 // Start app services (ADB, device monitoring)
 async function startAppServices() {
-  if (process.env?.DEBUG) console.log('[App] ========== START APP SERVICES ==========');
+  if (process.env?.DEBUG) console.debug('[App] ========== START APP SERVICES ==========');
 
   // Start ADB server
   try {
-    if (process.env?.DEBUG) console.log('[App] Starting ADB server...');
+    if (process.env?.DEBUG) console.debug('[App] Starting ADB server...');
     const adbResult = await adbManager.startServer();
-    if (process.env?.DEBUG) console.log('[App] ADB server start result:', adbResult);
+    if (process.env?.DEBUG) console.debug('[App] ADB server start result:', adbResult);
   } catch (e) {
     console.error('[App] ADB start error:', e.message);
   }
 
   // Initialize device monitor
-  if (process.env?.DEBUG) console.log('[App] Creating DeviceMonitor...');
+  if (process.env?.DEBUG) console.debug('[App] Creating DeviceMonitor...');
   deviceMonitor = new DeviceMonitor(adbManager, autostartManager, scrcpyManager);
-  if (process.env?.DEBUG) console.log('[App] DeviceMonitor created');
+  if (process.env?.DEBUG) console.debug('[App] DeviceMonitor created');
 
   // Device events
   deviceMonitor.on('devices-changed', (devices) => {
-    if (process.env?.DEBUG) console.log('[App] devices-changed event, count:', devices.length);
-    try { mainWindow?.webContents?.send('devices-updated', devices); } catch(e) { /* window gone */ }
+    if (process.env?.DEBUG) console.debug('[App] devices-changed event, count:', devices.length);
+    try { mainWindow?.webContents?.send('devices-updated', devices); } catch(e) { console.debug('IPC handler error:', e.message); }
   });
 
   deviceMonitor.on('device-connected', (device) => {
-    if (process.env?.DEBUG) console.log('[App] device-connected event:', device.id);
+    if (process.env?.DEBUG) console.debug('[App] device-connected event:', device.id);
     notificationManager.deviceConnected(device);
-    try { mainWindow?.webContents?.send('device-connected', device); } catch(e) { /* window gone */ }
+    try { mainWindow?.webContents?.send('device-connected', device); } catch(e) { console.debug('IPC handler error:', e.message); }
   });
 
   deviceMonitor.on('device-disconnected', (device) => {
-    if (process.env?.DEBUG) console.log('[App] device-disconnected event:', device.id);
+    if (process.env?.DEBUG) console.debug('[App] device-disconnected event:', device.id);
     notificationManager.deviceDisconnected(device);
-    try { mainWindow?.webContents?.send('device-disconnected', device); } catch(e) { /* window gone */ }
+    try { mainWindow?.webContents?.send('device-disconnected', device); } catch(e) { console.debug('IPC handler error:', e.message); }
   });
 
   // Start device monitoring
-  if (process.env?.DEBUG) console.log('[App] Starting DeviceMonitor...');
+  if (process.env?.DEBUG) console.debug('[App] Starting DeviceMonitor...');
   deviceMonitor.start();
-  if (process.env?.DEBUG) console.log('[App] ========== APP SERVICES STARTED ==========');
+  if (process.env?.DEBUG) console.debug('[App] ========== APP SERVICES STARTED ==========');
 }
 
 app.on('window-all-closed', () => {
@@ -261,7 +387,7 @@ app.on('before-quit', async () => {
  * @returns {Promise<{isValid:boolean,type?:string,expiryDate?:string,gracePeriodDays?:number,error?:string}>}
  */
 ipcMain.handle('check-license', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] check-license called');
+  if (process.env?.DEBUG) console.debug('[IPC] check-license called');
   const result = await LicenseManager.checkLicense();
   isLicenseValid = result.isValid;
   return result;
@@ -274,7 +400,7 @@ ipcMain.handle('check-license', async () => {
  * @returns {Promise<{success:boolean,error?:string}>}
  */
 ipcMain.handle('activate-license', async (event, licenseKey) => {
-  if (process.env?.DEBUG) console.log('[IPC] activate-license called');
+  if (process.env?.DEBUG) console.debug('[IPC] activate-license called');
   const result = await LicenseManager.activateLicense(licenseKey);
   if (result.success) {
     isLicenseValid = true;
@@ -288,7 +414,7 @@ ipcMain.handle('activate-license', async (event, licenseKey) => {
  * @returns {Promise<{success:boolean,error?:string}>}
  */
 ipcMain.handle('deactivate-license', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] deactivate-license called');
+  if (process.env?.DEBUG) console.debug('[IPC] deactivate-license called');
   const result = await LicenseManager.deactivateLicense();
   if (result.success) {
     isLicenseValid = false;
@@ -302,7 +428,7 @@ ipcMain.handle('deactivate-license', async () => {
  * @returns {Promise<object>}
  */
 ipcMain.handle('get-license-info', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] get-license-info called');
+  if (process.env?.DEBUG) console.debug('[IPC] get-license-info called');
   return LicenseManager.getLicenseInfo();
 });
 
@@ -313,7 +439,7 @@ ipcMain.handle('get-license-info', async () => {
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('license-activated', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] license-activated called - starting services');
+  if (process.env?.DEBUG) console.debug('[IPC] license-activated called - starting services');
   if (mainWindow?.isDestroyed?.()) return { success: false, error: 'Window not ready' };
   // Start app services if not already started
   if (!deviceMonitor) {
@@ -348,8 +474,9 @@ ipcMain.handle('is-remote-access-allowed', async () => {
  * @returns {Promise<{success:boolean,mode:string}>}
  */
 ipcMain.handle('select-mode', async (event, mode) => {
-  if (process.env?.DEBUG) console.log('[IPC] Mode selected:', mode);
+  if (process.env?.DEBUG) console.debug('[IPC] Mode selected:', mode);
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
+  if (!VALID_MODES.includes(mode)) return { success: false, error: 'Invalid mode' };
   currentMode = mode;
   appStore.set('lastMode', mode);
 
@@ -363,7 +490,7 @@ ipcMain.handle('select-mode', async (event, mode) => {
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('go-back', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] Going back to mode selection');
+  if (process.env?.DEBUG) console.debug('[IPC] Going back to mode selection');
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   currentMode = null;
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
@@ -383,9 +510,6 @@ ipcMain.handle('get-current-mode', async () => {
 // IPC: SETUP
 // =====================================================
 
-/**
- * @returns {Promise<boolean>} Whether the initial setup wizard has been completed
- */
 /**
  * IPC: Returns whether the setup wizard has been completed.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -440,10 +564,6 @@ ipcMain.handle('navigate-to-help', async () => {
 // =====================================================
 
 /**
- * @returns {Promise<{installed:boolean,running:boolean,version?:string,error?:string}>}
- *  Tailscale daemon / connection status snapshot
- */
-/**
  * IPC: Returns the current status of the Tailscale daemon.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{installed:boolean,running:boolean,connected:boolean,ip?:string,error?:string}>}
@@ -452,11 +572,6 @@ ipcMain.handle('tailscale-status', async () => {
   return await tailscaleManager.getStatus();
 });
 
-/**
- * Installs Tailscale. Progress events are forwarded to the renderer via 'tailscale-install-progress'.
- * @param {import('electron').IpcMainEvent} event
- * @returns {Promise<{success:boolean,error?:string}>}
- */
 /**
  * IPC: Installs the Tailscale daemon if not already present.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -469,9 +584,6 @@ ipcMain.handle('tailscale-install', async (event) => {
 });
 
 /**
- * @returns {Promise<{success:boolean,error?:string}>}
- */
-/**
  * IPC: Triggers a Tailscale login flow (opens the login URL in a browser).
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
@@ -480,10 +592,6 @@ ipcMain.handle('tailscale-login', async () => {
   return await tailscaleManager.login();
 });
 
-/**
- * Opens Tailscale admin web UI.
- * @returns {Promise<{success:boolean}>}
- */
 /**
  * IPC: Opens the Tailscale admin panel in the system browser.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -498,10 +606,6 @@ ipcMain.handle('tailscale-open-admin', async () => {
 // =====================================================
 
 /**
- * @returns {Promise<{installed:boolean,running:boolean}>}
- *  Parsec runtime status (BinaryStat-compatible)
- */
-/**
  * IPC: Returns the current Parsec service status.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{installed:boolean,running:boolean,loggedIn:boolean,error?:string}>}
@@ -510,11 +614,6 @@ ipcMain.handle('parsec-status', async () => {
   return await parsecManager.getStatus();
 });
 
-/**
- * Installs Parsec. Progress events are forwarded to the renderer via 'parsec-install-progress'.
- * @param {import('electron').IpcMainEvent} event
- * @returns {Promise<{success:boolean,error?:string}>}
- */
 /**
  * IPC: Installs the Parsec client if not already present.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -527,10 +626,6 @@ ipcMain.handle('parsec-install', async (event) => {
 });
 
 /**
- * Opens the Parsec application window.
- * @returns {Promise<{success:boolean,error?:string}>}
- */
-/**
  * IPC: Opens the Parsec client / dashboard in the system browser.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
@@ -539,10 +634,6 @@ ipcMain.handle('parsec-open', async () => {
   return await parsecManager.open();
 });
 
-/**
- * Starts the Parsec application.
- * @returns {Promise<{success:boolean,error?:string}>}
- */
 /**
  * IPC: Starts the Parsec service if installed.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -557,55 +648,44 @@ ipcMain.handle('parsec-start', async () => {
 // =====================================================
 
 /**
- * @returns {Promise<{success:boolean,devices:import('./devices').DeviceInfo[]}>}
- *  Current list of connected ADB devices
- */
-/**
  * IPC: Returns the list of currently connected ADB devices from the monitor.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,devices:Array<object>}>}
  */
 ipcMain.handle('get-devices', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] get-devices called');
-  if (process.env?.DEBUG) console.log('[IPC] deviceMonitor exists:', !!deviceMonitor);
+  if (process.env?.DEBUG) console.debug('[IPC] get-devices called');
+  if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
-  if (process.env?.DEBUG) console.log('[IPC] get-devices returning:', devices.length, 'devices');
+  if (process.env?.DEBUG) console.debug('[IPC] get-devices returning:', devices.length, 'devices');
   return { success: true, devices };
 });
 
-/**
- * Re-queries ADB for a fresh device list.
- * @returns {Promise<{success:boolean,devices:object[],error?:string}>}
- */
 /**
  * IPC: Forces a device-rescan through the DeviceMonitor.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,devices:Array<object>,error?:string}>}
  */
 ipcMain.handle('refresh-devices', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] refresh-devices called');
-  if (process.env?.DEBUG) console.log('[IPC] deviceMonitor exists:', !!deviceMonitor);
+  if (process.env?.DEBUG) console.debug('[IPC] refresh-devices called');
+  if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   if (deviceMonitor) {
     const devices = await deviceMonitor.refresh();
-    if (process.env?.DEBUG) console.log('[IPC] refresh-devices returning:', devices.length, 'devices');
+    if (process.env?.DEBUG) console.debug('[IPC] refresh-devices returning:', devices.length, 'devices');
     return { success: true, devices };
   }
-  if (process.env?.DEBUG) console.log('[IPC] refresh-devices: Monitor not initialized!');
+  if (process.env?.DEBUG) console.debug('[IPC] refresh-devices: Monitor not initialized!');
   return { success: false, error: 'Monitor not initialized', devices: [] };
 });
 
-/**
- * @returns {Promise<{running:boolean,version?:string,error?:string}>}
- */
 /**
  * IPC: Returns the ADB daemon connection status.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{connected:boolean,version?:string,error?:string}>}
  */
 ipcMain.handle('adb-status', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] adb-status called');
+  if (process.env?.DEBUG) console.debug('[IPC] adb-status called');
   const status = await adbManager.getStatus();
-  if (process.env?.DEBUG) console.log('[IPC] adb-status returning:', status);
+  if (process.env?.DEBUG) console.debug('[IPC] adb-status returning:', status);
   return status;
 });
 
@@ -622,10 +702,6 @@ ipcMain.handle('scrcpy-status', async () => {
   return await scrcpyManager.getStatus();
 });
 
-/**
- * Starts a scrcpy mirror for every connected ADB device.
- * @returns {Promise<{success:boolean,results:import('./scrcpy').DeviceStartResult[],devices:string[]}>}
- */
 /**
  * IPC: Starts a scrcpy window for every currently connected device.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -644,17 +720,13 @@ ipcMain.handle('scrcpy-start-all', async () => {
   // Send window started events
   for (const r of result.results) {
     if (r.success) {
-      try { mainWindow?.webContents?.send('scrcpy-window-started', { deviceId: r.deviceId }); } catch(e) { /* window gone */ }
+      try { mainWindow?.webContents?.send('scrcpy-window-started', { deviceId: r.deviceId }); } catch(e) { console.debug('IPC handler error:', e.message); }
     }
   }
 
   return result;
 });
 
-/**
- * Stops all running scrcpy mirror windows.
- * @returns {Promise<{success:boolean}>}
- */
 /**
  * IPC: Stops all active scrcpy sessions.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -665,33 +737,23 @@ ipcMain.handle('scrcpy-stop-all', async () => {
 });
 
 /**
- * Starts scrcpy mirror for a single device.
- * @param {string} deviceId - ADB device identifier
- * @returns {Promise<{success:boolean,deviceId:string,error?:string}>}
- */
-/**
  * IPC: Starts a scrcpy window for a single device.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} deviceId - The device identifier
  * @returns {Promise<{success:boolean,deviceId:string,error?:string}>}
  */
 ipcMain.handle('scrcpy-start-device', async (event, deviceId) => {
-  if (process.env?.DEBUG) console.log('[IPC] scrcpy-start-device called for:', deviceId);
+  if (process.env?.DEBUG) console.debug('[IPC] scrcpy-start-device called for:', deviceId);
   const safeDeviceId = ipcDeviceId(deviceId);
   const result = await scrcpyManager.startDevice(safeDeviceId);
 
   if (result.success) {
-    try { mainWindow?.webContents?.send('scrcpy-window-started', { deviceId: safeDeviceId }); } catch(e) { /* window gone */ }
+    try { mainWindow?.webContents?.send('scrcpy-window-started', { deviceId: safeDeviceId }); } catch(e) { console.debug('IPC handler error:', e.message); }
   }
 
   return result;
 });
 
-/**
- * Stops a running scrcpy mirror for a single device.
- * @param {string} deviceId - ADB device identifier
- * @returns {Promise<{success:boolean,deviceId:string}>}
- */
 /**
  * IPC: Stops an active scrcpy session for a single device.
  * @param {Electron.IpcMainInvokeEvent} event
@@ -704,10 +766,6 @@ ipcMain.handle('scrcpy-stop-device', async (event, deviceId) => {
 });
 
 /**
- * @returns {Promise<{width?:number,height?:number,bitrate?:number,fullscreen?:boolean,alwaysOnTop?:boolean}>}
- *  Current scrcpy mirror options
- */
-/**
  * IPC: Returns the current scrcpy configuration options.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
@@ -717,16 +775,13 @@ ipcMain.handle('scrcpy-get-options', async () => {
 });
 
 /**
- * @param {object} options - Partial scrcpy options to save
- * @returns {Promise<{success:boolean}>}
- */
-/**
  * IPC: Saves updated scrcpy configuration options.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {object} options - Partial options object to merge into stored config
  * @returns {Promise<{success:boolean,error?:string}>}
  */
 ipcMain.handle('scrcpy-set-options', async (event, options) => {
+  assertJsonBodySize(options);
   return scrcpyManager.setOptions(options);
 });
 
@@ -735,12 +790,6 @@ ipcMain.handle('scrcpy-set-options', async (event, options) => {
 // =====================================================
 
 /**
- * Sends a text string to an ADB device via `adb shell input text`.
- * @param {string} deviceId - ADB device identifier
- * @param {string} text - Text to type on the device
- * @returns {Promise<{success:boolean,error?:string}>}
- */
-/**
  * IPC: Sends text input to a connected device via ADB.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} deviceId - The device identifier
@@ -748,7 +797,7 @@ ipcMain.handle('scrcpy-set-options', async (event, options) => {
  * @returns {Promise<{success:boolean,error?:string}>}
  */
 ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
-  if (process.env?.DEBUG) console.log('[IPC] send-text-to-device called for:', deviceId, 'text:', text);
+  if (process.env?.DEBUG) console.debug('[IPC] send-text-to-device called for:', deviceId, 'text:', text);
   const safeDeviceId = ipcDeviceId(deviceId);
   const textCheck = ipcDeviceText(text);
   if (!textCheck.success) {
@@ -758,12 +807,6 @@ ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
 });
 
 /**
- * Sends a key event to an ADB device via `adb shell input keyevent`.
- * @param {string} deviceId - ADB device identifier
- * @param {number} keycode - Android keycode integer (e.g. 3 = HOME)
- * @returns {Promise<{success:boolean,error?:string}>}
- */
-/**
  * IPC: Sends a hardware key event to a connected device via ADB.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} deviceId - The device identifier
@@ -771,7 +814,7 @@ ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
  * @returns {Promise<{success:boolean,error?:string}>}
  */
 ipcMain.handle('send-key-to-device', async (event, deviceId, keycode) => {
-  if (process.env?.DEBUG) console.log('[IPC] send-key-to-device called for:', deviceId, 'keycode:', keycode);
+  if (process.env?.DEBUG) console.debug('[IPC] send-key-to-device called for:', deviceId, 'keycode:', keycode);
   const safeDeviceId = ipcDeviceId(deviceId);
   return await adbManager.sendKey(safeDeviceId, keycode);
 });
@@ -820,6 +863,7 @@ ipcMain.handle('get-autostart-settings', async () => {
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('update-autostart-settings', async (event, settings) => {
+  assertJsonBodySize(settings);
   return autostartManager.updateSettings(settings);
 });
 
@@ -832,12 +876,8 @@ ipcMain.handle('update-autostart-settings', async (event, settings) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,tailscale:object,parsec:object,scrcpy:object,autostart:object,homeComputerName:string}>}
  */
-/**
- * Gathers a snapshot of all top-level subsystem statuses in one call.
- * @returns {Promise<{success:boolean,tailscale:object,parsec:object,scrcpy:object,autostart:object,homeComputerName:string}>}
- */
 ipcMain.handle('get-full-status', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] get-full-status called');
+  if (process.env?.DEBUG) console.debug('[IPC] get-full-status called');
 
   const [tailscale, parsec, scrcpy, autostart] = await Promise.all([
     tailscaleManager.getStatus(),
@@ -846,8 +886,8 @@ ipcMain.handle('get-full-status', async () => {
     Promise.resolve(autostartManager.getStatus())
   ]);
 
-  if (process.env?.DEBUG) console.log('[IPC] Tailscale status:', tailscale);
-  if (process.env?.DEBUG) console.log('[IPC] Parsec status:', parsec);
+  if (process.env?.DEBUG) console.debug('[IPC] Tailscale status:', tailscale);
+  if (process.env?.DEBUG) console.debug('[IPC] Parsec status:', parsec);
 
   return {
     success: true,
@@ -869,10 +909,6 @@ ipcMain.handle('get-full-status', async () => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<object>}
  */
-/**
- * @param {string} deviceId - ADB device identifier
- * @returns {Promise<import('./device-store').DeviceData>}
- */
 ipcMain.handle('get-device-data', async (event, deviceId) => {
   const safeDeviceId = ipcDeviceId(deviceId);
   return deviceStore.getDeviceData(safeDeviceId);
@@ -883,11 +919,6 @@ ipcMain.handle('get-device-data', async (event, deviceId) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} deviceId - The device identifier
  * @param {object} data - Arbitrary JSON-safe data to store
- * @returns {Promise<{success:boolean}>}
- */
-/**
- * @param {string} deviceId - ADB device identifier
- * @param {object} data - Partial device data to persist
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('save-device-data', async (event, deviceId, data) => {
@@ -901,10 +932,6 @@ ipcMain.handle('save-device-data', async (event, deviceId, data) => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {string} deviceId - ADB device identifier
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('delete-device-data', async (event, deviceId) => {
   const safeDeviceId = ipcDeviceId(deviceId);
   deviceStore.deleteDeviceData(safeDeviceId);
@@ -916,10 +943,6 @@ ipcMain.handle('delete-device-data', async (event, deviceId) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-/**
- * @returns {Promise<{success:boolean,devices:ImportDeviceDataItem[]}>}
- *  All device records including non-connected devices
- */
 ipcMain.handle('get-all-device-data', async () => {
   return deviceStore.getAllDeviceData();
 });
@@ -930,11 +953,10 @@ ipcMain.handle('get-all-device-data', async () => {
  * @param {Array<{id:string, col:number, row:number, group?:string}>} positions
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {object[]} positions - Array of {id, x, y, groupName} position entries
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('update-device-positions', async (event, positions) => {
+  if (!Array.isArray(positions) || positions.length > 500) {
+    return { success: false, error: 'Invalid positions data' };
+  }
   deviceStore.updateDevicePositions(positions);
   return { success: true };
 });
@@ -943,9 +965,6 @@ ipcMain.handle('update-device-positions', async (event, positions) => {
  * IPC: Returns the list of all defined device groups.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<string>>}
- */
-/**
- * @returns {Promise<string[]>} All defined device group names
  */
 ipcMain.handle('get-groups', async () => {
   return deviceStore.getGroups();
@@ -957,11 +976,10 @@ ipcMain.handle('get-groups', async () => {
  * @param {string} name - The group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-/**
- * @param {string} name - Group name to create
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('add-group', async (event, name) => {
+  if (typeof name !== 'string' || !name.trim() || name.length > 100) {
+    return { success: false, error: 'Invalid group name' };
+  }
   return deviceStore.addGroup(name);
 });
 
@@ -971,11 +989,10 @@ ipcMain.handle('add-group', async (event, name) => {
  * @param {string} name - The group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-/**
- * @param {string} name - Group name to remove
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('remove-group', async (event, name) => {
+  if (typeof name !== 'string' || !name.trim()) {
+    return { success: false, error: 'Invalid group name' };
+  }
   return deviceStore.removeGroup(name);
 });
 
@@ -986,12 +1003,10 @@ ipcMain.handle('remove-group', async (event, name) => {
  * @param {string} newName - The new group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-/**
- * @param {string} oldName - Current group name
- * @param {string} newName - New group name
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('rename-group', async (event, oldName, newName) => {
+  if (typeof oldName !== 'string' || !oldName.trim() || typeof newName !== 'string' || !newName.trim()) {
+    return { success: false, error: 'Invalid group name' };
+  }
   return deviceStore.renameGroup(oldName, newName);
 });
 
@@ -1000,17 +1015,13 @@ ipcMain.handle('rename-group', async (event, oldName, newName) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<object>>}
  */
-/**
- * @returns {Promise<any[]>}
- *  Merged device list (connected + stored records with names/groups/positions)
- */
 ipcMain.handle('get-merged-devices', async () => {
-  if (process.env?.DEBUG) console.log('[IPC] get-merged-devices called');
-  if (process.env?.DEBUG) console.log('[IPC] deviceMonitor exists:', !!deviceMonitor);
+  if (process.env?.DEBUG) console.debug('[IPC] get-merged-devices called');
+  if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
-  if (process.env?.DEBUG) console.log('[IPC] Raw devices from monitor:', devices.length);
+  if (process.env?.DEBUG) console.debug('[IPC] Raw devices from monitor:', devices.length);
   const merged = deviceStore.mergeDeviceData(devices);
-  if (process.env?.DEBUG) console.log('[IPC] Merged devices:', merged.length);
+  if (process.env?.DEBUG) console.debug('[IPC] Merged devices:', merged.length);
   return merged;
 });
 
@@ -1018,9 +1029,6 @@ ipcMain.handle('get-merged-devices', async () => {
  * IPC: Returns all device-store settings.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
- */
-/**
- * @returns {Promise<object>} Current device-store settings (grid cols/rows, etc.)
  */
 ipcMain.handle('get-device-store-settings', async () => {
   return deviceStore.getSettings();
@@ -1033,11 +1041,6 @@ ipcMain.handle('get-device-store-settings', async () => {
  * @param {*} value - The setting value
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {string} key   - Setting key
- * @param {any}    value - Setting value
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('set-device-store-setting', async (event, key, value) => {
   return deviceStore.setSetting(key, value);
 });
@@ -1046,9 +1049,6 @@ ipcMain.handle('set-device-store-setting', async (event, key, value) => {
  * IPC: Serialises and returns all device-store data as JSON for download / export.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,data?:string,error?:string}>}
- */
-/**
- * @returns {Promise<{success:boolean,data:object}>}
  */
 ipcMain.handle('export-device-data', async () => {
   return deviceStore.exportData();
@@ -1060,11 +1060,8 @@ ipcMain.handle('export-device-data', async () => {
  * @param {string} data - JSON string previously returned by export-device-data
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-/**
- * @param {object} data - Previously exported device data JSON
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('import-device-data', async (event, data) => {
+  assertJsonBodySize(data);
   return deviceStore.importData(data);
 });
 
@@ -1077,9 +1074,6 @@ ipcMain.handle('import-device-data', async (event, data) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-/**
- * @returns {Promise<{enabled:boolean,soundEnabled:boolean}>}
- */
 ipcMain.handle('get-notification-settings', async () => {
   return notificationManager.getSettings();
 });
@@ -1088,10 +1082,6 @@ ipcMain.handle('get-notification-settings', async () => {
  * IPC: Enables or disables system notifications.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {boolean} enabled - Whether notifications should be active
- * @returns {Promise<{success:boolean}>}
- */
-/**
- * @param {boolean} enabled - Enable/disable notifications
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('set-notification-enabled', async (event, enabled) => {
@@ -1105,10 +1095,6 @@ ipcMain.handle('set-notification-enabled', async (event, enabled) => {
  * @param {boolean} enabled - Whether sound should be active
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {boolean} enabled - Enable/disable notification sound
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('set-notification-sound', async (event, enabled) => {
   notificationManager.setSoundEnabled(enabled);
   return { success: true };
@@ -1120,11 +1106,8 @@ ipcMain.handle('set-notification-sound', async (event, enabled) => {
  * @param {object} settings - Partial notification settings to merge
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {object} settings - Partial notification settings merge object
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('update-notification-settings', async (event, settings) => {
+  assertJsonBodySize(settings);
   notificationManager.updateSettings(settings);
   return { success: true };
 });
@@ -1137,9 +1120,6 @@ ipcMain.handle('update-notification-settings', async (event, settings) => {
  * IPC: Returns the list of registered keyboard shortcuts.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<object>>}
- */
-/**
- * @returns {Promise<object[]>} List of registered keyboard shortcuts
  */
 ipcMain.handle('get-shortcuts', async () => {
   return shortcutManager.getShortcutList();
@@ -1155,11 +1135,6 @@ ipcMain.handle('get-shortcuts', async () => {
  * @param {boolean} running - Whether the farm is actively running
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * Sets the global farm-running state flag.
- * @param {boolean} running - Whether the farm loop is active
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('set-farm-running', async (event, running) => {
   isFarmRunning = running;
   return { success: true };
@@ -1169,9 +1144,6 @@ ipcMain.handle('set-farm-running', async (event, running) => {
  * IPC: Returns the current farm-running state flag.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<boolean>}
- */
-/**
- * @returns {Promise<boolean>} Whether the farm loop is currently running
  */
 ipcMain.handle('get-farm-running', async () => {
   return isFarmRunning;
@@ -1186,9 +1158,6 @@ ipcMain.handle('get-farm-running', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<string>}
  */
-/**
- * @returns {Promise<string>} Stored home computer name (empty string if unset)
- */
 ipcMain.handle('get-home-computer-name', async () => {
   return appStore.get('homeComputerName', '');
 });
@@ -1199,11 +1168,10 @@ ipcMain.handle('get-home-computer-name', async () => {
  * @param {string} name - The hostname or IP to store
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @param {string} name - Home computer display name
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('set-home-computer-name', async (event, name) => {
+  if (typeof name !== 'string' || name.length > 255) {
+    return { success: false, error: 'Invalid computer name' };
+  }
   appStore.set('homeComputerName', name);
   return { success: true };
 });
@@ -1212,27 +1180,33 @@ ipcMain.handle('set-home-computer-name', async (event, name) => {
 // IPC: ABOUT
 // =====================================================
 
-/**
- * IPC: Opens the "About" dialog window.
- * @param {Electron.IpcMainInvokeEvent} event
- * @returns {Promise<{success:boolean}>}
- */
-/**
- * Opens the "About" modal window.
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('open-about', async () => {
   createAboutWindow();
+  return { success: true };
+});
+
+// =====================================================
+// IPC: UPDATER
+// =====================================================
+
+ipcMain.handle('update:check', async () => {
+  Updater.checkForUpdates();
+  return { success: true };
+});
+
+ipcMain.handle('update:get-settings', async () => {
+  return Updater.getSettings();
+});
+
+ipcMain.handle('update:save-settings', async (event, settings) => {
+  Updater.saveSettings(settings);
+  Updater.init();
   return { success: true };
 });
 
 /**
  * IPC: Closes the "About" dialog window.
  * @param {Electron.IpcMainInvokeEvent} event
- * @returns {Promise<{success:boolean}>}
- */
-/**
- * Closes the "About" modal window if it is open.
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('close-about', async () => {
@@ -1247,9 +1221,6 @@ ipcMain.handle('close-about', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{name:string,version:string,author:string,electron:string,node:string,chrome:string}>}
  */
-/**
- * @returns {Promise<{name:string,version:string,author:string,electron:string,node:string,chrome:string}>}
- */
 ipcMain.handle('get-app-info', async () => {
   return {
     name: 'Phone Farm',
@@ -1262,6 +1233,143 @@ ipcMain.handle('get-app-info', async () => {
 });
 
 // =====================================================
+// IPC: CALL HISTORY
+// =====================================================
+
+/**
+ * IPC: Reads call log JSON files from the logs/ directory and returns parsed records.
+ * Reads all *.json files in the logs/ directory, merges their contents, and
+ * returns the combined list sorted by timestamp descending.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @returns {Promise<Array<{timestamp:string,number:string,duration:number,status:string}>>}
+ */
+ipcMain.handle('call-history:get', async () => {
+});
+
+ipcMain.handle('phone:call-bulk', async (event, numbers) => {
+  if (!Array.isArray(numbers) || numbers.length === 0) {
+    return { success: false, error: 'No numbers provided for bulk call' };
+  }
+
+  const validNumbers = numbers.filter(num => {
+    const clean = num.replace(/\s/g, '');
+    const plus90Pattern = /^\+90[5]\d{8}$/;
+    const zeroPattern = /^0[5]\d{9}$/;
+    return plus90Pattern.test(clean) || zeroPattern.test(clean);
+  });
+
+  if (validNumbers.length === 0) {
+    return { success: false, error: 'No valid phone numbers provided' };
+  }
+
+  const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
+  if (devices.length === 0) {
+    return { success: false, error: 'No devices connected' };
+  }
+
+  const deviceId = devices[0].id;
+
+  try {
+    const jobId = await submitBulkCallJob(deviceId, validNumbers);
+    return { success: true, jobId };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+async function submitBulkCallJob(deviceId, numbers) {
+  const steps = numbers.map(number => ({
+    task: 'call',
+    params: { number }
+  }));
+
+  const fs = require('fs');
+  const path = require('path');
+  
+  const tempDir = require('os').tmpdir();
+  const jobFilePath = path.join(tempDir, `bulk-call-${Date.now()}.json`);
+  
+  const jobData = {
+    device_id: deviceId,
+    steps: steps
+  };
+  
+  fs.writeFileSync(jobFilePath, JSON.stringify(jobData, null, 2));
+  
+  try {
+    const result = await adbManager.runCommand([
+      'phone_farm_cli.py', 'submit', deviceId, jobFilePath
+    ], { timeout: 30000 });
+    
+    const output = result.stdout || '';
+    const jobIdMatch = output.match(/Job ID: (\S+)/);
+    if (jobIdMatch) {
+      return jobIdMatch[1];
+    }
+    
+    return `bulk-call-${Date.now()}`;
+  } finally {
+    try { fs.unlinkSync(jobFilePath); } catch(e) { console.debug('Cleanup error:', e.message); }
+  }
+}
+
+// =====================================================
+// IPC: CALL HISTORY
+// =====================================================
+
+/**
+ * IPC: Reads call log JSON files from the logs/ directory and returns parsed records.
+ * Reads all *.json files in the logs/ directory, merges their contents, and
+ * returns the combined list sorted by timestamp descending.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @returns {Promise<Array<{timestamp:string,number:string,duration:number,status:string}>>}
+ */
+ipcMain.handle('call-history:get', async () => {
+  const fs = require('fs');
+  const logsDir = path.join(__dirname, '..', '..', 'logs');
+
+  try {
+    if (!fs.existsSync(logsDir)) {
+      return [];
+    }
+
+    const files = fs.readdirSync(logsDir).filter(function (f) {
+      return f.endsWith('.json');
+    });
+
+    if (files.length === 0) return [];
+
+    let allRecords = [];
+
+    for (const file of files) {
+      try {
+        const filePath = path.join(logsDir, file);
+        const raw = fs.readFileSync(filePath, 'utf-8');
+        const data = JSON.parse(raw);
+
+        if (Array.isArray(data)) {
+          allRecords = allRecords.concat(data);
+        } else if (data && typeof data === 'object' && Array.isArray(data.records)) {
+          allRecords = allRecords.concat(data.records);
+        }
+      } catch (e) {
+        console.error('[IPC] call-history: error reading file', file, e.message);
+      }
+    }
+
+    allRecords.sort(function (a, b) {
+      if (!a.timestamp || !b.timestamp) return 0;
+      return b.timestamp.localeCompare(a.timestamp);
+    });
+
+    return allRecords;
+  } catch (e) {
+    console.error('[IPC] call-history:get error:', e.message);
+    return [];
+  }
+});
+
+// =====================================================
 // IPC: UTILITY
 // =====================================================
 
@@ -1271,13 +1379,11 @@ ipcMain.handle('get-app-info', async () => {
  * @param {string} url - The URL to open
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-/**
- * Opens a URL in the user's default browser.
- * @param {string} url - URL to open
- * @returns {Promise<{success:boolean,error?:string}>}
- */
 ipcMain.handle('open-external', async (event, url) => {
   try {
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
+      return { success: false, error: 'Only http/https URLs are allowed' };
+    }
     await shell.openExternal(url);
     return { success: true };
   } catch (e) {
@@ -1290,9 +1396,6 @@ ipcMain.handle('open-external', async (event, url) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('minimize-window', async () => {
   mainWindow?.minimize();
   return { success: true };
@@ -1303,12 +1406,83 @@ ipcMain.handle('minimize-window', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-/**
- * @returns {Promise<{success:boolean}>}
- */
 ipcMain.handle('quit-app', async () => {
   app.quit();
   return { success: true };
+});
+
+// =====================================================
+// IPC: DEVICE HEALTH
+// =====================================================
+
+/**
+ * Collects battery, temperature, SIM, signal, and memory info via ADB shell.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {string} deviceId - ADB device identifier
+ * @returns {Promise<{ok:boolean,sim:object,signal:object,battery:object,memory:object,error?:string}>}
+ */
+ipcMain.handle('health:system', async () => {
+  if (healthMonitor) {
+    return { success: true, health: healthMonitor.getHealth() };
+  }
+  return { success: false, error: 'Health monitor not initialized' };
+});
+
+ipcMain.handle('health:get', async (event, deviceId) => {
+  const safeDeviceId = ipcDeviceId(deviceId);
+  if (!safeDeviceId) {
+    return { ok: false, error: 'Invalid device ID' };
+  }
+
+  try {
+    // Battery + temperature via dumpsys battery
+    const batteryRaw = await adbManager.runCommand(
+      ['-s', safeDeviceId, 'shell', 'dumpsys', 'battery'],
+      { timeout: 10000 }
+    );
+    const battLines = batteryRaw.stdout || '';
+    const levelMatch = battLines.match(/level:\s*(\d+)/);
+    const tempMatch = battLines.match(/temperature:\s*(\d+)/);
+    const battery = {
+      level: levelMatch ? parseInt(levelMatch[1], 10) : null,
+      temperature: tempMatch ? parseInt(tempMatch[1], 10) / 10 : null
+    };
+
+    // SIM state
+    const simRaw = await adbManager.runCommand(
+      ['-s', safeDeviceId, 'shell', 'getprop', 'gsm.sim.state'],
+      { timeout: 10000 }
+    );
+    const sim = { sim_state: (simRaw.stdout || '').trim() || 'UNKNOWN' };
+
+    // Signal strength
+    const signalRaw = await adbManager.runCommand(
+      ['-s', safeDeviceId, 'shell', 'dumpsys', 'telephony.registry'],
+      { timeout: 10000 }
+    );
+    const signalMatch = (signalRaw.stdout || '').match(/mDbm=(-?\d+)/);
+    const signal = { signal_dbm: signalMatch ? parseInt(signalMatch[1], 10) : null };
+
+    // Memory via /proc/meminfo
+    const memRaw = await adbManager.runCommand(
+      ['-s', safeDeviceId, 'shell', 'cat', '/proc/meminfo'],
+      { timeout: 10000 }
+    );
+    const memLines = memRaw.stdout || '';
+    const totalMatch = memLines.match(/MemTotal:\s*(\d+)/);
+    const availMatch = memLines.match(/MemAvailable:\s*(\d+)/);
+    const totalKb = totalMatch ? parseInt(totalMatch[1], 10) : 0;
+    const availKb = availMatch ? parseInt(availMatch[1], 10) : 0;
+    const memory = {
+      total: totalKb,
+      available: availKb,
+      used: totalKb - availKb
+    };
+
+    return { ok: true, sim, signal, battery, memory };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 });
 
 // =====================================================
@@ -1327,8 +1501,161 @@ process.on('unhandledRejection', (reason) => {
   setTimeout(() => process.exit(1), 2000);
 });
 
-process.on('SIGTERM', () => {
-  app.quit();
+// =====================================================
+// IPC: PHONE CALLS
+// =====================================================
+
+/**
+ * IPC: Initiates a phone call on a device.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {Object} params - {deviceId: string, number: string}
+ * @returns {Promise<{success:boolean,error?:string}>}
+ */
+ipcMain.handle('phone:call', async (event, params) => {
+   try {
+   assertJsonBodySize(params);
+   const { deviceId, number } = params;
+   if (!deviceId || !number) {
+      return { success: false, error: 'Device ID and number are required' };
+   }
+   assertValidDeviceId(deviceId, 'deviceId');
+   assertValidPhoneNumber(number);
+   try {
+      // Execute phone_farm_cli.py call command
+      const { exec } = require('child_process');
+      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      return new Promise((resolve) => {
+         exec(`python "${cliPath}" call "${deviceId}" --number "${number}"`, (error, stdout, stderr) => {
+            if (error) {
+               console.error('[IPC] phone:call error:', error);
+               resolve({ success: false, error: error.message });
+            } else {
+               // Notify renderer of call state change
+               mainWindow?.webContents?.send('phone-state-update', 'ringing');
+               resolve({ success: true, output: stdout });
+            }
+         });
+      });
+   } catch (error) {
+      console.error('[IPC] phone:call exception:', error);
+      return { success: false, error: error.message };
+   }
+   } catch (outerError) {
+      console.error('[IPC] phone:call outer exception:', outerError);
+      return { success: false, error: outerError.message };
+   }
 });
 
-if (process.env?.DEBUG) console.log('[Main] Phone Farm main process loaded');
+/**
+ * IPC: Answers an incoming call on a device.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {Object} params - {deviceId: string}
+ * @returns {Promise<{success:boolean,error?:string}>}
+ */
+ipcMain.handle('phone:answer', async (event, params) => {
+   try {
+   assertJsonBodySize(params);
+   const { deviceId } = params;
+   if (!deviceId) {
+      return { success: false, error: 'Device ID is required' };
+   }
+   assertValidDeviceId(deviceId, 'deviceId');
+   try {
+      // Execute phone_farm_cli.py answer command
+      const { exec } = require('child_process');
+      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      return new Promise((resolve) => {
+         exec(`python "${cliPath}" run "${deviceId}" answer`, (error, stdout, stderr) => {
+            if (error) {
+               console.error('[IPC] phone:answer error:', error);
+               resolve({ success: false, error: error.message });
+            } else {
+               // Notify renderer of call state change
+               mainWindow?.webContents?.send('phone-state-update', 'active');
+               resolve({ success: true, output: stdout });
+            }
+         });
+      });
+   } catch (error) {
+      console.error('[IPC] phone:answer exception:', error);
+      return { success: false, error: error.message };
+   }
+   } catch (outerError) {
+      console.error('[IPC] phone:answer outer exception:', outerError);
+      return { success: false, error: outerError.message };
+   }
+});
+
+/**
+ * IPC: Hangs up a call on a device.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {Object} params - {deviceId: string}
+ * @returns {Promise<{success:boolean,error?:string}>}
+ */
+ipcMain.handle('phone:hangup', async (event, params) => {
+   try {
+   assertJsonBodySize(params);
+   const { deviceId } = params;
+   if (!deviceId) {
+      return { success: false, error: 'Device ID is required' };
+   }
+   assertValidDeviceId(deviceId, 'deviceId');
+   try {
+      // Execute phone_farm_cli.py hangup command
+      const { exec } = require('child_process');
+      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      return new Promise((resolve) => {
+         exec(`python "${cliPath}" run "${deviceId}" hangup`, (error, stdout, stderr) => {
+            if (error) {
+               console.error('[IPC] phone:hangup error:', error);
+               resolve({ success: false, error: error.message });
+            } else {
+               // Notify renderer of call state change
+               mainWindow?.webContents?.send('phone-state-update', 'ended');
+               resolve({ success: true, output: stdout });
+            }
+         });
+      });
+   } catch (error) {
+      console.error('[IPC] phone:hangup exception:', error);
+      return { success: false, error: error.message };
+   }
+   } catch (outerError) {
+      console.error('[IPC] phone:hangup outer exception:', outerError);
+      return { success: false, error: outerError.message };
+   }
+});
+
+/**
+ * IPC: Gets the current call state for a device.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {Object} params - {deviceId: string}
+ * @returns {Promise<{success:boolean,state:string,error?:string}>}
+ */
+ipcMain.handle('phone:state', async (event, params) => {
+   try {
+   assertJsonBodySize(params);
+   const { deviceId } = params;
+   if (!deviceId) {
+      return { success: false, error: 'Device ID is required' };
+   }
+   assertValidDeviceId(deviceId, 'deviceId');
+   try {
+      // For now, we'll return idle as default state
+      // In a real implementation, this would query the device state
+      return { success: true, state: 'idle' };
+   } catch (error) {
+      console.error('[IPC] phone:state exception:', error);
+      return { success: false, error: error.message };
+   }
+   } catch (outerError) {
+      console.error('[IPC] phone:state outer exception:', outerError);
+      return { success: false, error: outerError.message };
+   }
+});
+
+process.on('SIGTERM', () => {
+   app.quit();
+});
+
+if (process.env?.DEBUG) console.debug('[Main] Phone Farm main process loaded');

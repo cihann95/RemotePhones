@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from typing import Any
+
+import requests
 
 from utils.logger import get_logger
 
@@ -38,6 +41,9 @@ class AlertManager:
             # Default: flag memory below 200 MB (conservative for phones)
             self.memory_low_free_mb = 200
 
+        # Webhook configuration
+        self.webhook_url: str | None = os.environ.get("ALERT_WEBHOOK_URL")
+
     def evaluate(self, result: Any) -> list[dict[str, Any]]:
         """Evaluate a :class:`monitor.health.HealthCheckResult` against the
         configured thresholds and return alert dicts.
@@ -56,11 +62,12 @@ class AlertManager:
         """
         alerts: list[dict[str, Any]] = []
         ts = time.time()
+        device_id = getattr(result, "device_id", "unknown")
 
         if not bool(getattr(result, "online", False)):
             alerts.append(
                 {
-                    "device_id": getattr(result, "device_id", "unknown"),
+                    "device_id": device_id,
                     "severity": "critical",
                     "metric": "reachability",
                     "message": "Device is offline or ADB is not responding",
@@ -69,9 +76,6 @@ class AlertManager:
                     "ts": ts,
                 }
             )
-            return alerts
-
-        device_id = getattr(result, "device_id", "unknown")
 
         battery_level: int | None = getattr(result, "battery_level", None)
         if battery_level is not None:
@@ -125,3 +129,48 @@ class AlertManager:
                 )
 
         return alerts
+
+    def send_webhook(self, alert: dict[str, Any]) -> bool:
+        """Send alert to webhook URL with retry logic.
+
+        Args:
+            alert: Alert dictionary to send
+
+        Returns:
+            bool: True if delivery successful, False otherwise
+        """
+        if not self.webhook_url:
+            logger.debug("No webhook URL configured, skipping webhook delivery")
+            return False
+
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                response = requests.post(
+                    self.webhook_url,
+                    json=alert,
+                    timeout=10,
+                )
+                response.raise_for_status()
+                logger.info(
+                    "Webhook delivery successful for alert %s on device %s",
+                    alert.get("metric"),
+                    alert.get("device_id"),
+                )
+                return True
+            except requests.exceptions.RequestException as e:
+                logger.warning(
+                    "Webhook delivery attempt %d failed: %s",
+                    attempt + 1,
+                    e,
+                )
+                if attempt < max_attempts - 1:  # Don't sleep on last attempt
+                    time.sleep(2**attempt)  # Exponential backoff: 1s, 2s, 4s
+                else:
+                    logger.error(
+                        "Webhook delivery failed after %d attempts for alert %s on device %s",
+                        max_attempts,
+                        alert.get("metric"),
+                        alert.get("device_id"),
+                    )
+        return False

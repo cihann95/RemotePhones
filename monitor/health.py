@@ -27,10 +27,18 @@ class HealthCheckResult:
     memory_free_mb: int | None = None
     adb_responsive: bool = False
     last_checked: float = field(default_factory=time.time)
+    issues: list[str] = field(default_factory=list)
 
     @property
     def ok(self) -> bool:
         return bool(self.online)
+
+    @property
+    def healthy(self) -> bool:
+        return self.ok
+
+    def add_issue(self, issue: str) -> None:
+        self.issues.append(issue)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -41,6 +49,7 @@ class HealthCheckResult:
             "memory_free_mb": self.memory_free_mb,
             "adb_responsive": self.adb_responsive,
             "last_checked": self.last_checked,
+            "issues": self.issues,
         }
 
     @classmethod
@@ -53,6 +62,7 @@ class HealthCheckResult:
             memory_free_mb=data.get("memory_free_mb"),
             adb_responsive=bool(data.get("adb_responsive", False)),
             last_checked=float(data.get("last_checked", time.time())),
+            issues=list(data.get("issues", [])),
         )
 
 
@@ -70,34 +80,32 @@ class DeviceHealthChecker:
         self.memory_high_pct: int = mon_cfg.get("memory_high_pct", 90)
         self._timeout_s: int = mon_cfg.get("health_check_timeout_s", 10)
 
-    def check(self, device_id: str) -> dict:
+    def check(self, device_id: str) -> HealthCheckResult:
         """
-        Döner: {
-          device_id: str,
-          online: bool,
-          battery: int | None,      # 0-100
-          cpu_usage: float | None,  # 0.0-1.0
-          memory_free_mb: int | None,
-          adb_responsive: bool,
-          last_checked: float        # unix timestamp
-        }
+        Perform a health check on the given device and return a HealthCheckResult.
 
-        Dönüş tipi ``dict`` olur; bu tip aynı zamanda :class:`HealthCheckResult`
-        ile uyumludur. Eğer gerekirse::
+        The result includes:
+          - device_id: str
+          - online: bool (True if the device is online and reachable via ADB)
+          - battery_level: int | None (percentage 0-100)
+          - cpu_usage: float | None (0.0-1.0)
+          - memory_free_mb: int | None (in MB)
+          - adb_responsive: bool (True if ADB commands succeed)
+          - last_checked: float (Unix timestamp)
+          - issues: list[str] (descriptions of any non-critical problems)
 
-            result = DeviceHealthChecker(...).check(id)
-            typed = HealthCheckResult.from_dict(result)
-
-        Exception yakalanır ve ``online: False`` döndürülür — asla yukarı fırlatılmaz.
+        The ``healthy`` property is an alias for ``online``.
+        Non-critical issues (e.g., failure to read battery level) are recorded in ``issues``
+        but do not affect the ``online`` status.
         """
-        raw_result = HealthCheckResult(device_id=device_id)
+        result = HealthCheckResult(device_id=device_id)
         try:
             device = self.dm.get(device_id)
             if device is None or device.get("status") != "online":
-                return raw_result.to_dict()
+                return result
 
-            raw_result.online = True
-            raw_result.adb_responsive = True
+            result.online = True
+            result.adb_responsive = True
 
             # Battery
             try:
@@ -112,7 +120,7 @@ class DeviceHealthChecker:
                         if len(parts) >= 2:
                             pct = int(parts[-1].strip())
                             if 0 <= pct <= 100:
-                                raw_result.battery_level = pct
+                                result.battery_level = pct
                         break
             except Exception as exc:
                 logger.debug("Battery check failed for %s: %s", device_id, exc)
@@ -130,7 +138,7 @@ class DeviceHealthChecker:
                 )
                 cpu = self._parse_cpu(raw)
                 if cpu is not None and 0.0 <= cpu <= 1.0:
-                    raw_result.cpu_usage = cpu
+                    result.cpu_usage = cpu
             except Exception as exc:
                 logger.debug("CPU check failed for %s: %s", device_id, exc)
 
@@ -147,7 +155,7 @@ class DeviceHealthChecker:
                 )
                 mem_free_kb = self._parse_mem_free_kb(raw)
                 if mem_free_kb is not None:
-                    raw_result.memory_free_mb = mem_free_kb // 1024
+                    result.memory_free_mb = mem_free_kb // 1024
             except Exception as exc:
                 logger.debug("Memory check failed for %s: %s", device_id, exc)
 
@@ -155,9 +163,9 @@ class DeviceHealthChecker:
             logger.error(
                 "Health check failed for %s: %s", device_id, exc, exc_info=True
             )
-            raw_result.online = False
+            result.online = False
 
-        return raw_result.to_dict()
+        return result
 
     @staticmethod
     def _parse_cpu(raw: str) -> float | None:

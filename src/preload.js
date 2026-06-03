@@ -291,6 +291,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppInfo: () => ipcRenderer.invoke('get-app-info'),
 
   // =====================================================
+  // DEVICE HEALTH
+  // =====================================================
+  /** IPC: Returns health data (SIM, signal, battery, temp, memory) for a single device */
+  getDeviceHealth: (deviceId) => ipcRenderer.invoke('health:get', deviceId),
+
+  // =====================================================
+  // SYSTEM HEALTH
+  // =====================================================
+  getSystemHealth: () => ipcRenderer.invoke('health:system'),
+  onHealthCritical: (callback) => {
+    return ipcRenderer.on('health:system-critical', (event, alerts) => callback(alerts));
+  },
+
+  // =====================================================
+  // CALL HISTORY
+  // =====================================================
+  /** IPC: Returns all call log records read from JSON files in logs/ */
+  getCallHistory: () => ipcRenderer.invoke('call-history:get'),
+
+  // =====================================================
   // UTILITY
   // =====================================================
   /** IPC: Opens a URL in the OS default browser */
@@ -298,7 +318,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** IPC: Minimises the main application window */
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   /** IPC: Gracefully quits the application */
-  quitApp: () => ipcRenderer.invoke('quit-app')
+  quitApp: () => ipcRenderer.invoke('quit-app'),
+
+  // =====================================================
+  // UPDATE
+  // =====================================================
+  /** IPC: Triggers a manual check for updates */
+  updateCheck: () => ipcRenderer.invoke('update:check'),
+  /** IPC: Returns the current update settings (autoCheck, channel) */
+  updateGetSettings: () => ipcRenderer.invoke('update:get-settings'),
+  /** IPC: Persists update settings and reinitializes the updater */
+  updateSaveSettings: (settings) => ipcRenderer.invoke('update:save-settings', settings),
+  /** IPC: Fired when a new update version is available */
+  onUpdateAvailable: (callback) => {
+    return ipcRenderer.on('update-available', (event, info) => callback(info));
+  },
+  /** IPC: Fired when no update is available (already on latest) */
+  onUpdateNotAvailable: (callback) => {
+    return ipcRenderer.on('update-not-available', (event, info) => callback(info));
+  },
+  /** IPC: Fired when the updater encounters an error */
+  onUpdateError: (callback) => {
+    return ipcRenderer.on('update-error', (event, message) => callback(message));
+  },
+  /** IPC: Fired periodically with download progress data */
+  onUpdateDownloadProgress: (callback) => {
+    return ipcRenderer.on('update-download-progress', (event, progress) => callback(progress));
+  },
+  /** IPC: Fired when the update has been fully downloaded and is ready to install */
+  onUpdateDownloaded: (callback) => {
+    return ipcRenderer.on('update-downloaded', (event, info) => callback(info));
+  }
 });
 
 if (process.env?.DEBUG) console.log('[Preload] Phone Farm preload script loaded');

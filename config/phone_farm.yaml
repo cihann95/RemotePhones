@@ -1,20 +1,14 @@
-# phone_farm.yaml — sample configuration.
-# Copy and adapt for production use.
-
-# ── adb ──────────────────────────────────────────────────────────────────────
-adb_path: adb                       # path to adb binary (must be on PATH)
-default_device: null                # override default ADB serial
-
-# ── scheduler ────────────────────────────────────────────────────────────────
-poll_interval_s: 1.0                # runner loop sleep when queue is empty
-max_retries: 3
-retry_delay_base_s: 5.0
-
-# ── monitor ──────────────────────────────────────────────────────────────────
-health_check_interval_s: 60
-battery_low_pct: 15
-temperature_high_c: 50
-memory_high_pct: 90
-
-# ── sample device list ───────────────────────────────────────────────────────
+# phone_farm.yaml
+adb:
+  adb_path: adb
+  default_device: null
+scheduler:
+  poll_interval_s: 1.0
+  max_retries: 3
+  retry_delay_base_s: 5.0
+monitor:
+  health_check_interval_s: 60
+  battery_low_pct: 15
+  temperature_high_c: 50
+  memory_high_pct: 90
 devices: []

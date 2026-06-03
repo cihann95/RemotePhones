@@ -7,6 +7,8 @@ const fs = require('fs');
 const { app } = require('electron');
 const { LICENSE_RETRY_ATTEMPTS, DEFAULT_LICENSE_RETRY_DELAY_MS } = require('./constants');
 
+const DEBUG = process.env.NODE_ENV === 'development';
+
 let LexActivator;
 let StatusCodes;
 
@@ -42,53 +44,53 @@ let licenseStatus = {
 // Initialize LexActivator
 function initializeLexActivator() {
   try {
-    if (process.env?.DEBUG) console.log('[License] ========== LEXACTIVATOR INIT START ==========');
-    if (process.env?.DEBUG) console.log('[License] app.isPackaged:', app.isPackaged);
-    if (process.env?.DEBUG) console.log('[License] process.resourcesPath:', process.resourcesPath);
-    if (process.env?.DEBUG) console.log('[License] __dirname:', __dirname);
-    if (process.env?.DEBUG) console.log('[License] process.cwd():', process.cwd());
+    if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT START ==========');
+    if (DEBUG) console.log('[License] app.isPackaged:', app.isPackaged);
+    if (DEBUG) console.log('[License] process.resourcesPath:', process.resourcesPath);
+    if (DEBUG) console.log('[License] __dirname:', __dirname);
+    if (DEBUG) console.log('[License] process.cwd():', process.cwd());
 
     // Get Product.dat path
     const productFile = getProductFilePath();
-    if (process.env?.DEBUG) console.log('[License] Product.dat path:', productFile);
+    if (DEBUG) console.log('[License] Product.dat path:', productFile);
 
     // Check if file exists
     const fileExists = fs.existsSync(productFile);
-    if (process.env?.DEBUG) console.log('[License] Product.dat exists:', fileExists);
+    if (DEBUG) console.log('[License] Product.dat exists:', fileExists);
 
     if (!fileExists) {
       console.error('[License] ERROR: Product.dat NOT FOUND at:', productFile);
       if (app.isPackaged && process.resourcesPath) {
         try {
           const resourcesContents = fs.readdirSync(process.resourcesPath);
-          if (process.env?.DEBUG) console.log('[License] Contents of resources folder:', resourcesContents);
+          if (DEBUG) console.log('[License] Contents of resources folder:', resourcesContents);
         } catch (e) {
-          if (process.env?.DEBUG) console.log('[License] Could not list resources folder:', e.message);
+          if (DEBUG) console.log('[License] Could not list resources folder:', e.message);
         }
       }
       licenseStatus.error = 'Product.dat file not found. Please reinstall the application.';
-      if (process.env?.DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
+      if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
       return false;
     }
 
     // Try to load LexActivator module
-    if (process.env?.DEBUG) console.log('[License] Loading @cryptlex/lexactivator module...');
+    if (DEBUG) console.log('[License] Loading @cryptlex/lexactivator module...');
     let lexactivator;
     try {
       lexactivator = require('@cryptlex/lexactivator');
-      if (process.env?.DEBUG) console.log('[License] Module loaded successfully');
+      if (DEBUG) console.log('[License] Module loaded successfully');
     } catch (moduleError) {
       console.error('[License] ERROR: Product.dat NOT FOUND at:', productFile);
       if (app.isPackaged && process.resourcesPath) {
         try {
           const resourcesContents = fs.readdirSync(process.resourcesPath);
-          if (process.env?.DEBUG) console.log('[License] Contents of resources folder:', resourcesContents);
+          if (DEBUG) console.log('[License] Contents of resources folder:', resourcesContents);
         } catch (e) {
-          if (process.env?.DEBUG) console.log('[License] Could not list resources folder:', e.message);
+          if (DEBUG) console.log('[License] Could not list resources folder:', e.message);
         }
       }
       licenseStatus.error = 'Product.dat file not found. Please reinstall the application.';
-      if (process.env?.DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
+      if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
       return false;
     }
 
@@ -96,16 +98,16 @@ function initializeLexActivator() {
     StatusCodes = lexactivator.LexStatusCodes;
 
     // Initialize
-    if (process.env?.DEBUG) console.log('[License] Calling SetProductFile...');
+    if (DEBUG) console.log('[License] Calling SetProductFile...');
     LexActivator.SetProductFile(productFile);
-    if (process.env?.DEBUG) console.log('[License] SetProductFile completed');
+    if (DEBUG) console.log('[License] SetProductFile completed');
 
-    if (process.env?.DEBUG) console.log('[License] Calling SetProductId...');
+    if (DEBUG) console.log('[License] Calling SetProductId...');
     LexActivator.SetProductId(PRODUCT_ID, lexactivator.PermissionFlags.LA_USER);
-    if (process.env?.DEBUG) console.log('[License] SetProductId completed');
+    if (DEBUG) console.log('[License] SetProductId completed');
 
-    if (process.env?.DEBUG) console.log('[License] LexActivator initialized successfully');
-    if (process.env?.DEBUG) console.log('[License] ========== LEXACTIVATOR INIT END ==========');
+    if (DEBUG) console.log('[License] LexActivator initialized successfully');
+    if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT END ==========');
     return true;
   } catch (error) {
     console.error('[License] ========== LEXACTIVATOR INIT ERROR ==========');
@@ -114,7 +116,7 @@ function initializeLexActivator() {
     console.error('[License] Error message:', error.message);
     console.error('[License] Error stack:', error.stack);
     licenseStatus.error = `LexActivator initialization error: ${error.message}`;
-    if (process.env?.DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
+    if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
     return false;
   }
 }
@@ -132,7 +134,7 @@ function getProductFilePath() {
 
 // Check if license is valid (called on app startup)
 async function checkLicense() {
-  if (process.env?.DEBUG) console.log('[License] Checking license...');
+  if (DEBUG) console.log('[License] Checking license...');
 
   if (!LexActivator) {
     if (!initializeLexActivator()) {
@@ -143,7 +145,7 @@ async function checkLicense() {
 
   try {
     const status = LexActivator.IsLicenseGenuine();
-    if (process.env?.DEBUG) console.log('[License] IsLicenseGenuine status:', status);
+    if (DEBUG) console.log('[License] IsLicenseGenuine status:', status);
 
     if (status === StatusCodes.LA_OK || status === StatusCodes.LA_EXPIRED || status === StatusCodes.LA_SUSPENDED || status === StatusCodes.LA_GRACE_PERIOD_OVER) {
       // License is valid (or was valid)
@@ -151,28 +153,28 @@ async function checkLicense() {
         licenseStatus.isValid = true;
         licenseStatus.error = null;
         await loadLicenseInfo();
-        if (process.env?.DEBUG) console.log('[License] License is valid');
+        if (DEBUG) console.log('[License] License is valid');
       } else if (status === StatusCodes.LA_EXPIRED) {
         licenseStatus.isValid = false;
         licenseStatus.error = 'License has expired';
-        if (process.env?.DEBUG) console.log('[License] License expired');
+        if (DEBUG) console.log('[License] License expired');
       } else if (status === StatusCodes.LA_SUSPENDED) {
         licenseStatus.isValid = false;
         licenseStatus.error = 'License has been suspended';
-        if (process.env?.DEBUG) console.log('[License] License suspended');
+        if (DEBUG) console.log('[License] License suspended');
       } else if (status === StatusCodes.LA_GRACE_PERIOD_OVER) {
         licenseStatus.isValid = false;
         licenseStatus.error = 'License validation time expired';
-        if (process.env?.DEBUG) console.log('[License] Grace period over');
+        if (DEBUG) console.log('[License] Grace period over');
       }
     } else if (status === StatusCodes.LA_FAIL) {
       licenseStatus.isValid = false;
       licenseStatus.error = 'License could not be verified';
-      if (process.env?.DEBUG) console.log('[License] License validation failed');
+      if (DEBUG) console.log('[License] License validation failed');
     } else {
       licenseStatus.isValid = false;
       licenseStatus.error = 'No license found';
-      if (process.env?.DEBUG) console.log('[License] No license found, status:', status);
+      if (DEBUG) console.log('[License] No license found, status:', status);
     }
 
     licenseStatus.lastCheck = new Date().toISOString();
@@ -193,7 +195,7 @@ async function loadLicenseInfo() {
     try {
       licenseStatus.licenseKey = LexActivator.GetLicenseKey();
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get license key');
+      if (DEBUG) console.log('[License] Could not get license key');
     }
 
     // Get expiry date
@@ -203,41 +205,41 @@ async function loadLicenseInfo() {
         licenseStatus.expiryDate = new Date(expiryTimestamp * 1000).toISOString();
       }
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get expiry date');
+      if (DEBUG) console.log('[License] Could not get expiry date');
     }
 
     // Get user info
     try {
       licenseStatus.userName = LexActivator.GetLicenseUserName();
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get user name');
+      if (DEBUG) console.log('[License] Could not get user name');
     }
 
     try {
       licenseStatus.userEmail = LexActivator.GetLicenseUserEmail();
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get user email');
+      if (DEBUG) console.log('[License] Could not get user email');
     }
 
     // Get metadata - maxPhones
     try {
       const maxPhones = LexActivator.GetLicenseMetadata('maxPhones');
       licenseStatus.maxPhones = parseInt(maxPhones, 10) || 5;
-      if (process.env?.DEBUG) console.log('[License] maxPhones:', licenseStatus.maxPhones);
+      if (DEBUG) console.log('[License] maxPhones:', licenseStatus.maxPhones);
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get maxPhones metadata, using default:', licenseStatus.maxPhones);
+      if (DEBUG) console.log('[License] Could not get maxPhones metadata, using default:', licenseStatus.maxPhones);
     }
 
     // Get metadata - remoteAccess
     try {
       const remoteAccess = LexActivator.GetLicenseMetadata('remoteAccess');
       licenseStatus.remoteAccess = remoteAccess === 'true' || remoteAccess === '1';
-      if (process.env?.DEBUG) console.log('[License] remoteAccess:', licenseStatus.remoteAccess);
+      if (DEBUG) console.log('[License] remoteAccess:', licenseStatus.remoteAccess);
     } catch (e) {
-      if (process.env?.DEBUG) console.log('[License] Could not get remoteAccess metadata, using default:', licenseStatus.remoteAccess);
+      if (DEBUG) console.log('[License] Could not get remoteAccess metadata, using default:', licenseStatus.remoteAccess);
     }
 
-    if (process.env?.DEBUG) console.log('[License] License info loaded:', {
+    if (DEBUG) console.log('[License] License info loaded:', {
       key: licenseStatus.licenseKey ? '***' + licenseStatus.licenseKey.slice(-4) : null,
       expiry: licenseStatus.expiryDate,
       maxPhones: licenseStatus.maxPhones,
@@ -308,9 +310,9 @@ function getStatusCodeName(code) {
 
 // Activate license with a key
 async function activateLicense(licenseKey) {
-  if (process.env?.DEBUG) console.log('[License] ========== ACTIVATION START ==========');
-  if (process.env?.DEBUG) console.log('[License] License Key:', licenseKey ? `${licenseKey.substring(0, 8)}...${licenseKey.slice(-4)}` : 'NULL');
-  if (process.env?.DEBUG) console.log('[License] Product ID:', PRODUCT_ID);
+  if (DEBUG) console.log('[License] ========== ACTIVATION START ==========');
+  if (DEBUG) console.log('[License] License Key:', licenseKey ? `${licenseKey.substring(0, 8)}...${licenseKey.slice(-4)}` : 'NULL');
+  if (DEBUG) console.log('[License] Product ID:', PRODUCT_ID);
 
   // Preflight validation: reject empty or suspicious values before calling LexActivator
   if (typeof licenseKey !== 'string') {
@@ -325,7 +327,7 @@ async function activateLicense(licenseKey) {
   }
 
   if (!LexActivator) {
-    if (process.env?.DEBUG) console.log('[License] LexActivator not initialized, initializing now...');
+    if (DEBUG) console.log('[License] LexActivator not initialized, initializing now...');
     if (!initializeLexActivator()) {
       console.error('[License] LexActivator initialization failed');
       return { success: false, error: 'LexActivator initialization failed' };
@@ -334,68 +336,68 @@ async function activateLicense(licenseKey) {
 
   try {
     // Set the license key
-    if (process.env?.DEBUG) console.log('[License] Calling SetLicenseKey...');
+    if (DEBUG) console.log('[License] Calling SetLicenseKey...');
     LexActivator.SetLicenseKey(trimmedKey);
-    if (process.env?.DEBUG) console.log('[License] SetLicenseKey completed');
+    if (DEBUG) console.log('[License] SetLicenseKey completed');
 
     // Activate — wrapped in retry for network resilience
-    if (process.env?.DEBUG) console.log('[License] Calling ActivateLicense...');
+    if (DEBUG) console.log('[License] Calling ActivateLicense...');
     const status = await retry(() => LexActivator.ActivateLicense());
     const statusName = getStatusCodeName(status);
-    if (process.env?.DEBUG) console.log('[License] ActivateLicense returned:', status, `(${statusName})`);
+    if (DEBUG) console.log('[License] ActivateLicense returned:', status, `(${statusName})`);
 
     // Log all known status codes for reference
-    if (process.env?.DEBUG) console.log('[License] Status code reference: LA_OK=0, LA_FAIL=1, LA_E_LICENSE_KEY=40');
+    if (DEBUG) console.log('[License] Status code reference: LA_OK=0, LA_FAIL=1, LA_E_LICENSE_KEY=40');
 
     if (status === StatusCodes.LA_OK) {
       licenseStatus.isValid = true;
       licenseStatus.licenseKey = trimmedKey;
       licenseStatus.error = null;
       await loadLicenseInfo();
-      if (process.env?.DEBUG) console.log('[License] Activation successful!');
-      if (process.env?.DEBUG) console.log('[License] ========== ACTIVATION END ==========');
+      if (DEBUG) console.log('[License] Activation successful!');
+      if (DEBUG) console.log('[License] ========== ACTIVATION END ==========');
       return { success: true, licenseStatus: { ...licenseStatus } };
     } else if (status === StatusCodes.LA_EXPIRED) {
-      if (process.env?.DEBUG) console.log('[License] Error: License expired');
+      if (DEBUG) console.log('[License] Error: License expired');
       return { success: false, error: 'License has expired', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_SUSPENDED) {
-      if (process.env?.DEBUG) console.log('[License] Error: License suspended');
+      if (DEBUG) console.log('[License] Error: License suspended');
       return { success: false, error: 'License has been suspended', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_REVOKED) {
-      if (process.env?.DEBUG) console.log('[License] Error: License revoked');
+      if (DEBUG) console.log('[License] Error: License revoked');
       return { success: false, error: 'License has been revoked', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_PRODUCT_ID) {
-      if (process.env?.DEBUG) console.log('[License] Error: Invalid product ID');
+      if (DEBUG) console.log('[License] Error: Invalid product ID');
       return { success: false, error: 'Invalid product ID', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_INET) {
-      if (process.env?.DEBUG) console.log('[License] Error: No internet connection');
+      if (DEBUG) console.log('[License] Error: No internet connection');
       return { success: false, error: 'Internet connection required', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_ACTIVATION_LIMIT) {
-      if (process.env?.DEBUG) console.log('[License] Error: Activation limit reached');
+      if (DEBUG) console.log('[License] Error: Activation limit reached');
       return { success: false, error: 'Activation limit reached', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_LICENSE_KEY) {
-      if (process.env?.DEBUG) console.log('[License] Error: Invalid license key');
+      if (DEBUG) console.log('[License] Error: Invalid license key');
       return { success: false, error: 'Invalid license key', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_AUTHENTICATION_FAILED) {
-      if (process.env?.DEBUG) console.log('[License] Error: Authentication failed');
+      if (DEBUG) console.log('[License] Error: Authentication failed');
       return { success: false, error: 'Authentication failed', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_COUNTRY) {
-      if (process.env?.DEBUG) console.log('[License] Error: Country restriction');
+      if (DEBUG) console.log('[License] Error: Country restriction');
       return { success: false, error: 'Country restriction', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_IP) {
-      if (process.env?.DEBUG) console.log('[License] Error: IP restriction');
+      if (DEBUG) console.log('[License] Error: IP restriction');
       return { success: false, error: 'IP restriction', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_RATE_LIMIT) {
-      if (process.env?.DEBUG) console.log('[License] Error: Rate limit exceeded');
+      if (DEBUG) console.log('[License] Error: Rate limit exceeded');
       return { success: false, error: 'Request limit exceeded, please wait', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_SERVER) {
-      if (process.env?.DEBUG) console.log('[License] Error: Server error');
+      if (DEBUG) console.log('[License] Error: Server error');
       return { success: false, error: 'Server error', code: status, codeName: statusName };
     } else if (status === StatusCodes.LA_E_CLIENT) {
-      if (process.env?.DEBUG) console.log('[License] Error: Client error');
+      if (DEBUG) console.log('[License] Error: Client error');
       return { success: false, error: 'Client error', code: status, codeName: statusName };
     } else {
-      if (process.env?.DEBUG) console.log('[License] Error: Unknown status code:', status, statusName);
+      if (DEBUG) console.log('[License] Error: Unknown status code:', status, statusName);
       return { success: false, error: `Activation failed (${statusName}, code: ${status})`, code: status, codeName: statusName };
     }
 
@@ -404,14 +406,14 @@ async function activateLicense(licenseKey) {
     console.error('[License] Error name:', error.name);
     console.error('[License] Error message:', error.message);
     console.error('[License] Error stack:', error.stack);
-    if (process.env?.DEBUG) console.log('[License] ========== ACTIVATION END (ERROR) ==========');
+    if (DEBUG) console.log('[License] ========== ACTIVATION END (ERROR) ==========');
     return { success: false, error: error.message };
   }
 }
 
 // Deactivate license
 async function deactivateLicense() {
-  if (process.env?.DEBUG) console.log('[License] Deactivating license...');
+  if (DEBUG) console.log('[License] Deactivating license...');
 
   if (!LexActivator) {
     return { success: false, error: 'LexActivator not initialized' };
@@ -419,7 +421,7 @@ async function deactivateLicense() {
 
   try {
     const status = LexActivator.DeactivateLicense();
-    if (process.env?.DEBUG) console.log('[License] DeactivateLicense status:', status);
+    if (DEBUG) console.log('[License] DeactivateLicense status:', status);
 
     if (status === StatusCodes.LA_OK) {
       // Reset license status
@@ -434,7 +436,7 @@ async function deactivateLicense() {
         lastCheck: null,
         error: null
       };
-      if (process.env?.DEBUG) console.log('[License] Deactivation successful');
+      if (DEBUG) console.log('[License] Deactivation successful');
       return { success: true };
     } else {
       return { success: false, error: `Deactivation failed (code: ${status})` };
@@ -515,7 +517,7 @@ function resetLicense() {
       lastCheck: null,
       error: null
     };
-    if (process.env?.DEBUG) console.log('[License] License reset');
+    if (DEBUG) console.log('[License] License reset');
     return { success: true };
   } catch (error) {
     console.error('[License] Reset error:', error.message);

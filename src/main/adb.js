@@ -9,6 +9,8 @@ const fs = require('fs');
 const BaseToolManager = require('./base-tool-manager');
 const { validateDeviceId, validateExecArg, ValidationError } = require('./device-id-validator');
 
+const DEBUG = process.env.NODE_ENV === 'development';
+
 class ADBManager extends BaseToolManager {
   constructor() {
     super({ logPrefix: '[ADB]', subPath: 'adb/adb.exe' });
@@ -27,7 +29,7 @@ class ADBManager extends BaseToolManager {
     if (toolsPath) {
       this.adbPath = path.join(toolsPath, 'adb', 'adb.exe');
         if (fs.existsSync(this.adbPath)) {
-          if (process.env?.DEBUG) console.log('[ADB] Found at:', this.adbPath);
+          if (DEBUG) console.log('[ADB] Found at:', this.adbPath);
         return this.adbPath;
       }
     }
@@ -74,7 +76,7 @@ class ADBManager extends BaseToolManager {
     try {
       await this.runCommand(['start-server'], { timeout: 10000 });
       this.serverStarted = true;
-      if (process.env?.DEBUG) console.log('[ADB] Server started');
+      if (DEBUG) console.log('[ADB] Server started');
       return { success: true };
     } catch (e) {
       console.error('[ADB] Failed to start server:', e.message);
@@ -89,7 +91,7 @@ class ADBManager extends BaseToolManager {
     try {
       await this.runCommand(['kill-server'], { timeout: 10000 });
       this.serverStarted = false;
-      if (process.env?.DEBUG) console.log('[ADB] Server stopped');
+      if (DEBUG) console.log('[ADB] Server stopped');
       return { success: true };
     } catch (e) {
       console.error('[ADB] Failed to stop server:', e.message);
@@ -101,26 +103,26 @@ class ADBManager extends BaseToolManager {
    * Get list of connected devices
    */
   async getDevices() {
-    if (process.env?.DEBUG) console.log('[ADB] ========== GET DEVICES ==========');
-    if (process.env?.DEBUG) console.log('[ADB] ADB path:', this.adbPath);
+    if (DEBUG) console.log('[ADB] ========== GET DEVICES ==========');
+    if (DEBUG) console.log('[ADB] ADB path:', this.adbPath);
 
     try {
-      if (process.env?.DEBUG) console.log('[ADB] Running: adb devices -l');
+      if (DEBUG) console.log('[ADB] Running: adb devices -l');
       const { stdout, stderr } = await this.runCommand(['devices', '-l'], { timeout: 10000 });
 
-      if (process.env?.DEBUG) console.log('[ADB] Raw stdout:', JSON.stringify(stdout));
-      if (stderr) if (process.env?.DEBUG) console.log('[ADB] stderr:', stderr);
+      if (DEBUG) console.log('[ADB] Raw stdout:', JSON.stringify(stdout));
+      if (stderr) if (DEBUG) console.log('[ADB] stderr:', stderr);
 
       const devices = [];
       const lines = stdout.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
-      if (process.env?.DEBUG) console.log('[ADB] Lines count:', lines.length);
+      if (DEBUG) console.log('[ADB] Lines count:', lines.length);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (process.env?.DEBUG) console.log(`[ADB] Line ${i}: "${line}"`);
+        if (DEBUG) console.log(`[ADB] Line ${i}: "${line}"`);
 
         if (line.startsWith('List of devices')) {
-          if (process.env?.DEBUG) console.log('[ADB] Skipping header line');
+          if (DEBUG) console.log('[ADB] Skipping header line');
           continue;
         }
 
@@ -128,7 +130,7 @@ class ADBManager extends BaseToolManager {
         if (match) {
           const id = match[1];
           const info = match[2];
-          if (process.env?.DEBUG) console.log(`[ADB] MATCH FOUND - ID: ${id}, Info: ${info}`);
+          if (DEBUG) console.log(`[ADB] MATCH FOUND - ID: ${id}, Info: ${info}`);
 
           const modelMatch = info.match(/model:(\S+)/);
           const productMatch = info.match(/product:(\S+)/);
@@ -141,20 +143,20 @@ class ADBManager extends BaseToolManager {
             device: deviceMatch ? deviceMatch[1] : '',
             status: 'device'
           };
-          if (process.env?.DEBUG) console.log('[ADB] Parsed device:', device);
+          if (DEBUG) console.log('[ADB] Parsed device:', device);
           devices.push(device);
         }
       }
 
-      if (process.env?.DEBUG) console.log('[ADB] Total devices found:', devices.length);
-      if (process.env?.DEBUG) console.log('[ADB] ======================================');
+      if (DEBUG) console.log('[ADB] Total devices found:', devices.length);
+      if (DEBUG) console.log('[ADB] ======================================');
       return { success: true, devices };
     } catch (e) {
       console.error('[ADB] ========== GET DEVICES ERROR ==========');
       console.error('[ADB] Error name:', e.name);
       console.error('[ADB] Error message:', e.message);
       console.error('[ADB] Error stack:', e.stack);
-      if (process.env?.DEBUG) console.log('[ADB] ==========================================');
+      if (DEBUG) console.log('[ADB] ==========================================');
       return { success: false, error: e.message, devices: [] };
     }
   }
@@ -295,7 +297,7 @@ class ADBManager extends BaseToolManager {
       validateExecArg(text);
       const escapedText = text.replace(/ /g, '%s').replace(/&/g, '\\&').replace(/</g, '\\<').replace(/>/g, '\\>').replace(/'/g, "\\'").replace(/"/g, '\\"');
       const { stdout, stderr } = await this.runCommand(['-s', validatedId, 'shell', 'input', 'text', escapedText], { timeout: 10000 });
-      if (process.env?.DEBUG) console.log('[ADB] sendText result:', stdout);
+      if (DEBUG) console.log('[ADB] sendText result:', stdout);
       return { success: true, stdout: stdout.trim() };
     } catch (e) {
       console.error('[ADB] sendText error:', e?.message || e);
@@ -311,7 +313,7 @@ class ADBManager extends BaseToolManager {
       const validatedId = validateDeviceId(deviceId);
       const validatedKeycode = validateExecArg(keycode.toString(), 'Keycode');
       const { stdout, stderr } = await this.runCommand(['-s', validatedId, 'shell', 'input', 'keyevent', validatedKeycode], { timeout: 10000 });
-      if (process.env?.DEBUG) console.log('[ADB] sendKey result:', stdout);
+      if (DEBUG) console.log('[ADB] sendKey result:', stdout);
       return { success: true, stdout: stdout.trim() };
     } catch (e) {
       console.error('[ADB] sendKey error:', e?.message || e);

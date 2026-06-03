@@ -186,7 +186,7 @@ class InstagramFollowSequenceTask(BaseTask):
 
     # ── helpers ──────────────────────────────────────────────────────────────
 
-@staticmethod
+    @staticmethod
     def _type_text(adb: MobileOperations, text: str,
                    device_id: str | None = None) -> None:
         for ch in text:

@@ -7,6 +7,8 @@ const path = require('path');
 const fs = require('fs');
 const { app } = require('electron');
 
+const DEBUG = process.env.NODE_ENV === 'development';
+
 /**
  * Check if running in packaged (production) mode
  */
@@ -84,18 +86,18 @@ function getAppDataPath() {
  * Log all paths for debugging
  */
 function logPaths() {
-  if (process.env?.DEBUG) console.log('[Paths] ========== PATH INFO ==========');
-  if (process.env?.DEBUG) console.log('[Paths] isDev:', isDev());
-  if (process.env?.DEBUG) console.log('[Paths] app.isPackaged:', app.isPackaged);
-  if (process.env?.DEBUG) console.log('[Paths] __dirname:', __dirname);
-  if (process.env?.DEBUG) console.log('[Paths] process.cwd():', process.cwd());
-  if (process.env?.DEBUG) console.log('[Paths] process.resourcesPath:', process.resourcesPath);
-  if (process.env?.DEBUG) console.log('[Paths] Tools path:', getToolsPath());
-  if (process.env?.DEBUG) console.log('[Paths] ADB path:', getAdbPath());
-  if (process.env?.DEBUG) console.log('[Paths] Scrcpy path:', getScrcpyPath());
-  if (process.env?.DEBUG) console.log('[Paths] Product.dat path:', getProductDataPath());
-  if (process.env?.DEBUG) console.log('[Paths] App data path:', getAppDataPath());
-  if (process.env?.DEBUG) console.log('[Paths] ================================');
+  if (DEBUG) console.log('[Paths] ========== PATH INFO ==========');
+  if (DEBUG) console.log('[Paths] isDev:', isDev());
+  if (DEBUG) console.log('[Paths] app.isPackaged:', app.isPackaged);
+  if (DEBUG) console.log('[Paths] __dirname:', __dirname);
+  if (DEBUG) console.log('[Paths] process.cwd():', process.cwd());
+  if (DEBUG) console.log('[Paths] process.resourcesPath:', process.resourcesPath);
+  if (DEBUG) console.log('[Paths] Tools path:', getToolsPath());
+  if (DEBUG) console.log('[Paths] ADB path:', getAdbPath());
+  if (DEBUG) console.log('[Paths] Scrcpy path:', getScrcpyPath());
+  if (DEBUG) console.log('[Paths] Product.dat path:', getProductDataPath());
+  if (DEBUG) console.log('[Paths] App data path:', getAppDataPath());
+  if (DEBUG) console.log('[Paths] ================================');
 }
 
 module.exports = {

@@ -14,74 +14,67 @@ let groups = [];
 let licenseInfo = null;
 let _lastDeviceScan = 0;
 
-// DOM Elements
-const elements = {
-  // Back button
-  btnBack: document.getElementById('btn-back'),
+// Focus trap
+let lastFocusedElement = null;
 
-  // Control Panel
-  controlTitle: document.getElementById('control-title'),
-  controlDescription: document.getElementById('control-description'),
-  btnStart: document.getElementById('btn-start'),
-  btnStop: document.getElementById('btn-stop'),
+function trapFocus(modalElement) {
+  const focusableElements = modalElement.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+  const firstFocusable = focusableElements[0];
+  const lastFocusable = focusableElements[focusableElements.length - 1];
+  
+  lastFocusedElement = document.activeElement;
+  
+  modalElement.addEventListener('keydown', function trapTabKey(e) {
+    if (e.key === 'Tab') {
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          e.preventDefault();
+          lastFocusable.focus();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          e.preventDefault();
+          firstFocusable.focus();
+        }
+      }
+    }
+    
+    if (e.key === 'Escape') {
+      closeActiveModal();
+    }
+  });
+  
+  requestAnimationFrame(() => {
+    firstFocusable.focus();
+  });
+}
 
-  // Devices
-  devicesList: document.getElementById('devices-list'),
-  devicesGrid: document.getElementById('devices-grid'),
-  devicesEmpty: document.getElementById('devices-empty'),
-  deviceCount: document.getElementById('device-count'),
-  btnRefreshDevices: document.getElementById('btn-refresh-devices'),
-  btnScanDevices: document.getElementById('btn-scan-devices'),
+function returnFocus() {
+  if (lastFocusedElement) {
+    lastFocusedElement.focus();
+    lastFocusedElement = null;
+  }
+}
 
-  // Status
-  tailscaleStatus: document.getElementById('tailscale-status'),
-  parsecStatus: document.getElementById('parsec-status'),
-  scrcpyStatus: document.getElementById('scrcpy-status'),
-  toggleAutostart: document.getElementById('toggle-autostart'),
-  btnRefreshStatus: document.getElementById('btn-refresh-status'),
+function closeActiveModal() {
+  const modals = [
+    elements.settingsModal,
+    elements.deviceEditModal,
+    elements.shortcutsModal,
+    elements.textInputModal
+  ];
+  
+  const openModal = modals.find(modal => modal && !modal.classList.contains('hidden'));
+  if (openModal) {
+    openModal.classList.add('hidden');
+    returnFocus();
+  }
+}
 
-  // Settings Modal
-  settingsModal: document.getElementById('settings-modal'),
-  btnSettings: document.getElementById('btn-settings'),
-  btnCloseSettings: document.getElementById('btn-close-settings'),
-  btnSaveSettings: document.getElementById('btn-save-settings'),
-  settingMaxSize: document.getElementById('setting-max-size'),
-  settingMaxFps: document.getElementById('setting-max-fps'),
-  settingBitrate: document.getElementById('setting-bitrate'),
-  settingBorderless: document.getElementById('setting-borderless'),
-  settingAlwaysOnTop: document.getElementById('setting-always-on-top'),
-
-  // Device Edit Modal
-  deviceEditModal: document.getElementById('device-edit-modal'),
-  deviceEditTitle: document.getElementById('device-edit-title'),
-  btnCloseDeviceEdit: document.getElementById('btn-close-device-edit'),
-  deviceNameInput: document.getElementById('device-name-input'),
-  emojiPicker: document.getElementById('emoji-picker'),
-  colorPicker: document.getElementById('color-picker'),
-  deviceGroupSelect: document.getElementById('device-group-select'),
-  btnResetDevice: document.getElementById('btn-reset-device'),
-  btnSaveDevice: document.getElementById('btn-save-device'),
-
-  // Text Input Modal
-  textInputModal: document.getElementById('text-input-modal'),
-  textModalTitle: document.getElementById('text-modal-title'),
-  textInputField: document.getElementById('text-input-field'),
-  btnCloseTextModal: document.getElementById('btn-close-text-modal'),
-  btnSendText: document.getElementById('btn-send-text'),
-  btnSendEnter: document.getElementById('btn-send-enter'),
-  btnSendBackspace: document.getElementById('btn-send-backspace'),
-  textSendStatus: document.getElementById('text-send-status'),
-
-  // Shortcuts Modal
-  shortcutsModal: document.getElementById('shortcuts-modal'),
-  btnCloseShortcuts: document.getElementById('btn-close-shortcuts'),
-  shortcutList: document.getElementById('shortcut-list'),
-
-  // Other
-  btnMinimize: document.getElementById('btn-minimize'),
-  btnAbout: document.getElementById('btn-about')
-};
-
+// =====================================================
+// BACK NAVIGATION
 // =====================================================
 // BACK NAVIGATION
 // =====================================================
@@ -247,6 +240,7 @@ async function showShortcuts() {
       </div>
     `).join('');
     elements.shortcutsModal.classList.remove('hidden');
+    trapFocus(elements.shortcutsModal);
   } catch (e) {
     console.error('Show shortcuts error:', e);
   }
@@ -261,6 +255,7 @@ async function refreshDevicesWithMerge() {
   if (Date.now() - _lastDeviceScan < 5000) return;
   _lastDeviceScan = Date.now();
 
+  PhoneFarmLoading.show('Refreshing devices...');
   if (typeof process !== 'undefined') console.log('[Renderer] refreshDevicesWithMerge called');
   try {
     const mergedDevices = await window.electronAPI.getMergedDevices();
@@ -275,6 +270,8 @@ async function refreshDevicesWithMerge() {
   } catch (e) {
     console.error('[Renderer] refreshDevicesWithMerge error:', e);
     await refreshDevices();
+  } finally {
+    PhoneFarmLoading.hide();
   }
 }
 
@@ -297,7 +294,7 @@ async function refreshDevices() {
 
 function updateDevicesUI() {
   const count = devices.length;
-  elements.deviceCount.textContent = `${count} telefon`;
+  elements.deviceCount.textContent = `${count} phone${count !== 1 ? 's' : ''}`;
   updateDevicesList();
 
   if (count === 0) {
@@ -319,8 +316,8 @@ function updateDevicesList() {
     elements.devicesList.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📱</div>
-        <h3>Telefon Bekleniyor</h3>
-        <p>USB ile telefon baglayin ve USB hata ayiklama modunu acin.</p>
+        <h3>Waiting for Phone</h3>
+        <p>Connect phone via USB and enable USB debugging mode.</p>
       </div>
     `;
   } else {
@@ -331,7 +328,7 @@ function updateDevicesList() {
       const displayName = device.customName || device.model;
       const emoji = device.emoji || '📱';
       const statusClass = isActive ? 'status-online' : 'status-unknown';
-      const statusText = isActive ? 'Aktif' : 'Bagli';
+      const statusText = isActive ? 'Active' : 'Connected';
 
       html += `
         <div class="connected-device-item ${isActive ? 'active' : ''}">
@@ -374,12 +371,12 @@ function renderDeviceCards() {
     const originalName = device.customName ? device.model : '';
 
     html += `
-      <div class="${cardClasses.join(' ')}" data-device-id="${device.id}" data-index="${i}" style="${colorStyle}">
-        <span class="edit-hint">Cift tikla: Duzenle</span>
+      <div class="${cardClasses.join(' ')}" data-device-id="${device.id}" data-index="${i}" role="listitem" aria-label="${escapeHtml(displayName)} device, ${isActive ? 'active' : 'ready'}" style="${colorStyle}">
+        <span class="edit-hint">Double click: Edit</span>
         <div class="device-header">
           <span class="device-icon">${emoji || '📱'}</span>
           <span class="status-badge ${isActive ? 'status-online' : 'status-unknown'}">
-            ${isActive ? 'Aktif' : 'Hazir'}
+            ${isActive ? 'Active' : 'Ready'}
           </span>
         </div>
         <div class="device-name">${escapeHtml(displayName)}</div>
@@ -391,10 +388,10 @@ function renderDeviceCards() {
         </div>
         <div class="device-actions">
           ${isActive
-            ? `<button class="btn btn-sm btn-danger btn-block device-stop-btn" data-device-id="${device.id}">Durdur</button>`
-            : `<button class="btn btn-sm btn-primary btn-block device-start-btn" data-device-id="${device.id}">Baslat</button>`
+            ? `<button class="btn btn-sm btn-danger btn-block device-stop-btn" data-device-id="${device.id}">Stop</button>`
+            : `<button class="btn btn-sm btn-primary btn-block device-start-btn" data-device-id="${device.id}">Start</button>`
           }
-          <button class="btn btn-sm device-text-btn device-send-text-btn" data-device-id="${device.id}" title="Metin Gonder">Metin</button>
+          <button class="btn btn-sm device-text-btn device-send-text-btn" data-device-id="${device.id}" title="Send Text">Text</button>
         </div>
       </div>
     `;
@@ -450,11 +447,11 @@ async function startDevice(deviceId) {
     // Check phone limit
     const limitCheck = await window.electronAPI.canAddPhone(activeDevices.size);
     if (!limitCheck) {
-      alert('Telefon limiti kontrol edilemedi');
+      PhoneFarmNotification.show('Phone limit could not be checked. Please try again.', 'error');
       return;
     }
     if (!limitCheck.allowed) {
-      alert(limitCheck.reason || 'Telefon limiti asildi');
+      PhoneFarmNotification.show(limitCheck.reason || 'Phone limit exceeded. Reduce the number of active devices.', 'warning');
       return;
     }
 
@@ -465,11 +462,11 @@ async function startDevice(deviceId) {
       updateControlPanel();
       await window.electronAPI.setFarmRunning(true);
     } else {
-      alert('Cihaz baslatilamadi: ' + (result?.error || 'Bilinmeyen hata'));
+      PhoneFarmNotification.show('Device could not be started: ' + (result?.error || 'Unknown error'), 'error');
     }
   } catch (e) {
     console.error('Start device error:', e);
-    alert('Cihaz baslatilamadi: ' + (e?.message || String(e)));
+    PhoneFarmNotification.show('Device could not be started: ' + (e?.message || String(e)), 'error');
   }
 }
 
@@ -514,22 +511,23 @@ async function openDeviceEdit(deviceId) {
     btn.classList.toggle('selected', btn.dataset.color === selectedColor);
   });
 
-  elements.deviceGroupSelect.value = device.group || 'Varsayilan';
-  elements.deviceEditModal.classList.remove('hidden');
-  elements.deviceNameInput.focus();
+  elements.deviceGroupSelect.value = device.group || 'Default';
+   elements.deviceEditModal.classList.remove('hidden');
+   trapFocus(elements.deviceEditModal);
+   elements.deviceNameInput.focus();
 }
 
 async function loadGroups() {
   try {
     groups = await window.electronAPI.getGroups();
-    if (!Array.isArray(groups)) groups = ['Varsayilan'];
+    if (!Array.isArray(groups)) groups = ['Default'];
     elements.deviceGroupSelect.innerHTML = groups.map(g =>
       `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`
     ).join('');
   } catch (e) {
     console.error('Load groups error:', e);
-    groups = ['Varsayilan'];
-    elements.deviceGroupSelect.innerHTML = '<option value="Varsayilan">Varsayilan</option>';
+    groups = ['Default'];
+    elements.deviceGroupSelect.innerHTML = '<option value="Default">Default</option>';
   }
 }
 
@@ -540,7 +538,7 @@ async function saveDeviceEdit() {
     customName: elements.deviceNameInput.value.trim() || null,
     emoji: selectedEmoji || null,
     color: selectedColor || null,
-    group: elements.deviceGroupSelect.value || 'Varsayilan'
+    group: elements.deviceGroupSelect.value || 'Default'
   };
 
   try {
@@ -549,14 +547,14 @@ async function saveDeviceEdit() {
     await refreshDevicesWithMerge();
   } catch (e) {
     console.error('Save device error:', e);
-    alert('Cihaz kaydedilemedi: ' + (e?.message || String(e)));
+    PhoneFarmNotification.show('Device could not be saved: ' + (e?.message || String(e)), 'error');
   }
 }
 
 async function resetDeviceEdit() {
   if (!editingDeviceId) return;
 
-  if (confirm('Bu cihazin tum ozel ayarlarini sifirlamak istediginize emin misiniz?')) {
+  if (confirm('Are you sure you want to reset all custom settings for this device?')) {
     try {
       await window.electronAPI.deleteDeviceData(editingDeviceId);
       closeDeviceEdit();
@@ -569,6 +567,7 @@ async function resetDeviceEdit() {
 
 function closeDeviceEdit() {
   elements.deviceEditModal.classList.add('hidden');
+  elements.deviceEditModal.removeEventListener('keydown', trapFocus);
   editingDeviceId = null;
 }
 
@@ -601,15 +600,18 @@ function openTextModal(deviceId) {
   textModalDeviceId = deviceId;
   const device = devices.find(d => d.id === deviceId);
   const displayName = device ? (device.customName || device.model) : deviceId;
-  elements.textModalTitle.textContent = `Metin Gonder - ${displayName}`;
+  elements.textModalTitle.textContent = `Send Text - ${displayName}`;
   elements.textInputField.value = '';
   elements.textSendStatus.classList.add('hidden');
   elements.textInputModal.classList.remove('hidden');
+  trapFocus(elements.textInputModal);
   elements.textInputField.focus();
 }
 
 function closeTextModal() {
   elements.textInputModal.classList.add('hidden');
+  elements.textInputModal.removeEventListener('keydown', trapFocus);
+  returnFocus();
   textModalDeviceId = null;
 }
 
@@ -628,15 +630,15 @@ async function sendText() {
   try {
     const result = await window.electronAPI.sendTextToDevice(textModalDeviceId, text);
     if (result && result.success) {
-      showTextStatus('Metin gonderildi!', false);
+      showTextStatus('Text sent!', false);
       elements.textInputField.value = '';
       elements.textInputField.focus();
     } else {
-      showTextStatus('Hata: ' + (result?.error || 'Gonderilemedi'), true);
+      showTextStatus('Error: ' + (result?.error || 'Could not send'), true);
     }
   } catch (e) {
     console.error('Send text error:', e);
-    showTextStatus('Hata: ' + (e?.message || String(e)), true);
+    showTextStatus('Error: ' + (e?.message || String(e)), true);
   }
 }
 
@@ -645,13 +647,13 @@ async function sendEnterKey() {
   try {
     const result = await window.electronAPI.sendKeyToDevice(textModalDeviceId, 66); // KEYCODE_ENTER
     if (result && result.success) {
-      showTextStatus('Enter gonderildi!', false);
+      showTextStatus('Enter sent!', false);
     } else {
-      showTextStatus('Hata: ' + (result?.error || 'Gonderilemedi'), true);
+      showTextStatus('Error: ' + (result?.error || 'Could not send'), true);
     }
   } catch (e) {
     console.error('Send enter error:', e);
-    showTextStatus('Hata: ' + (e?.message || String(e)), true);
+    showTextStatus('Error: ' + (e?.message || String(e)), true);
   }
 }
 
@@ -660,13 +662,13 @@ async function sendBackspace() {
   try {
     const result = await window.electronAPI.sendKeyToDevice(textModalDeviceId, 67); // KEYCODE_DEL
     if (result && result.success) {
-      showTextStatus('Silme tusu gonderildi!', false);
+      showTextStatus('Delete key sent!', false);
     } else {
-      showTextStatus('Hata: ' + (result?.error || 'Gonderilemedi'), true);
+      showTextStatus('Error: ' + (result?.error || 'Could not send'), true);
     }
   } catch (e) {
     console.error('Send backspace error:', e);
-    showTextStatus('Hata: ' + (e?.message || String(e)), true);
+    showTextStatus('Error: ' + (e?.message || String(e)), true);
   }
 }
 
@@ -679,30 +681,31 @@ function updateControlPanel() {
   isRunning = activeDevices.size > 0;
 
   if (isRunning) {
-    elements.controlTitle.textContent = `${activeDevices.size} Telefon Aktif`;
-    elements.controlDescription.textContent = 'Telefonlar ekranda gosteriliyor. Durdurmak icin asagidaki dugmeyi kullanin.';
+    elements.controlTitle.textContent = `${activeDevices.size} Phone${activeDevices.size !== 1 ? 's' : ''} Active`;
+    elements.controlDescription.textContent = 'Phones are displayed on screen. Use the button below to stop.';
     elements.btnStart.disabled = true;
     elements.btnStop.disabled = false;
   } else {
-    elements.controlTitle.textContent = 'Telefon Kontrolu';
-    elements.controlDescription.textContent = 'Telefonlari gostermek icin Baslat dugmesine tiklayin.';
+    elements.controlTitle.textContent = 'Phone Control';
+    elements.controlDescription.textContent = 'Click Start to display phones.';
     elements.btnStart.disabled = devices.length === 0;
     elements.btnStop.disabled = true;
   }
 
-  elements.scrcpyStatus.textContent = `${activeDevices.size} aktif`;
+  elements.scrcpyStatus.textContent = `${activeDevices.size} active`;
 }
 
 async function startAll() {
   elements.btnStart.disabled = true;
-  elements.btnStart.innerHTML = '<span class="spinner"></span><span>Baslatiliyor...</span>';
+  elements.btnStart.innerHTML = '<span class="spinner"></span><span>Starting...</span>';
 
+  PhoneFarmLoading.show('Starting farm...');
   try {
     // Check phone limit - will we exceed the limit?
     const maxPhones = licenseInfo?.maxPhones || 5;
     if (devices.length > maxPhones) {
-      alert(`Telefon limiti asilacak! Maksimum ${maxPhones} telefon baslatabilirsiniz. Bagli telefon sayisi: ${devices.length}`);
-      elements.btnStart.innerHTML = '<span>▶️</span><span>BASLAT</span>';
+      PhoneFarmNotification.show(`Phone limit will be exceeded! Maximum ${maxPhones} phones allowed. Connected: ${devices.length}`, 'warning');
+      elements.btnStart.innerHTML = '<span>▶️</span><span>START</span>';
       elements.btnStart.disabled = false;
       return;
     }
@@ -716,21 +719,23 @@ async function startAll() {
       updateControlPanel();
       await window.electronAPI.setFarmRunning(true);
     } else {
-      alert('Baslatilamadi: ' + (result?.error || 'Bilinmeyen hata'));
+      PhoneFarmNotification.show('Could not start: ' + (result?.error || 'Unknown error'), 'error');
     }
   } catch (e) {
     console.error('Start all error:', e);
-    alert('Baslatilamadi: ' + (e?.message || String(e)));
+    PhoneFarmNotification.show('Could not start: ' + (e?.message || String(e)), 'error');
   } finally {
-    elements.btnStart.innerHTML = '<span>▶️</span><span>BASLAT</span>';
+    PhoneFarmLoading.hide();
+    elements.btnStart.innerHTML = '<span>▶️</span><span>START</span>';
     elements.btnStart.disabled = devices.length === 0 || isRunning;
   }
 }
 
 async function stopAll() {
   elements.btnStop.disabled = true;
-  elements.btnStop.innerHTML = '<span class="spinner"></span><span>Durduruluyor...</span>';
+  elements.btnStop.innerHTML = '<span class="spinner"></span><span>Stopping...</span>';
 
+  PhoneFarmLoading.show('Stopping farm...');
   try {
     await window.electronAPI.scrcpyStopAll();
     activeDevices.clear();
@@ -740,7 +745,8 @@ async function stopAll() {
   } catch (e) {
     console.error('Stop all error:', e);
   } finally {
-    elements.btnStop.innerHTML = '<span>⏹️</span><span>DURDUR</span>';
+    PhoneFarmLoading.hide();
+    elements.btnStop.innerHTML = '<span>⏹️</span><span>STOP</span>';
   }
 }
 
@@ -757,31 +763,31 @@ async function refreshStatus() {
     // Tailscale
     if (status.tailscale.loggedIn) {
       elements.tailscaleStatus.innerHTML = `
-        <span class="status-badge status-online">Bagli</span>
+        <span class="status-badge status-online">Connected</span>
         <span class="text-muted" style="font-size: 0.8rem; margin-left: 8px;">${status.tailscale.ip || ''}</span>
       `;
     } else if (status.tailscale.running) {
-      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Giris Gerekli</span>';
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Login Required</span>';
     } else if (status.tailscale.installed) {
-      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Calismiyor</span>';
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-warning">Not Running</span>';
     } else {
-      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-offline">Kurulu Degil</span>';
+      elements.tailscaleStatus.innerHTML = '<span class="status-badge status-offline">Not Installed</span>';
     }
 
     // Parsec
     if (status.parsec.loggedIn) {
-      elements.parsecStatus.innerHTML = '<span class="status-badge status-online">Hazir</span>';
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-online">Ready</span>';
     } else if (status.parsec.running) {
-      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Giris Gerekli</span>';
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Login Required</span>';
     } else if (status.parsec.installed) {
-      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Calismiyor</span>';
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-warning">Not Running</span>';
     } else {
-      elements.parsecStatus.innerHTML = '<span class="status-badge status-offline">Kurulu Degil</span>';
+      elements.parsecStatus.innerHTML = '<span class="status-badge status-offline">Not Installed</span>';
     }
 
     // Scrcpy
     activeDevices = new Set(status.scrcpy.activeDevices || []);
-    elements.scrcpyStatus.textContent = `${activeDevices.size} aktif`;
+    elements.scrcpyStatus.textContent = `${activeDevices.size} active`;
 
     // Autostart
     elements.toggleAutostart.checked = status.autostart.enabled;
@@ -799,11 +805,13 @@ async function refreshStatus() {
 
 function openSettings() {
   elements.settingsModal.classList.remove('hidden');
+  trapFocus(elements.settingsModal);
   loadSettings();
 }
 
 function closeSettings() {
   elements.settingsModal.classList.add('hidden');
+  elements.settingsModal.removeEventListener('keydown', trapFocus);
 }
 
 async function loadSettings() {
@@ -818,6 +826,28 @@ async function loadSettings() {
   } catch (e) {
     console.error('Load settings error:', e);
   }
+
+  // Load update settings
+  try {
+    const updateSettings = await window.electronAPI.updateGetSettings();
+    if (updateSettings) {
+      const autoUpdateEl = document.getElementById('setting-auto-update');
+      const channelEl = document.getElementById('setting-update-channel');
+      if (autoUpdateEl) autoUpdateEl.checked = updateSettings.autoCheck !== false;
+      if (channelEl) channelEl.value = updateSettings.channel || 'stable';
+    }
+  } catch (e) {
+    console.error('Load update settings error:', e);
+  }
+
+  // Load current app version
+  try {
+    const appInfo = await window.electronAPI.getAppInfo();
+    const verEl = document.getElementById('update-current-version');
+    if (verEl && appInfo) verEl.textContent = 'v' + appInfo.version;
+  } catch (e) {
+    console.error('Load version error:', e);
+  }
 }
 
 async function saveSettings() {
@@ -831,10 +861,50 @@ async function saveSettings() {
 
   try {
     await window.electronAPI.scrcpySetOptions(options);
-    closeSettings();
   } catch (e) {
-    console.error('Save settings error:', e);
-    alert('Ayarlar kaydedilemedi: ' + (e?.message || String(e)));
+    console.error('Save scrcpy settings error:', e);
+    PhoneFarmNotification.show('Settings could not be saved: ' + (e?.message || String(e)), 'error');
+    return;
+  }
+
+  // Save update settings
+  try {
+    const autoUpdateEl = document.getElementById('setting-auto-update');
+    const channelEl = document.getElementById('setting-update-channel');
+    const updateSettings = {
+      autoCheck: autoUpdateEl ? autoUpdateEl.checked : true,
+      channel: channelEl ? channelEl.value : 'stable'
+    };
+    await window.electronAPI.updateSaveSettings(updateSettings);
+  } catch (e) {
+    console.error('Save update settings error:', e);
+  }
+
+  closeSettings();
+}
+
+function showUpdateStatus(message, type) {
+  const el = document.getElementById('update-status-message');
+  if (!el) return;
+  el.textContent = message;
+  el.className = 'update-status-message ' + (type || 'info');
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 8000);
+}
+
+async function checkForUpdatesManually() {
+  const btn = document.getElementById('btn-check-update-now');
+  if (btn) btn.disabled = true;
+
+  showUpdateStatus('Checking for updates...', 'info');
+
+  try {
+    await window.electronAPI.updateCheck();
+  } catch (e) {
+    console.error('Manual update check error:', e);
+    showUpdateStatus('Update check failed: ' + (e?.message || 'Unknown error'), 'error');
+  } finally {
+    if (btn) setTimeout(() => { btn.disabled = false; }, 3000);
   }
 }
 
@@ -867,7 +937,14 @@ elements.btnSaveSettings.addEventListener('click', saveSettings);
 elements.btnCloseDeviceEdit.addEventListener('click', closeDeviceEdit);
 elements.btnSaveDevice.addEventListener('click', saveDeviceEdit);
 elements.btnResetDevice.addEventListener('click', resetDeviceEdit);
-elements.btnCloseShortcuts?.addEventListener('click', () => elements.shortcutsModal.classList.add('hidden'));
+
+// Update settings
+const btnCheckUpdate = document.getElementById('btn-check-update-now');
+if (btnCheckUpdate) btnCheckUpdate.addEventListener('click', checkForUpdatesManually);
+elements.btnCloseShortcuts?.addEventListener('click', () => {
+  elements.shortcutsModal.classList.add('hidden');
+  elements.shortcutsModal.removeEventListener('keydown', trapFocus);
+});
 
 // Text Input Modal events
 elements.btnCloseTextModal?.addEventListener('click', closeTextModal);
@@ -935,6 +1012,30 @@ window.electronAPI.onScrcpyWindowError((data) => {
   updateControlPanel();
 });
 
+// IPC: UPDATE EVENTS
+window.electronAPI.onUpdateAvailable((info) => {
+  showUpdateStatus('Update v' + info.version + ' is available. Downloading...', 'info');
+});
+
+window.electronAPI.onUpdateNotAvailable(() => {
+  showUpdateStatus('You are on the latest version.', 'success');
+});
+
+window.electronAPI.onUpdateError((message) => {
+  showUpdateStatus('Update check failed: ' + message, 'error');
+});
+
+window.electronAPI.onUpdateDownloadProgress((progress) => {
+  const pct = Math.round(progress.percent);
+  showUpdateStatus('Downloading update: ' + pct + '%', 'info');
+});
+
+window.electronAPI.onUpdateDownloaded((info) => {
+  showUpdateStatus('Update v' + info.version + ' downloaded. Restart to install.', 'success');
+});
+
+// =====================================================
+// UTILITY FUNCTIONS
 // =====================================================
 // UTILITY FUNCTIONS
 // =====================================================
@@ -962,20 +1063,76 @@ async function loadLicenseInfo() {
 }
 
 async function init() {
-  if (typeof process !== 'undefined') console.log('[Renderer] Initializing home mode...');
+   if (typeof process !== 'undefined') console.log('[Renderer] Initializing home mode...');
 
-  // Load license info first
-  await loadLicenseInfo();
+   // Load license info first
+   await loadLicenseInfo();
 
-  await refreshDevicesWithMerge();
-  await refreshStatus();
+   await refreshDevicesWithMerge();
+   await refreshStatus();
 
-  setInterval(async () => {
-    await refreshStatus();
-    await refreshDevicesWithMerge();
-  }, 10000);
+   setInterval(async () => {
+     await refreshStatus();
+     await refreshDevicesWithMerge();
+   }, 10000);
 
-  if (typeof process !== 'undefined') console.log('[Renderer] Home mode initialized');
-}
+   if (window.HealthDashboard) {
+     window.HealthDashboard.mount('health-panel');
+   }
+
+   var btnRefreshHealth = document.getElementById('btn-refresh-health');
+   if (btnRefreshHealth) {
+     btnRefreshHealth.addEventListener('click', function () {
+       if (window.HealthDashboard) window.HealthDashboard.refresh();
+     });
+   }
+
+   // Initialize phone panel toggle
+   const phonePanelToggleBtn = document.getElementById('btn-toggle-phone-panel');
+   const phonePanelBody = document.getElementById('phone-panel-body');
+   if (phonePanelToggleBtn && phonePanelBody) {
+     phonePanelToggleBtn.addEventListener('click', () => {
+       phonePanelBody.classList.toggle('hidden');
+       // Toggle button text/icon
+       const isHidden = phonePanelBody.classList.contains('hidden');
+       phonePanelToggleBtn.innerHTML = isHidden ? '📞' : '📞';
+     });
+   }
+
+   // Set up IPC listeners for phone panel
+   window.electronAPI.on('phone-state-update', (state) => {
+     if (window.PhonePanel) {
+       window.PhonePanel.updateCallState(state);
+     }
+     // Show notification for call state changes
+     if (window.PhoneFarmNotification) {
+       let message = '';
+       let type = 'info';
+       switch (state) {
+         case 'ringing':
+           message = 'Incoming call...';
+           type = 'warning';
+           break;
+         case 'active':
+           message = 'Call active';
+           type = 'success';
+           break;
+         case 'ended':
+           message = 'Call ended';
+           type = 'info';
+           break;
+         case 'idle':
+           message = 'Ready to call';
+           type = 'info';
+           break;
+       }
+       if (message) {
+         window.PhoneFarmNotification.show(message, type);
+       }
+     }
+   });
+
+   if (typeof process !== 'undefined') console.log('[Renderer] Home mode initialized');
+ }
 
 init();

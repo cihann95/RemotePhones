@@ -15,6 +15,13 @@ from core.mobile_ops import not_up, MobileOperations
 from core.adb import ADBClient
 from core.device_manager import DeviceManager
 from tasks.base_task import BaseTask, TaskConfig, TaskResult
+from tasks.phone_call import (
+    PhoneCallTask,
+    PhoneAnswerTask,
+    PhoneRejectTask,
+    PhoneHangUpTask,
+    PhoneCallMonitorTask,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +191,11 @@ ALL = [
     AppLaunchTask,
     ScreenshotTask,
     SwipeSequenceTask,
+    PhoneCallTask,
+    PhoneAnswerTask,
+    PhoneRejectTask,
+    PhoneHangUpTask,
+    PhoneCallMonitorTask,
 ]
 
 
