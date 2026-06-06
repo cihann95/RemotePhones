@@ -55,7 +55,7 @@ if _HAS_PYDANTIC:
         def _ensure_list(cls, v: Any) -> list[Any]:
             if v is None:
                 return []
-            return v  # type: ignore[no-any-return]
+            return v
 
 
 def load_config(path: str | None = None) -> dict[str, Any]:

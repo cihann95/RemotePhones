@@ -14,10 +14,64 @@ let groups = [];
 let licenseInfo = null;
 let _lastDeviceScan = 0;
 
+// Elements
+const elements = {
+  btnBack: document.getElementById('btn-back'),
+  settingsModal: document.getElementById('settings-modal'),
+  deviceEditModal: document.getElementById('device-edit-modal'),
+  shortcutsModal: document.getElementById('shortcuts-modal'),
+  textInputModal: document.getElementById('text-input-modal'),
+  shortcutList: document.getElementById('shortcut-list'),
+  deviceCount: document.getElementById('device-count'),
+  devicesGrid: document.getElementById('devices-grid'),
+  devicesEmpty: document.getElementById('devices-empty'),
+  devicesList: document.getElementById('devices-list'),
+  deviceEditTitle: document.getElementById('device-edit-title'),
+  deviceNameInput: document.getElementById('device-name-input'),
+  deviceGroupSelect: document.getElementById('device-group-select'),
+  textModalTitle: document.getElementById('text-modal-title'),
+  textInputField: document.getElementById('text-input-field'),
+  textSendStatus: document.getElementById('text-send-status'),
+  controlTitle: document.getElementById('control-title'),
+  controlDescription: document.getElementById('control-description'),
+  btnStart: document.getElementById('btn-start'),
+  btnStop: document.getElementById('btn-stop'),
+  scrcpyStatus: document.getElementById('scrcpy-status'),
+  tailscaleStatus: document.getElementById('tailscale-status'),
+  parsecStatus: document.getElementById('parsec-status'),
+  toggleAutostart: document.getElementById('toggle-autostart'),
+  settingMaxSize: document.getElementById('setting-max-size'),
+  settingMaxFps: document.getElementById('setting-max-fps'),
+  settingBitrate: document.getElementById('setting-bitrate'),
+  settingBorderless: document.getElementById('setting-borderless'),
+  settingAlwaysOnTop: document.getElementById('setting-always-on-top'),
+  btnCloseSettings: document.getElementById('btn-close-settings'),
+  btnSaveSettings: document.getElementById('btn-save-settings'),
+  btnCloseDeviceEdit: document.getElementById('btn-close-device-edit'),
+  btnSaveDevice: document.getElementById('btn-save-device'),
+  btnResetDevice: document.getElementById('btn-reset-device'),
+  btnCloseShortcuts: document.getElementById('btn-close-shortcuts'),
+  btnCloseTextModal: document.getElementById('btn-close-text-modal'),
+  btnSendText: document.getElementById('btn-send-text'),
+  btnSendEnter: document.getElementById('btn-send-enter'),
+  btnSendBackspace: document.getElementById('btn-send-backspace'),
+  btnMinimize: document.getElementById('btn-minimize'),
+  btnAbout: document.getElementById('btn-about'),
+  btnRefreshDevices: document.getElementById('btn-refresh-devices'),
+  btnScanDevices: document.getElementById('btn-scan-devices'),
+  btnRefreshStatus: document.getElementById('btn-refresh-status'),
+  btnSettings: document.getElementById('btn-settings'),
+  themeButtons: document.querySelectorAll('.theme-btn')
+};
+
 // Focus trap
 let lastFocusedElement = null;
+let _activeTrapHandler = null;
+let _activeTrapElement = null;
 
 function trapFocus(modalElement) {
+  removeTrapFocus();
+
   const focusableElements = modalElement.querySelectorAll(
     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
   );
@@ -26,7 +80,7 @@ function trapFocus(modalElement) {
   
   lastFocusedElement = document.activeElement;
   
-  modalElement.addEventListener('keydown', function trapTabKey(e) {
+  const handler = function trapTabKey(e) {
     if (e.key === 'Tab') {
       if (e.shiftKey) {
         if (document.activeElement === firstFocusable) {
@@ -44,14 +98,27 @@ function trapFocus(modalElement) {
     if (e.key === 'Escape') {
       closeActiveModal();
     }
-  });
+  };
+
+  modalElement.addEventListener('keydown', handler);
+  _activeTrapHandler = handler;
+  _activeTrapElement = modalElement;
   
   requestAnimationFrame(() => {
     firstFocusable.focus();
   });
 }
 
+function removeTrapFocus() {
+  if (_activeTrapElement && _activeTrapHandler) {
+    _activeTrapElement.removeEventListener('keydown', _activeTrapHandler);
+    _activeTrapHandler = null;
+    _activeTrapElement = null;
+  }
+}
+
 function returnFocus() {
+  removeTrapFocus();
   if (lastFocusedElement) {
     lastFocusedElement.focus();
     lastFocusedElement = null;
@@ -505,7 +572,7 @@ async function openDeviceEdit(deviceId) {
     btn.classList.toggle('selected', btn.dataset.color === selectedColor);
   });
 
-  elements.deviceGroupSelect.value = device.group || 'Default';
+  elements.deviceGroupSelect.value = device.group || 'Varsayilan';
    elements.deviceEditModal.classList.remove('hidden');
    trapFocus(elements.deviceEditModal);
    elements.deviceNameInput.focus();
@@ -514,14 +581,14 @@ async function openDeviceEdit(deviceId) {
 async function loadGroups() {
   try {
     groups = await window.electronAPI.getGroups();
-    if (!Array.isArray(groups)) groups = ['Default'];
+    if (!Array.isArray(groups)) groups = ['Varsayilan'];
     elements.deviceGroupSelect.innerHTML = groups.map(g =>
       `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`
     ).join('');
   } catch (e) {
     console.error('Load groups error:', e);
-    groups = ['Default'];
-    elements.deviceGroupSelect.innerHTML = '<option value="Default">Default</option>';
+    groups = ['Varsayilan'];
+    elements.deviceGroupSelect.innerHTML = '<option value="Varsayilan">Varsayilan</option>';
   }
 }
 
@@ -532,7 +599,7 @@ async function saveDeviceEdit() {
     customName: elements.deviceNameInput.value.trim() || null,
     emoji: selectedEmoji || null,
     color: selectedColor || null,
-    group: elements.deviceGroupSelect.value || 'Default'
+    group: elements.deviceGroupSelect.value || 'Varsayilan'
   };
 
   try {
@@ -561,7 +628,7 @@ async function resetDeviceEdit() {
 
 function closeDeviceEdit() {
   elements.deviceEditModal.classList.add('hidden');
-  elements.deviceEditModal.removeEventListener('keydown', trapFocus);
+  removeTrapFocus();
   editingDeviceId = null;
 }
 
@@ -604,7 +671,7 @@ function openTextModal(deviceId) {
 
 function closeTextModal() {
   elements.textInputModal.classList.add('hidden');
-  elements.textInputModal.removeEventListener('keydown', trapFocus);
+  removeTrapFocus();
   returnFocus();
   textModalDeviceId = null;
 }
@@ -805,7 +872,7 @@ function openSettings() {
 
 function closeSettings() {
   elements.settingsModal.classList.add('hidden');
-  elements.settingsModal.removeEventListener('keydown', trapFocus);
+  removeTrapFocus();
 }
 
 async function loadSettings() {
@@ -916,6 +983,38 @@ async function toggleAutostart() {
 }
 
 // =====================================================
+// THEME
+// =====================================================
+/* ===== FILE REF: renderer.js | SECTION: THEME ===== */
+
+const VALID_THEME_VALUES = ['dark', 'light'];
+
+function applyTheme(theme) {
+  const value = VALID_THEME_VALUES.includes(theme) ? theme : 'dark';
+  document.documentElement.setAttribute('data-theme', value);
+  syncThemeButtons(value);
+}
+
+function syncThemeButtons(activeTheme) {
+  elements.themeButtons.forEach((btn) => {
+    const isActive = btn.dataset.themeValue === activeTheme;
+    btn.classList.toggle('btn-primary', isActive);
+    btn.classList.toggle('btn-outline', !isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
+  });
+}
+
+async function selectTheme(theme) {
+  if (!VALID_THEME_VALUES.includes(theme)) return;
+  applyTheme(theme);
+  try {
+    await window.electronAPI.setTheme(theme);
+  } catch (e) {
+    console.error('Persist theme error:', e);
+  }
+}
+
+// =====================================================
 // EVENT LISTENERS
 // =====================================================
 /* ===== FILE REF: renderer.js | SECTION: EVENT LISTENERS ===== */
@@ -937,7 +1036,7 @@ const btnCheckUpdate = document.getElementById('btn-check-update-now');
 if (btnCheckUpdate) btnCheckUpdate.addEventListener('click', checkForUpdatesManually);
 elements.btnCloseShortcuts?.addEventListener('click', () => {
   elements.shortcutsModal.classList.add('hidden');
-  elements.shortcutsModal.removeEventListener('keydown', trapFocus);
+  removeTrapFocus();
 });
 
 // Text Input Modal events
@@ -1092,7 +1191,7 @@ async function init() {
    }
 
    // Set up IPC listeners for phone panel
-   window.electronAPI.on('phone-state-update', (state) => {
+   window.electronAPI.onPhoneStateUpdate((state) => {
      if (window.PhonePanel) {
        window.PhonePanel.updateCallState(state);
      }

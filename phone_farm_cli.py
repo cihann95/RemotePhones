@@ -15,37 +15,124 @@ import argparse
 import json
 import os
 import re
+import secrets
 import sys
 
 DEVICE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
-PHONE_RE = re.compile(r'^\+?[0-9]{10,15}$')
+PHONE_RE = re.compile(r'^\+?[0-9]{7,15}$')
+
+# ── Error message map ─────────────────────────────────────────────────────────
+
+_ERROR_MESSAGES_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "shared", "error_messages.json"
+)
+_ERROR_MESSAGES: list[dict] = []
+
+def _load_error_messages() -> list[dict]:
+    """Load the centralized error message map from shared/error_messages.json."""
+    global _ERROR_MESSAGES
+    if _ERROR_MESSAGES:
+        return _ERROR_MESSAGES
+    try:
+        with open(_ERROR_MESSAGES_PATH, "r", encoding="utf-8") as fh:
+            _ERROR_MESSAGES = json.load(fh)
+    except (OSError, json.JSONDecodeError) as exc:
+        print(
+            f"WARNING: Could not load error messages from {_ERROR_MESSAGES_PATH}: {exc}",
+            file=sys.stderr,
+        )
+        _ERROR_MESSAGES = []
+    return _ERROR_MESSAGES
+
+
+def humanize_error(err_str: str, lang: str = "tr") -> dict:
+    """Match a raw error string against the error map and return a structured dict.
+
+    Returns:
+        {
+            "id": str,
+            "title": str,
+            "hint": str,
+            "fix_steps": list[str],
+            "raw": str   # original error string
+        }
+    """
+    err_lower = err_str.lower()
+    messages = _load_error_messages()
+
+    for entry in messages:
+        for pattern in entry.get("patterns", []):
+            try:
+                if re.search(pattern, err_lower):
+                    return {
+                        "id": entry["id"],
+                        "title": entry["title"],
+                        "hint": entry["hint"],
+                        "fix_steps": entry.get("fix_steps", []),
+                        "raw": err_str,
+                    }
+            except re.error:
+                if pattern in err_lower:
+                    return {
+                        "id": entry["id"],
+                        "title": entry["title"],
+                        "hint": entry["hint"],
+                        "fix_steps": entry.get("fix_steps", []),
+                        "raw": err_str,
+                    }
+
+    fallback = next((e for e in messages if e["id"] == "unknown_error"), None)
+    if fallback:
+        return {
+            "id": fallback["id"],
+            "title": fallback["title"],
+            "hint": fallback["hint"],
+            "fix_steps": fallback.get("fix_steps", []),
+            "raw": err_str,
+        }
+    return {"id": "unknown_error", "title": "Bilinmeyen hata", "hint": err_str, "fix_steps": [], "raw": err_str}
+
+
+def _print_human_error(err_str: str) -> None:
+    info = humanize_error(err_str)
+    print(f"\nHata: {info['title']}", file=sys.stderr)
+    print(f"Nasıl düzeltilir: {info['hint']}", file=sys.stderr)
+    if info["fix_steps"]:
+        print("Adımlar:", file=sys.stderr)
+        for i, step in enumerate(info["fix_steps"], 1):
+            print(f"  {i}. {step}", file=sys.stderr)
+    print(f"\nTeknik detay: {info['raw']}", file=sys.stderr)
 
 
 def validate_device_id(device_id: str) -> None:
     if not device_id or not DEVICE_ID_RE.match(device_id):
-        print(
-            "Invalid device ID format. Must contain only letters, numbers, hyphens, underscores.",
-            file=sys.stderr,
-        )
+        _print_human_error("Invalid device ID format. Make sure the device ID contains only letters, numbers, hyphens, and underscores.")
         sys.exit(1)
 
 
 def validate_phone_number(number: str) -> None:
     if not number or not PHONE_RE.match(number):
-        print(
-            "Invalid phone number format. Expected: +905XXXXXXXXX or 05XXXXXXXXX (10-15 digits)",
-            file=sys.stderr,
-        )
+        _print_human_error("Invalid phone number format. Expected: +905XXXXXXXXX or 05XXXXXXXXX (10-15 digits). Check your phone number and try again.")
         sys.exit(1)
 
 
 def sanitize_file_path(file_path: str) -> str:
+    if not file_path or not isinstance(file_path, str):
+        _print_human_error("File path must be a non-empty string. Check your input and try again.")
+        sys.exit(1)
+
+    if '\x00' in file_path or any(ord(c) < 32 for c in file_path):
+        _print_human_error("File path contains forbidden characters. Make sure the path is valid.")
+        sys.exit(1)
+
     resolved = os.path.realpath(file_path)
-    if '..' in file_path or file_path.startswith('/'):
-        normalized = os.path.normpath(file_path)
-        if '..' in normalized.split(os.sep):
-            print("File path contains directory traversal components.", file=sys.stderr)
-            sys.exit(1)
+
+    # Check traversal BEFORE resolution — catches both / and \ on all platforms
+    parts = file_path.replace('\\', '/').split('/')
+    if '..' in parts:
+        _print_human_error("File path contains directory traversal. Try this: use an absolute path without '..' components.")
+        sys.exit(1)
+
     return resolved
 
 from config.loader import load_config
@@ -115,7 +202,7 @@ def cmd_submit(args: argparse.Namespace, config: dict) -> None:
     with open(steps_file, "r", encoding="utf-8") as fh:
         steps = json.load(fh)
     if not isinstance(steps, list):
-        print("Error: steps file must contain a JSON array", file=sys.stderr)
+        _print_human_error("Steps file must contain a JSON array. Check your file format and try again.")
         sys.exit(1)
     mgr = _make_manager(config)
     mgr.start()
@@ -130,21 +217,15 @@ def cmd_status(args: argparse.Namespace, config: dict) -> None:
         print(json.dumps(mgr.status_summary(), indent=2))
     else:
         record = mgr.queue.get_status(args.job_id)
-        print(json.dumps(record or {"error": "not found"}, indent=2))
+        if not record:
+            _print_human_error("Job not found. Check your job ID and try again.")
+            sys.exit(1)
+        print(json.dumps(record, indent=2))
 
 
 def _report_call_error(error: str) -> None:
     """Print a user-friendly error message based on the call error string."""
-    err_lower = error.lower()
-    if "format" in err_lower:
-        print(
-            "Invalid phone number format. Expected: +905XXXXXXXXX or 05XXXXXXXXX",
-            file=sys.stderr,
-        )
-    elif "timeout" in err_lower:
-        print("Call timed out. Check SIM card and signal.", file=sys.stderr)
-    else:
-        print("No device found. Connect via USB and enable USB debugging.", file=sys.stderr)
+    _print_human_error(error)
 
 
 def cmd_call(args: argparse.Namespace, config: dict) -> None:
@@ -157,10 +238,7 @@ def cmd_call(args: argparse.Namespace, config: dict) -> None:
     if args.csv_file:
         csv_path = sanitize_file_path(args.csv_file)
         if not os.path.exists(csv_path):
-            print(
-                f"CSV file not found: {args.csv_file}. Check file path and try again.",
-                file=sys.stderr,
-            )
+            _print_human_error(f"CSV file not found: {args.csv_file}. Check your file path and try again.")
             sys.exit(1)
         csv_result = phone.read_csv_numbers(csv_path)
         if csv_result.get("warnings"):
@@ -168,7 +246,7 @@ def cmd_call(args: argparse.Namespace, config: dict) -> None:
                 print(f"WARNING: {w}", file=sys.stderr)
         numbers = csv_result.get("numbers", [])
         if not numbers:
-            print(json.dumps({"ok": False, "error": "No valid numbers in CSV"}, indent=2))
+            _print_human_error("No valid numbers in CSV. Make sure the CSV file contains a 'number' column with valid phone numbers.")
             sys.exit(1)
         results = []
         for item in numbers:
@@ -187,8 +265,85 @@ def cmd_call(args: argparse.Namespace, config: dict) -> None:
             sys.exit(1)
         print(json.dumps(result, indent=2))
     else:
-        print("Error: Either --number or --csv-file is required", file=sys.stderr)
+        _print_human_error("Either --number or --csv-file is required. How to fix: specify one of these options.")
         sys.exit(1)
+
+
+# ── API key rotation ──────────────────────────────────────────────────────────
+
+ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+
+
+def _read_env_key(env_path: str = ENV_FILE) -> str:
+    """Read the current API_SECRET_KEY from .env. Returns "" if not set.
+
+    Does NOT trust os.environ here — rotation must reflect what's on disk so
+    that the user can re-run the command and the new key always lands in the
+    right file regardless of shell exports.
+    """
+    if not os.path.exists(env_path):
+        return ""
+    try:
+        with open(env_path, "r", encoding="utf-8") as fh:
+            for raw in fh:
+                line = raw.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("API_SECRET_KEY="):
+                    return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError as exc:
+        print(f"Error: cannot read {env_path}: {exc}", file=sys.stderr)
+    return ""
+
+
+def _write_env_key(new_key: str, env_path: str = ENV_FILE) -> None:
+    """Overwrite API_SECRET_KEY= in .env, preserving all other lines.
+
+    If the file does not exist it is created. If the line is missing it is
+    appended. Trailing newline is always emitted.
+    """
+    lines: list[str] = []
+    replaced = False
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as fh:
+            lines = fh.readlines()
+
+    for i, raw in enumerate(lines):
+        if raw.lstrip().startswith("API_SECRET_KEY="):
+            lines[i] = f"API_SECRET_KEY={new_key}\n"
+            replaced = True
+            break
+
+    if not replaced:
+        # Ensure single blank-line separator if file has content
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] = lines[-1] + "\n"
+        if lines and lines[-1].strip() != "":
+            lines.append("\n")
+        lines.append(f"API_SECRET_KEY={new_key}\n")
+
+    with open(env_path, "w", encoding="utf-8") as fh:
+        fh.writelines(lines)
+
+
+def _rotate_api_key(env_path: str = ENV_FILE) -> tuple[str, str]:
+    """Generate a fresh 32-char hex key, persist it to .env, return (old, new).
+
+    The caller is responsible for printing these to the user.
+    """
+    old_key = _read_env_key(env_path)
+    new_key = secrets.token_hex(16)  # 32 hex chars
+    _write_env_key(new_key, env_path)
+    return old_key, new_key
+
+
+def cmd_rotate(args: argparse.Namespace, config: dict) -> None:
+    """Rotate the API_SECRET_KEY in .env and print old/new to stdout."""
+    old_key, new_key = _rotate_api_key()
+    print("API key rotated.")
+    print(f"  OLD key: {old_key if old_key else '(none — first rotation)'}")
+    print(f"  NEW key: {new_key}")
+    print("Update your clients to use the new key. The old key is now invalid.")
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -241,6 +396,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     call_p.add_argument("--number", help="Phone number (e.g. +905XXXXXXXXX)")
     call_p.add_argument("--csv-file", help="CSV file with number,name columns")
 
+    # rotate
+    sub.add_parser("rotate", help="Rotate the API_SECRET_KEY in .env")
+    sub.add_parser("rotate-key", help="Alias for `rotate` — rotate the API_SECRET_KEY in .env")
+
     return p.parse_args(argv)
 
 
@@ -283,6 +442,10 @@ def main(argv: list[str] | None = None) -> None:
         cmd_status(args, config)
     elif cmd == "call":
         cmd_call(args, config)
+    elif cmd == "rotate":
+        cmd_rotate(args, config)
+    elif cmd == "rotate-key":  # alias for `rotate` per plan K5
+        cmd_rotate(args, config)
     else:
         parse_args(["--help"])
 

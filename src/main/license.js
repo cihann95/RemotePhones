@@ -80,7 +80,7 @@ function initializeLexActivator() {
       lexactivator = require('@cryptlex/lexactivator');
       if (DEBUG) console.log('[License] Module loaded successfully');
     } catch (moduleError) {
-      console.error('[License] ERROR: Product.dat NOT FOUND at:', productFile);
+      console.error('[License] ERROR: @cryptlex/lexactivator module failed to load:', moduleError.message);
       if (app.isPackaged && process.resourcesPath) {
         try {
           const resourcesContents = fs.readdirSync(process.resourcesPath);
@@ -89,7 +89,7 @@ function initializeLexActivator() {
           if (DEBUG) console.log('[License] Could not list resources folder:', e.message);
         }
       }
-      licenseStatus.error = 'Product.dat file not found. Please reinstall the application.';
+      licenseStatus.error = 'License module (@cryptlex/lexactivator) not available. Please check installation.';
       if (DEBUG) console.log('[License] ========== LEXACTIVATOR INIT FAILED ==========');
       return false;
     }

@@ -13,18 +13,17 @@ module still works — every route raises HTTP 503 when the manager is absent.
 
 from __future__ import annotations
 
-import re
-from typing import Any
-
-import csv
-import io
+import hmac
 import logging
 import os
+import re
+import secrets
 import sys
 import time
+from typing import Any
 
 DEVICE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
-PHONE_RE = re.compile(r'^\+?[0-9]{10,15}$')
+PHONE_RE = re.compile(r'^\+?[0-9]{7,15}$')
 MAX_CSV_BODY = 512 * 1024  # 512 KB
 
 
@@ -63,16 +62,28 @@ if FastAPI is None:
     )
     app = None  # type: ignore[assignment]
 else:
+    def _get_api_key() -> str:
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        if os.path.exists(env_path):
+            try:
+                with open(env_path, "r", encoding="utf-8") as fh:
+                    for line in fh:
+                        if line.startswith("API_SECRET_KEY="):
+                            return line.split("=", 1)[1].strip().strip('"').strip("'")
+            except OSError:
+                pass
+        return os.getenv("API_SECRET_KEY", "")
+
     def verify_api_key(authorization: str = Header(None)) -> str:
-        expected_token = os.getenv("API_SECRET_KEY")
-        if expected_token is None:
+        expected_token = _get_api_key()
+        if not expected_token:
             raise HTTPException(status_code=401, detail="API_SECRET_KEY not set")
         if authorization is None:
             raise HTTPException(status_code=401, detail="Missing Authorization header")
         if not authorization.startswith("Bearer "):
             raise HTTPException(status_code=401, detail="Invalid Authorization header format")
         token = authorization[7:]
-        if token != expected_token:
+        if not hmac.compare_digest(token.encode(), expected_token.encode()):
             raise HTTPException(status_code=401, detail="Invalid API key")
         return token
 
@@ -81,7 +92,6 @@ else:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
-            "file://",
             "http://127.0.0.1:8000",
             "http://localhost:8000",
         ],
@@ -94,7 +104,9 @@ else:
 
 _RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "100"))
 _RATE_WINDOW_S = 60.0
+_RATE_BUCKET_CLEANUP_EVERY = 100
 _rate_buckets: dict[str, list[float]] = {}
+_rate_req_counter: int = 0
 
 # ── shared state ──────────────────────────────────────────────────────────────
 
@@ -105,7 +117,7 @@ _health_checker: DeviceHealthChecker | None = None
 def attach_manager(mgr: PhoneFarmManager) -> None:
     global _manager, _health_checker
     _manager = mgr
-    _health_checker = DeviceHealthChecker(device_manager=mgr.dm, config={})
+    _health_checker = DeviceHealthChecker(device_manager=mgr.dm, config=getattr(mgr, 'config', {}))
     logger.info("PhoneFarmManager attached to API")
 
 
@@ -131,10 +143,8 @@ if app is not None:
     @app.middleware("http")
     async def _rate_limit_middleware(request, call_next):
         # Exempt /health endpoint (and sub-paths like /health/devices)
-        # Also exempt phone endpoints as they should not be rate limited
         if (request.url.path == "/health" or 
-            request.url.path.startswith("/health/") or
-            request.url.path.startswith("/phone/")):
+            request.url.path.startswith("/health/")):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
@@ -154,7 +164,25 @@ if app is not None:
 
         timestamps.append(now)
         _rate_buckets[client_ip] = timestamps
+
+        global _rate_req_counter
+        _rate_req_counter += 1
+        if _rate_req_counter >= _RATE_BUCKET_CLEANUP_EVERY:
+            _rate_req_counter = 0
+            stale = [ip for ip, ts in _rate_buckets.items() if not ts]
+            for ip in stale:
+                del _rate_buckets[ip]
+
         return await call_next(request)
+
+    # ── security headers middleware (all responses) ──────────────────────
+
+    @app.middleware("http")
+    async def _security_headers_middleware(request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        return response
 
     @app.get("/health")
     def health() -> dict[str, Any]:
@@ -189,12 +217,7 @@ if app is not None:
     def queue_all(api_key: str = Depends(verify_api_key)) -> dict[str, Any]:
         _require_manager()
         q = _manager.queue
-        with q._lock:
-            rows = [
-                {"job_id": jid, **rec}
-                for jid, rec in q._store.items()
-            ]
-        rows.sort(key=lambda r: r.get("created_at", 0), reverse=True)
+        rows = q.get_all_jobs()
         return {"jobs": rows, "qsize": q.qsize()}
 
 
@@ -347,3 +370,43 @@ if app is not None:
         if not result.get("ok"):
             raise HTTPException(400, detail=result.get("error", "Hang up failed"))
         return result
+
+    def _rotate_api_key_impl() -> dict[str, Any]:
+        """Shared rotation body used by both /admin/rotate-key and /rotate-key."""
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+        old_key = _get_api_key()
+        new_key = secrets.token_hex(16)
+
+        lines = []
+        replaced = False
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as fh:
+                lines = fh.readlines()
+
+        for i, raw in enumerate(lines):
+            if raw.lstrip().startswith("API_SECRET_KEY="):
+                lines[i] = f"API_SECRET_KEY={new_key}\n"
+                replaced = True
+                break
+
+        if not replaced:
+            if lines and not lines[-1].endswith("\n"):
+                lines[-1] = lines[-1] + "\n"
+            if lines and lines[-1].strip() != "":
+                lines.append("\n")
+            lines.append(f"API_SECRET_KEY={new_key}\n")
+
+        with open(env_path, "w", encoding="utf-8") as fh:
+            fh.writelines(lines)
+
+        return {"status": "rotated", "new_key": new_key, "old_key_invalidated": bool(old_key)}
+
+    @app.post("/admin/rotate-key")
+    def rotate_api_key_endpoint(api_key: str = Depends(verify_api_key)) -> dict[str, Any]:
+        """Rotate the API key. Requires current valid API key."""
+        return _rotate_api_key_impl()
+
+    @app.post("/rotate-key")
+    def rotate_api_key_endpoint_alias(api_key: str = Depends(verify_api_key)) -> dict[str, Any]:
+        """Alias for /admin/rotate-key (plan K5). Requires current valid API key."""
+        return _rotate_api_key_impl()

@@ -70,8 +70,9 @@ class TestRunOnDevice:
                     "priority": Priority.NORMAL,
                 }
             ]
-            mgr.run_on_device("mock-device-1", steps, sequential=False)
-            st = self.wh.wait_status(mgr.queue, "app_launch", "completed")
+            results = mgr.run_on_device("mock-device-1", steps, sequential=False)
+            jid = results[0]["job_id"]
+            st = self.wh.wait_status(mgr.queue, jid, "completed")
             assert st is not None, "app_launch should be completed"
             assert st["status"] == "completed"
         finally:
@@ -90,8 +91,9 @@ class TestRunOnDevice:
                     "priority": Priority.NORMAL,
                 }
             ]
-            mgr.run_on_device("mock-device-1", steps, sequential=False)
-            st = self.wh.wait_status(mgr.queue, "screenshot", "completed")
+            results = mgr.run_on_device("mock-device-1", steps, sequential=False)
+            jid = results[0]["job_id"]
+            st = self.wh.wait_status(mgr.queue, jid, "completed")
             assert st is not None, "screenshot should be completed"
             assert st["status"] == "completed"
         finally:
@@ -131,8 +133,9 @@ class TestRunOnDevice:
                     "priority": Priority.LOW,
                 }
             ]
-            mgr.run_on_device("mock-device-1", steps, sequential=False)
-            st = self.wh.wait_status(mgr.queue, "swipe_sequence", "completed", timeout=15)
+            results = mgr.run_on_device("mock-device-1", steps, sequential=False)
+            jid = results[0]["job_id"]
+            st = self.wh.wait_status(mgr.queue, jid, "completed", timeout=15)
             assert st is not None, "swipe_sequence should complete"
             assert st["status"] == "completed"
         finally:
@@ -153,7 +156,8 @@ class TestRunOnDevice:
             ]
             results = mgr.run_on_device("mock-device-1", steps, sequential=False)
             assert len(results) == 1
-            st = self.wh.wait_status(mgr.queue, "app_install", "completed", timeout=15)
+            jid = results[0]["job_id"]
+            st = self.wh.wait_status(mgr.queue, jid, "completed", timeout=15)
             assert st is not None, "app_install should be completed"
         finally:
             mgr.stop(timeout=2)
@@ -164,12 +168,12 @@ class TestRunOnDevice:
         """run_on_device enqueues an unknown task; runner marks it FAILED."""
         mgr = self.make_mgr()
         try:
-            # Use max_retries=0 so the job fails fast (no retry delays).
             mgr.queue.max_retries = 0
             steps = [{"task": "no_such_task", "params": {}}]
             results = mgr.run_on_device("mock-device-1", steps, sequential=False)
             assert len(results) == 1
-            st = self.wh.wait_status(mgr.queue, "no_such_task", "failed", timeout=10)
+            jid = results[0]["job_id"]
+            st = self.wh.wait_status(mgr.queue, jid, "failed", timeout=10)
             assert st is not None, "Job should have been processed (and failed)"
             assert st["status"] == "failed"
         finally:

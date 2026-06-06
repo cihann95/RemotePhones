@@ -80,7 +80,7 @@ window.CallHistory = (function () {
    * Bind the CSV export button.
    */
   function _bindExportButton() {
-    var exportBtn = panel.querySelector('#call-history-export');
+    const exportBtn = panel.querySelector('#call-history-export');
     if (exportBtn) {
       exportBtn.addEventListener('click', exportCSV);
     }
@@ -91,7 +91,7 @@ window.CallHistory = (function () {
    */
   async function loadHistory() {
     try {
-      var records = await window.electronAPI.getCallHistory();
+      let records = await window.electronAPI.getCallHistory();
       if (!Array.isArray(records)) records = [];
       _renderTable(records);
     } catch (e) {
@@ -107,7 +107,7 @@ window.CallHistory = (function () {
   function _renderTable(records) {
     if (!tableBody) return;
 
-    var filtered = records;
+    let filtered = records;
     if (activeFilter !== 'all') {
       filtered = records.filter(function (r) {
         return r.status === activeFilter;
@@ -122,13 +122,13 @@ window.CallHistory = (function () {
       return;
     }
 
-    var html = '';
-    for (var i = 0; i < filtered.length; i++) {
-      var r = filtered[i];
-      var statusClass = 'status-' + (r.status || 'completed');
-      var statusLabel = _statusLabel(r.status);
-      var duration = _formatDuration(r.duration);
-      var timestamp = _formatTimestamp(r.timestamp);
+    let html = '';
+    for (let i = 0; i < filtered.length; i++) {
+      const r = filtered[i];
+      const statusClass = 'status-' + (r.status || 'completed');
+      const statusLabel = _statusLabel(r.status);
+      const duration = _formatDuration(r.duration);
+      const timestamp = _formatTimestamp(r.timestamp);
 
       html +=
         '<tr>' +
@@ -147,7 +147,7 @@ window.CallHistory = (function () {
    * @returns {string}
    */
   function _statusLabel(status) {
-    var labels = {
+    const labels = {
       completed: 'Completed',
       missed: 'Missed',
       rejected: 'Rejected'
@@ -162,8 +162,8 @@ window.CallHistory = (function () {
    */
   function _formatDuration(secs) {
     if (secs == null || isNaN(secs)) return '---';
-    var m = Math.floor(secs / 60);
-    var s = secs % 60;
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
     return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
 
@@ -175,13 +175,13 @@ window.CallHistory = (function () {
   function _formatTimestamp(ts) {
     if (!ts) return '---';
     try {
-      var d = new Date(ts);
+      const d = new Date(ts);
       if (isNaN(d.getTime())) return ts;
-      var day = d.getDate();
-      var month = d.getMonth() + 1;
-      var year = d.getFullYear();
-      var hour = d.getHours();
-      var min = d.getMinutes();
+      const day = d.getDate();
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear();
+      const hour = d.getHours();
+      const min = d.getMinutes();
       return (day < 10 ? '0' : '') + day + '.' + (month < 10 ? '0' : '') + month + '.' + year +
         ' ' + (hour < 10 ? '0' : '') + hour + ':' + (min < 10 ? '0' : '') + min;
     } catch (e) {
@@ -196,7 +196,7 @@ window.CallHistory = (function () {
    */
   function _escapeHtml(text) {
     if (!text) return '';
-    var div = document.createElement('div');
+    const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
   }
@@ -206,10 +206,10 @@ window.CallHistory = (function () {
    */
   async function exportCSV() {
     try {
-      var records = await window.electronAPI.getCallHistory();
+      let records = await window.electronAPI.getCallHistory();
       if (!Array.isArray(records)) records = [];
 
-      var filtered = records;
+      let filtered = records;
       if (activeFilter !== 'all') {
         filtered = records.filter(function (r) {
           return r.status === activeFilter;
@@ -223,20 +223,20 @@ window.CallHistory = (function () {
         return;
       }
 
-      var lines = ['Time,Number,Duration(s),Status'];
-      for (var i = 0; i < filtered.length; i++) {
-        var r = filtered[i];
-        var num = (r.number || '').replace(/"/g, '""');
-        var status = r.status || 'completed';
-        var ts = r.timestamp || '';
-        var dur = r.duration != null ? r.duration : '';
+      const lines = ['Time,Number,Duration(s),Status'];
+      for (let i = 0; i < filtered.length; i++) {
+        const r = filtered[i];
+        const num = (r.number || '').replace(/"/g, '""');
+        const status = r.status || 'completed';
+        const ts = r.timestamp || '';
+        const dur = r.duration != null ? r.duration : '';
         lines.push('"' + ts + '","' + num + '",' + dur + ',' + status);
       }
 
-      var csv = '\uFEFF' + lines.join('\r\n');
-      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
+      const csv = '\uFEFF' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = url;
       a.download = 'call-history-' + new Date().toISOString().slice(0, 10) + '.csv';
       document.body.appendChild(a);

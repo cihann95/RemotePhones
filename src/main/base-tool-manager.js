@@ -6,7 +6,7 @@
 
 const path = require('path');
 const fs = require('fs');
-const { exec, execFile, spawn } = require('child_process');
+
 const { app } = require('electron');
 
 const DEBUG = process.env.NODE_ENV === 'development';

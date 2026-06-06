@@ -5,7 +5,10 @@
 // =====================================================
 
 const { app, BrowserWindow, ipcMain, shell, Menu, session } = require('electron');
+const crypto = require('crypto');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 const Store = require('electron-store');
 
 // Import managers
@@ -18,6 +21,35 @@ const DeviceStore = require('./device-store');
 const AutostartManager = require('./autostart');
 const NotificationManager = require('./notifications');
 const ShortcutManager = require('./shortcuts');
+
+// ── Error message map ─────────────────────────────────────────────────────────
+let _errorMessages = [];
+try {
+  const errorMapPath = path.join(__dirname, '..', '..', 'shared', 'error_messages.json');
+  _errorMessages = JSON.parse(fs.readFileSync(errorMapPath, 'utf8'));
+} catch (e) {
+  console.warn('[Main] Could not load shared/error_messages.json:', e.message);
+}
+
+function humanizeError(errStr) {
+  const lower = (errStr || '').toLowerCase();
+  for (const entry of _errorMessages) {
+    for (const pattern of (entry.patterns || [])) {
+      try {
+        if (new RegExp(pattern, 'i').test(lower)) {
+          return { id: entry.id, title: entry.title, hint: entry.hint, fix_steps: entry.fix_steps || [], raw: errStr };
+        }
+      } catch (_) {
+        if (lower.includes(pattern)) {
+          return { id: entry.id, title: entry.title, hint: entry.hint, fix_steps: entry.fix_steps || [], raw: errStr };
+        }
+      }
+    }
+  }
+  const fallback = _errorMessages.find(e => e.id === 'unknown_error');
+  if (fallback) return { id: fallback.id, title: fallback.title, hint: fallback.hint, fix_steps: fallback.fix_steps || [], raw: errStr };
+  return { id: 'unknown_error', title: 'Bilinmeyen hata', hint: errStr, fix_steps: [], raw: errStr };
+}
 let LicenseManager;
 try {
   LicenseManager = require('./license');
@@ -46,7 +78,7 @@ try {
   };
 }
 const Paths = require('./paths');
-const { ipcDeviceId, ipcDeviceText } = require('./ipc-validators');
+const { ipcDeviceId, ipcDeviceText, ipcKeycode } = require('./ipc-validators');
 const HealthMonitor = require('./health-monitor');
 const Updater = require('./updater');
 
@@ -73,7 +105,6 @@ const deviceStore = new DeviceStore();
 const autostartManager = new AutostartManager();
 const notificationManager = new NotificationManager();
 const shortcutManager = new ShortcutManager();
-const licenseManager = require('./license');
 let deviceMonitor = null;
 let healthMonitor = null;
 
@@ -83,8 +114,28 @@ const appStore = new Store({
   defaults: {
     setupCompleted: false,
     homeComputerName: '',
-    lastMode: null
+    lastMode: null,
+    theme: 'dark'
   }
+});
+
+// =====================================================
+// IPC: THEME
+// =====================================================
+
+const VALID_THEMES = ['dark', 'light'];
+
+ipcMain.handle('theme:get', async () => {
+  const theme = appStore.get('theme', 'dark');
+  return VALID_THEMES.includes(theme) ? theme : 'dark';
+});
+
+ipcMain.handle('theme:set', async (event, theme) => {
+  if (typeof theme !== 'string' || !VALID_THEMES.includes(theme)) {
+    return { success: false, error: 'Invalid theme value' };
+  }
+  appStore.set('theme', theme);
+  return { success: true, theme };
 });
 
 // Make mainWindow globally accessible for scrcpy events
@@ -95,6 +146,7 @@ global.mainWindow = null;
 // =====================================================
 
 function createWindow() {
+  const { MAIN_WINDOW_WIDTH, MAIN_WINDOW_HEIGHT, MAIN_WINDOW_MIN_WIDTH, MAIN_WINDOW_MIN_HEIGHT } = require('./constants');
   const fs = require('fs');
 
   // Icon path - check if exists
@@ -102,10 +154,10 @@ function createWindow() {
   const hasIcon = fs.existsSync(iconPath);
 
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 800,
-    minHeight: 600,
+    width: MAIN_WINDOW_WIDTH,
+    height: MAIN_WINDOW_HEIGHT,
+    minWidth: MAIN_WINDOW_MIN_WIDTH,
+    minHeight: MAIN_WINDOW_MIN_HEIGHT,
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload.js'),
       contextIsolation: true,
@@ -142,6 +194,10 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
     global.mainWindow = null;
+    if (aboutWindow) {
+      aboutWindow.close();
+      aboutWindow = null;
+    }
   });
 
   return mainWindow;
@@ -233,7 +289,7 @@ function buildAppMenu() {
 
 // ── Input validation helpers ─────────────────────────────────────────────────
 const VALID_DEVICE_ID_RE = /^[a-zA-Z0-9_\-]+$/;
-const VALID_PHONE_RE = /^\+?[0-9]{10,15}$/;
+const VALID_PHONE_RE = /^\+?[0-9]{7,15}$/;
 const MAX_REQUEST_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
 const VALID_MODES = ['home', 'office'];
 
@@ -287,6 +343,9 @@ app.whenReady().then(async () => {
   // Log all paths for debugging
   Paths.logPaths();
 
+  // Clean up old crash logs on startup
+  cleanupOldCrashLogs();
+
   // Check license first
   if (process.env?.DEBUG) console.debug('[App] Checking license...');
   try {
@@ -304,17 +363,17 @@ app.whenReady().then(async () => {
   // Initialize auto-updater (checks for updates if autoCheck is enabled)
   Updater.init();
 
-  // Build application menu with "Check for Updates" item
-  buildAppMenu();
+   // Build application menu with "Check for Updates" item
+   buildAppMenu();
 
-  // Initialize health monitor
-  healthMonitor = new HealthMonitor({
-    adbManager,
-    licenseManager,
-    deviceStore,
-    paths: Paths
-  });
-  healthMonitor.init();
+   // Initialize health monitor
+   healthMonitor = new HealthMonitor({
+     adbManager,
+     licenseManager: LicenseManager,
+     deviceStore,
+     paths: Paths
+   });
+   healthMonitor.init();
 
   // Wire critical health alerts to renderer
   healthMonitor.onCritical((alerts) => {
@@ -373,8 +432,9 @@ async function startAppServices() {
 }
 
 app.on('window-all-closed', () => {
-  // Quit the app when all windows are closed
-  app.quit();
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
 
 app.on('activate', () => {
@@ -427,6 +487,9 @@ ipcMain.handle('check-license', async () => {
  */
 ipcMain.handle('activate-license', async (event, licenseKey) => {
   if (process.env?.DEBUG) console.debug('[IPC] activate-license called');
+  if (typeof licenseKey !== 'string' || !licenseKey.trim() || licenseKey.trim().length > 255) {
+    return { success: false, error: 'Invalid license key' };
+  }
   const result = await LicenseManager.activateLicense(licenseKey);
   if (result.success) {
     isLicenseValid = true;
@@ -842,7 +905,8 @@ ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
 ipcMain.handle('send-key-to-device', async (event, deviceId, keycode) => {
   if (process.env?.DEBUG) console.debug('[IPC] send-key-to-device called for:', deviceId, 'keycode:', keycode);
   const safeDeviceId = ipcDeviceId(deviceId);
-  return await adbManager.sendKey(safeDeviceId, keycode);
+  const safeKeycode = ipcKeycode(keycode);
+  return await adbManager.sendKey(safeDeviceId, safeKeycode);
 });
 
 // =====================================================
@@ -948,6 +1012,13 @@ ipcMain.handle('get-device-data', async (event, deviceId) => {
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('save-device-data', async (event, deviceId, data) => {
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return { success: false, error: 'Invalid device data' };
+  }
+  const disallowed = ['__proto__', 'constructor', 'prototype'];
+  if (disallowed.some(key => key in data)) {
+    return { success: false, error: 'Invalid device data' };
+  }
   const safeDeviceId = ipcDeviceId(deviceId);
   return deviceStore.saveDeviceData(safeDeviceId, data);
 });
@@ -1062,12 +1133,24 @@ ipcMain.handle('get-device-store-settings', async () => {
 
 /**
  * IPC: Sets a single device-store setting by key.
+ * Only pre-defined setting keys are allowed.
  * @param {Electron.IpcMainInvokeEvent} event
  * @param {string} key - The setting key
  * @param {*} value - The setting value
- * @returns {Promise<{success:boolean}>}
+ * @returns {Promise<{success:boolean,error?:string}>}
  */
+const VALID_SETTING_KEYS = [
+  'showOfflineDevices',
+  'sortBy',
+  'groupByGroup',
+];
 ipcMain.handle('set-device-store-setting', async (event, key, value) => {
+  if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    return { success: false, error: 'Invalid setting key' };
+  }
+  if (!VALID_SETTING_KEYS.includes(key)) {
+    return { success: false, error: 'Invalid setting key' };
+  }
   return deviceStore.setSetting(key, value);
 });
 
@@ -1287,7 +1370,7 @@ ipcMain.handle('phone:call-bulk', async (event, numbers) => {
 
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
   if (devices.length === 0) {
-    return { success: false, error: 'No devices connected' };
+    return { success: false, error: humanizeError('No devices connected') };
   }
 
   const deviceId = devices[0].id;
@@ -1296,7 +1379,7 @@ ipcMain.handle('phone:call-bulk', async (event, numbers) => {
     const jobId = await submitBulkCallJob(deviceId, validNumbers);
     return { success: true, jobId };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: humanizeError(error.message) };
   }
 });
 
@@ -1310,7 +1393,7 @@ async function submitBulkCallJob(deviceId, numbers) {
   const path = require('path');
   
   const tempDir = require('os').tmpdir();
-  const jobFilePath = path.join(tempDir, `bulk-call-${Date.now()}.json`);
+  const jobFilePath = path.join(tempDir, `bulk-call-${crypto.randomUUID()}.json`);
   
   const jobData = {
     device_id: deviceId,
@@ -1319,21 +1402,26 @@ async function submitBulkCallJob(deviceId, numbers) {
   
   fs.writeFileSync(jobFilePath, JSON.stringify(jobData, null, 2));
   
-  try {
-    const result = await adbManager.runCommand([
-      'phone_farm_cli.py', 'submit', deviceId, jobFilePath
-    ], { timeout: 30000 });
-    
-    const output = result.stdout || '';
-    const jobIdMatch = output.match(/Job ID: (\S+)/);
-    if (jobIdMatch) {
-      return jobIdMatch[1];
-    }
-    
-    return `bulk-call-${Date.now()}`;
-  } finally {
-    try { fs.unlinkSync(jobFilePath); } catch(e) { console.debug('Cleanup error:', e.message); }
-  }
+   try {
+     const { execFile: execFileCmd } = require('child_process');
+     const cliPath = path.join(__dirname, '..', '..', 'phone_farm_cli.py');
+     const result = await new Promise((resolve, reject) => {
+       execFileCmd('python', [cliPath, 'submit', deviceId, jobFilePath], { timeout: 30000 }, (err, stdout, stderr) => {
+         if (err) { reject(err); return; }
+         resolve({ stdout: stdout || '', stderr: stderr || '' });
+       });
+     });
+     
+     const output = result.stdout || '';
+     const jobIdMatch = output.match(/Job ID: (\S+)/);
+     if (jobIdMatch) {
+       return jobIdMatch[1];
+     }
+     
+     return `bulk-call-${Date.now()}`;
+   } finally {
+     try { fs.unlinkSync(jobFilePath); } catch(e) { console.debug('Cleanup error:', e.message); }
+   }
 }
 
 // =====================================================
@@ -1393,6 +1481,187 @@ ipcMain.handle('call-history:get', async () => {
 });
 
 // =====================================================
+// IPC: LOG VIEWER
+// =====================================================
+
+/**
+ * Resolves the directory that electron-log writes to.
+ * electron-log's default `file` transport lives at <userData>/logs/main.log
+ * in packaged apps, falling back to the project-root logs/ folder for tests
+ * and dev tools.
+ */
+function resolveElectronLogDir() {
+  try {
+    if (typeof app !== 'undefined' && app && typeof app.getPath === 'function') {
+      return path.join(app.getPath('userData'), 'logs');
+    }
+  } catch (_) { /* app not ready yet — fall through */ }
+  return path.join(__dirname, '..', '..', 'logs');
+}
+
+/**
+ * Parses a single line from electron-log's default file format.
+ * electron-log writes lines shaped like:
+ *   [2026-06-04 16:00:34.512] [info] [main] message body
+ * Unknown shapes are wrapped in a synthetic INFO record so they still appear.
+ * @param {string} line
+ * @param {string} source
+ * @returns {{timestamp:string,level:string,message:string,source:string}|null}
+ */
+function parseElectronLogLine(line, source) {
+  if (!line) return null;
+  const m = line.match(/^\[(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2}(?:\.\d+)?)]\s+\[(\w+)]\s+\[([^\]]*)]\s+(.*)$/);
+  if (!m) {
+    return {
+      timestamp: new Date(0).toISOString(),
+      level: 'info',
+      message: String(line).slice(0, 500),
+      source: source
+    };
+  }
+  let ts = m[1].replace(' ', 'T');
+  if (!/Z$/.test(ts) && /[+-]\d{2}:?\d{2}$/.test(ts) === false) ts += 'Z';
+  return {
+    timestamp: ts,
+    level: (m[2] || 'info').toLowerCase(),
+    message: (m[4] || '').slice(0, 1000),
+    source: m[3] || source
+  };
+}
+
+/**
+ * Parses a crash-log file emitted by writeCrashLog().
+ * These files contain a `Timestamp:` header line; everything after the
+ * `=== Stack Trace ===` marker is treated as the message body.
+ * @param {string} content
+ * @param {string} filename
+ * @returns {{timestamp:string,level:string,message:string,source:string}}
+ */
+function parseCrashLog(content, filename) {
+  const lines = String(content || '').split(/\r?\n/);
+  let timestamp = '';
+  let level = 'error';
+  for (const ln of lines) {
+    const t = ln.match(/^Timestamp:\s*(.+)$/);
+    if (t) { timestamp = t[1].trim(); break; }
+    const ty = ln.match(/^Type:\s*(.+)$/);
+    if (ty) {
+      const v = (ty[1] || '').toLowerCase();
+      if (v.includes('warn')) level = 'warning';
+      else if (v.includes('error') || v.includes('exception') || v.includes('reject')) level = 'error';
+      else level = 'info';
+    }
+  }
+  if (!timestamp) {
+    const m = filename.match(/crash-(\d+)-/);
+    timestamp = m ? new Date(parseInt(m[1], 10)).toISOString() : new Date().toISOString();
+  }
+  const startIdx = lines.findIndex(function (l) { return /^=== Stack Trace ===$/.test(l); });
+  const message = startIdx >= 0
+    ? lines.slice(startIdx + 1).join('\n').trim()
+    : lines.slice(0, 5).join('\n').trim();
+  return {
+    timestamp: timestamp,
+    level: level,
+    message: (message || filename).slice(0, 2000),
+    source: filename
+  };
+}
+
+/**
+ * IPC: Returns log entries from electron-log and crash-logs directories.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {{offset?:number,limit?:number,level?:string,text?:string,since?:string,until?:string}} [opts]
+ * @returns {Promise<{entries:Array,total:number,offset:number,limit:number}>}
+ */
+ipcMain.handle('get-logs', async (event, opts) => {
+  const safeOpts = (opts && typeof opts === 'object') ? opts : {};
+  const limit = Math.max(1, Math.min(2000, parseInt(safeOpts.limit, 10) || 200));
+  const offset = Math.max(0, parseInt(safeOpts.offset, 10) || 0);
+  const level = (typeof safeOpts.level === 'string') ? safeOpts.level.toLowerCase() : '';
+  const text = (typeof safeOpts.text === 'string') ? safeOpts.text.toLowerCase() : '';
+  const since = (typeof safeOpts.since === 'string' && safeOpts.since) ? safeOpts.since : '';
+  const until = (typeof safeOpts.until === 'string' && safeOpts.until) ? safeOpts.until : '';
+
+  try {
+    const entries = [];
+
+    // 1) electron-log default file
+    const electronDir = resolveElectronLogDir();
+    const mainLog = path.join(electronDir, 'main.log');
+    try {
+      if (fs.existsSync(mainLog)) {
+        const raw = fs.readFileSync(mainLog, 'utf-8');
+        const lines = raw.split(/\r?\n/);
+        for (let i = lines.length - 1; i >= 0; i--) {
+          const parsed = parseElectronLogLine(lines[i], 'main.log');
+          if (parsed) entries.push(parsed);
+        }
+      }
+    } catch (e) {
+      console.error('[IPC] get-logs: error reading main.log:', e.message);
+    }
+
+    // 2) Crash logs directory (userData/crash-logs or logs/crash-logs)
+    try {
+      const crashDir = resolveCrashLogsDir();
+      if (fs.existsSync(crashDir)) {
+        const files = fs.readdirSync(crashDir)
+          .filter(function (f) { return /^crash-.*\.log$/.test(f); })
+          .sort()
+          .reverse();
+        for (const file of files) {
+          try {
+            const fp = path.join(crashDir, file);
+            const stat = fs.statSync(fp);
+            if (!stat.isFile()) continue;
+            const content = fs.readFileSync(fp, 'utf-8');
+            entries.push(parseCrashLog(content, file));
+          } catch (e) {
+            console.error('[IPC] get-logs: error reading crash log', file, e.message);
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[IPC] get-logs: error reading crash-logs dir:', e.message);
+    }
+
+    // 3) Apply client-supplied filters
+    let filtered = entries;
+    if (level && level !== 'all') {
+      filtered = filtered.filter(function (e) { return (e.level || '').toLowerCase() === level; });
+    }
+    if (text) {
+      filtered = filtered.filter(function (e) {
+        return (e.message || '').toLowerCase().indexOf(text) !== -1
+          || (e.source || '').toLowerCase().indexOf(text) !== -1;
+      });
+    }
+    if (since) {
+      filtered = filtered.filter(function (e) { return e.timestamp >= since; });
+    }
+    if (until) {
+      filtered = filtered.filter(function (e) { return e.timestamp <= until; });
+    }
+
+    // 4) Sort newest first
+    filtered.sort(function (a, b) {
+      if (!a.timestamp) return 1;
+      if (!b.timestamp) return -1;
+      return b.timestamp.localeCompare(a.timestamp);
+    });
+
+    const total = filtered.length;
+    const page = filtered.slice(offset, offset + limit);
+
+    return { entries: page, total: total, offset: offset, limit: limit };
+  } catch (e) {
+    console.error('[IPC] get-logs error:', e.message);
+    return { entries: [], total: 0, offset: 0, limit: limit };
+  }
+});
+
+// =====================================================
 // IPC: UTILITY
 // =====================================================
 
@@ -1405,12 +1674,12 @@ ipcMain.handle('call-history:get', async () => {
 ipcMain.handle('open-external', async (event, url) => {
   try {
     if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
-      return { success: false, error: 'Only http/https URLs are allowed' };
+      return { success: false, error: humanizeError('Only http/https URLs are allowed') };
     }
     await shell.openExternal(url);
     return { success: true };
   } catch (e) {
-    return { success: false, error: e.message };
+    return { success: false, error: humanizeError(e.message) };
   }
 });
 
@@ -1452,9 +1721,11 @@ ipcMain.handle('health:system', async () => {
 });
 
 ipcMain.handle('health:get', async (event, deviceId) => {
-  const safeDeviceId = ipcDeviceId(deviceId);
-  if (!safeDeviceId) {
-    return { ok: false, error: 'Invalid device ID' };
+  let safeDeviceId;
+  try {
+    safeDeviceId = ipcDeviceId(deviceId);
+  } catch (e) {
+    return { ok: false, error: humanizeError(e.message) };
   }
 
   try {
@@ -1504,7 +1775,7 @@ ipcMain.handle('health:get', async (event, deviceId) => {
 
     return { ok: true, sim, signal, battery, memory };
   } catch (e) {
-    return { ok: false, error: e.message };
+    return { ok: false, error: humanizeError(e.message) };
   }
 });
 
@@ -1512,16 +1783,124 @@ ipcMain.handle('health:get', async (event, deviceId) => {
 // ERROR HANDLING
 // =====================================================
 
+let isShuttingDown = false;
+
+// Resolves the crash-logs directory.
+// Prefers Electron's writable userData path (works in packaged builds where
+// the project root lives inside app.asar and is read-only).
+// Falls back to the project-root `logs/crash-logs/` for non-Electron contexts
+// (tests, plain Node, dev tools) so the function is safe to call anywhere.
+function resolveCrashLogsDir() {
+  try {
+    if (typeof app !== 'undefined' && app && typeof app.getPath === 'function') {
+      return path.join(app.getPath('userData'), 'crash-logs');
+    }
+  } catch (_) { /* app not ready yet — fall through */ }
+  return path.join(__dirname, '..', '..', 'logs', 'crash-logs');
+}
+
+// Writes a crash report synchronously so the file is fully flushed
+// before app.quit() tears the process down. Async writes would race the quit.
+function writeCrashLog(error, type) {
+  try {
+    const logsDir = resolveCrashLogsDir();
+    fs.mkdirSync(logsDir, { recursive: true });
+
+    const filename = `crash-${Date.now()}-${type}.log`;
+    const filepath = path.join(logsDir, filename);
+
+    const stack = (error && error.stack)
+      ? error.stack
+      : (error ? String(error) : 'No error info available');
+
+    const lines = [
+      '=== Crash Report ===',
+      `Type: ${type}`,
+      `Timestamp: ${new Date().toISOString()}`,
+      `PID: ${process.pid}`,
+      '',
+      '=== Stack Trace ===',
+      stack,
+      '',
+      '=== Runtime Versions ===',
+      `Node: ${process.versions.node || 'unknown'}`,
+      `Electron: ${process.versions.electron || 'unknown'}`,
+      `Chrome: ${process.versions.chrome || 'unknown'}`,
+      `V8: ${process.versions.v8 || 'unknown'}`,
+      '',
+      '=== System Info ===',
+      `Platform: ${os.platform()}`,
+      `Release: ${os.release()}`,
+      `Arch: ${os.arch()}`,
+      `OS Type: ${os.type()}`,
+      `Hostname: ${os.hostname()}`,
+      `CPUs: ${os.cpus() ? os.cpus().length : 'unknown'}`,
+      `Total Memory: ${os.totalmem()} bytes`,
+      `Free Memory: ${os.freemem()} bytes`,
+      ''
+    ];
+
+    fs.writeFileSync(filepath, lines.join('\n'), 'utf8');
+    console.error(`[Crash] Wrote crash log to: ${filepath}`);
+  } catch (writeErr) {
+    console.error('[Crash] Failed to write crash log:', writeErr);
+    console.error('[Crash] Original error:', error);
+  }
+}
+
+// Deletes crash-*.log files whose mtime is older than 30 days.
+// All errors are swallowed; a cleanup failure must never break app boot.
+function cleanupOldCrashLogs() {
+  try {
+    const crashDir = resolveCrashLogsDir();
+    if (!fs.existsSync(crashDir)) return;
+
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const entries = fs.readdirSync(crashDir);
+    let removed = 0;
+
+    for (const entry of entries) {
+      if (!entry.startsWith('crash-') || !entry.endsWith('.log')) continue;
+
+      const filepath = path.join(crashDir, entry);
+      try {
+        const stat = fs.statSync(filepath);
+        if (!stat.isFile()) continue;
+        const age = now - stat.mtimeMs;
+        if (age > thirtyDaysMs) {
+          fs.unlinkSync(filepath);
+          removed++;
+        }
+      } catch (entryErr) {
+        console.error(`[Crash] Failed to inspect/delete ${entry}:`, entryErr.message);
+      }
+    }
+
+    if (removed > 0) {
+      console.log(`[Crash] Cleaned up ${removed} crash log(s) older than 30 days`);
+    }
+  } catch (e) {
+    console.error('[Crash] Old crash log cleanup failed:', e.message);
+  }
+}
+
 process.on('uncaughtException', (error) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  writeCrashLog(error, 'uncaughtException');
   console.error('[Main] Uncaught exception:', error);
   app.quit();
-  setTimeout(() => process.exit(1), 2000);
+  setTimeout(() => { isShuttingDown = false; }, 5000);
 });
 
 process.on('unhandledRejection', (reason) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  writeCrashLog(reason, 'unhandledRejection');
   console.error('[Main] Unhandled rejection:', reason);
   app.quit();
-  setTimeout(() => process.exit(1), 2000);
+  setTimeout(() => { isShuttingDown = false; }, 5000);
 });
 
 // =====================================================
@@ -1539,7 +1918,7 @@ ipcMain.handle('phone:call', async (event, params) => {
    assertJsonBodySize(params);
    const { deviceId, number } = params;
    if (!deviceId || !number) {
-      return { success: false, error: 'Device ID and number are required' };
+      return { success: false, error: humanizeError('Device ID and number are required') };
    }
    assertValidDeviceId(deviceId, 'deviceId');
    assertValidPhoneNumber(number);
@@ -1550,7 +1929,7 @@ ipcMain.handle('phone:call', async (event, params) => {
          execFile('python', [cliPath, 'call', deviceId, '--number', number], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:call error:', error);
-               resolve({ success: false, error: error.message });
+               resolve({ success: false, error: humanizeError(error.message) });
             } else {
                mainWindow?.webContents?.send('phone-state-update', 'ringing');
                resolve({ success: true, output: stdout });
@@ -1559,11 +1938,11 @@ ipcMain.handle('phone:call', async (event, params) => {
       });
    } catch (error) {
       console.error('[IPC] phone:call exception:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: humanizeError(error.message) };
    }
    } catch (outerError) {
       console.error('[IPC] phone:call outer exception:', outerError);
-      return { success: false, error: outerError.message };
+      return { success: false, error: humanizeError(outerError.message) };
    }
 });
 
@@ -1578,7 +1957,7 @@ ipcMain.handle('phone:answer', async (event, params) => {
    assertJsonBodySize(params);
    const { deviceId } = params;
    if (!deviceId) {
-      return { success: false, error: 'Device ID is required' };
+      return { success: false, error: humanizeError('Device ID is required') };
    }
    assertValidDeviceId(deviceId, 'deviceId');
    try {
@@ -1588,7 +1967,7 @@ ipcMain.handle('phone:answer', async (event, params) => {
          execFile('python', [cliPath, 'run', deviceId, 'answer'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:answer error:', error);
-               resolve({ success: false, error: error.message });
+               resolve({ success: false, error: humanizeError(error.message) });
             } else {
                mainWindow?.webContents?.send('phone-state-update', 'active');
                resolve({ success: true, output: stdout });
@@ -1597,11 +1976,11 @@ ipcMain.handle('phone:answer', async (event, params) => {
       });
    } catch (error) {
       console.error('[IPC] phone:answer exception:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: humanizeError(error.message) };
    }
    } catch (outerError) {
       console.error('[IPC] phone:answer outer exception:', outerError);
-      return { success: false, error: outerError.message };
+      return { success: false, error: humanizeError(outerError.message) };
    }
 });
 
@@ -1616,7 +1995,7 @@ ipcMain.handle('phone:hangup', async (event, params) => {
    assertJsonBodySize(params);
    const { deviceId } = params;
    if (!deviceId) {
-      return { success: false, error: 'Device ID is required' };
+      return { success: false, error: humanizeError('Device ID is required') };
    }
    assertValidDeviceId(deviceId, 'deviceId');
    try {
@@ -1626,7 +2005,7 @@ ipcMain.handle('phone:hangup', async (event, params) => {
          execFile('python', [cliPath, 'run', deviceId, 'hangup'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:hangup error:', error);
-               resolve({ success: false, error: error.message });
+               resolve({ success: false, error: humanizeError(error.message) });
             } else {
                mainWindow?.webContents?.send('phone-state-update', 'ended');
                resolve({ success: true, output: stdout });
@@ -1635,11 +2014,11 @@ ipcMain.handle('phone:hangup', async (event, params) => {
       });
    } catch (error) {
       console.error('[IPC] phone:hangup exception:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: humanizeError(error.message) };
    }
    } catch (outerError) {
       console.error('[IPC] phone:hangup outer exception:', outerError);
-      return { success: false, error: outerError.message };
+      return { success: false, error: humanizeError(outerError.message) };
    }
 });
 
@@ -1650,25 +2029,32 @@ ipcMain.handle('phone:hangup', async (event, params) => {
  * @returns {Promise<{success:boolean,state:string,error?:string}>}
  */
 ipcMain.handle('phone:state', async (event, params) => {
-   try {
-   assertJsonBodySize(params);
-   const { deviceId } = params;
-   if (!deviceId) {
-      return { success: false, error: 'Device ID is required' };
-   }
-   assertValidDeviceId(deviceId, 'deviceId');
-   try {
-      // For now, we'll return idle as default state
-      // In a real implementation, this would query the device state
-      return { success: true, state: 'idle' };
-   } catch (error) {
-      console.error('[IPC] phone:state exception:', error);
-      return { success: false, error: error.message };
-   }
-   } catch (outerError) {
-      console.error('[IPC] phone:state outer exception:', outerError);
-      return { success: false, error: outerError.message };
-   }
+    try {
+        assertJsonBodySize(params);
+        const { deviceId } = params;
+        if (!deviceId) {
+            return { success: false, error: 'Device ID is required' };
+        }
+        assertValidDeviceId(deviceId, 'deviceId');
+        const safeDeviceId = ipcDeviceId(deviceId);
+        const raw = await adbManager.runCommand(
+            ['-s', safeDeviceId, 'shell', 'dumpsys', 'telephony.registry'],
+            { timeout: 10000 }
+        );
+        const output = raw.stdout || '';
+        const callStateMatch = output.match(/mCallState\s*=\s*(\d+)/);
+        let state = 'unknown';
+        if (callStateMatch) {
+            const val = parseInt(callStateMatch[1], 10);
+            if (val === 0) state = 'idle';
+            else if (val === 1) state = 'ringing';
+            else if (val === 2) state = 'offhook';
+        }
+        return { success: true, state };
+    } catch (error) {
+        console.error('[IPC] phone:state exception:', error);
+        return { success: false, state: 'unknown', error: humanizeError(error.message) };
+    }
 });
 
 process.on('SIGTERM', () => {

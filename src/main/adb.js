@@ -3,11 +3,11 @@
 // Unified Application
 // =====================================================
 
-const { execFile, exec, spawn } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const BaseToolManager = require('./base-tool-manager');
-const { validateDeviceId, validateExecArg, ValidationError } = require('./device-id-validator');
+const { validateDeviceId, validateExecArg } = require('./device-id-validator');
 
 const DEBUG = process.env.NODE_ENV === 'development';
 
@@ -260,27 +260,40 @@ class ADBManager extends BaseToolManager {
   /**
    * Connect to device over network
    */
-  async connect(ip, port = 5555) {
-    try {
-      const validatedId = validateDeviceId(ip.toString());
-      const validatedPort = validateExecArg(port?.toString(), 'port');
-      const { stdout } = await this.runCommand(['connect', `${validatedId}:${validatedPort}`], { timeout: 10000 });
-      const success = stdout.includes('connected') || stdout.includes('already');
-      return { success, message: stdout.trim() };
-    } catch (e) {
-      console.error('[ADB] connect failed:', e?.message || e);
-      return { success: false, error: e.message };
-    }
-  }
+   async connect(ip, port = 5555) {
+     try {
+       const ipStr = ip.toString();
+        const validatedPort = validateExecArg(port?.toString(), 'port');
+        // Basic IP validation — reject anything with special chars
+       if (!/^[a-zA-Z0-9.\-:]+$/.test(ipStr)) {
+         throw new Error('Invalid IP address');
+       }
+       const target = `${ipStr}:${validatedPort}`;
+       const { stdout } = await this.runCommand(['connect', target], { timeout: 10000 });
+       const success = stdout.includes('connected') || stdout.includes('already');
+       return { success, message: stdout.trim() };
+     } catch (e) {
+       console.error('[ADB] connect failed:', e?.message || e);
+       return { success: false, error: e.message };
+     }
+   }
 
   /**
    * Disconnect from network device
    */
   async disconnect(ip, port = 5555) {
     try {
-      const validatedId = validateDeviceId(ip.toString());
-      const validatedPort = validateExecArg(port?.toString(), 'port');
-      const { stdout } = await this.runCommand(['disconnect', `${validatedId}:${validatedPort}`], { timeout: 10000 });
+      const ipStr = (ip || '').toString().trim();
+      if (!ipStr) {
+        return { success: false, error: 'IP address is required' };
+      }
+      // Basic IP validation — reject anything with special chars
+      if (!/^[a-zA-Z0-9.\-:]+$/.test(ipStr)) {
+        throw new Error('Invalid IP address');
+      }
+      // If the IP already contains a port (e.g. 192.168.1.42:5555), use it as-is
+      const target = ipStr.includes(':') ? ipStr : `${ipStr}:${port}`;
+      const { stdout } = await this.runCommand(['disconnect', target], { timeout: 10000 });
       return { success: true, message: stdout.trim() };
     } catch (e) {
       console.error('[ADB] disconnect failed:', e?.message || e);
@@ -322,11 +335,20 @@ class ADBManager extends BaseToolManager {
   }
 
   /**
-   * Check ADB status
+   * Check ADB server status
    */
+  async _checkRunning() {
+    try {
+      const { stdout } = await this.runCommand(['get-state'], { timeout: 5000 });
+      return stdout.trim() === 'device';
+    } catch {
+      return false;
+    }
+  }
+
   async getStatus() {
     const result = await super.getStatus();
-    return result; // ADB has no extra fields beyond what BaseToolManager provides
+    return result;
   }
 }
 

@@ -10,10 +10,10 @@
 // Qualcomm emergency mode: 0123456789ABCDEF:0 (device:sub-channel)
 
 // Regex covers all four:
-// - 16 hex (USB / emergency mode base)
+// - 16 hex (USB / emergency mode base) optionally followed by :NN sub-channel
 // - IPv4[:port] (TCP/IP)
 // - emulator-NNNN
-const VALID_DEVICE_ID = /^(?:[0-9A-Fa-f]{16}|(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}|emulator-\d+)$/;
+const VALID_DEVICE_ID = /^(?:[0-9A-Fa-f]{16}(?::[0-9A-Fa-f]{1,2})?|(?:\d{1,3}\.){3}\d{1,3}:\d{1,5}|emulator-\d+)$/;
 
 /**
  * Validate an ADB device identifier.
@@ -29,7 +29,7 @@ function validateDeviceId(rawId) {
   }
   if (!VALID_DEVICE_ID.test(id)) {
     throw new ValidationError(
-      `Invalid device ID format: ${id}. Expected 16 hex chars, IPv4:port, or emulator-NNNN.`
+      `Invalid device ID format: ${id}. Expected 16 hex chars (optionally with :NN sub-channel), IPv4:port, or emulator-NNNN.`
     );
   }
   return id;

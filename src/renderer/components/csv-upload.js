@@ -100,7 +100,7 @@ class CSVUpload {
 
       try {
         // Send numbers to main process via IPC
-        await window.electronAPI.invoke('phone:call-bulk', this.numbers);
+        await window.electronAPI.phoneCallBulk(this.numbers);
         this.showSuccess(`Bulk call initiated for ${this.numbers.length} numbers`);
       } catch (error) {
         this.showError(`Bulk call failed: ${error.message}`);

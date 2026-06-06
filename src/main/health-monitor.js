@@ -3,7 +3,6 @@
 // Runtime health monitoring for Electron app
 // =====================================================
 
-const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -14,13 +13,15 @@ class HealthMonitor {
    * @param {Object} dependencies.licenseManager - License manager instance
    * @param {Object} dependencies.deviceStore - Device store instance
    * @param {Object} dependencies.paths - Paths utility instance
+   * @param {Object} [dependencies.notificationManager] - Optional NotificationManager for failure alerts
    */
-  constructor({ adbManager, licenseManager, deviceStore, paths }) {
+  constructor({ adbManager, licenseManager, deviceStore, paths, notificationManager }) {
     this.adbManager = adbManager;
     this.licenseManager = licenseManager;
     this.deviceStore = deviceStore;
     this.paths = paths;
-    
+    this.notificationManager = notificationManager || null;
+
     this.healthData = {
       adbRunning: false,
       devicesConnected: 0,
@@ -30,15 +31,26 @@ class HealthMonitor {
       lastUpdated: null,
       criticalAlerts: []
     };
-    
+
     this.lastHealthData = null;
     this.criticalCallbacks = [];
     this.intervalId = null;
     this.checkInterval = 60 * 1000; // 60 seconds
-    
+
     // Thresholds for critical alerts
     this.DISK_SPACE_THRESHOLD_MB = 100; // Alert if less than 100MB free
     this.MEMORY_THRESHOLD_MB = 500;     // Alert if more than 500MB used
+
+    // ADB auto-restart rate limiting and backoff
+    this.restartHistory = [];
+    this.MAX_RESTARTS_PER_HOUR = 3;
+    this.RESTART_WINDOW_MS = 60 * 60 * 1000;
+    
+    this.adbRestartAttempts = 0;
+    this.MAX_ADB_RESTART_ATTEMPTS = 3;
+    this.adbRestartBackoffMs = 5000; // 5 seconds initial backoff
+    this.MAX_ADB_RESTART_BACKOFF_MS = 60000; // 60 seconds max backoff
+    this.isRestartingAdb = false;
   }
   
   /**
@@ -99,16 +111,25 @@ class HealthMonitor {
         criticalAlerts: alerts
       };
       
+      // Handle first run ADB check
+      if (!this.lastHealthData && !adbRunning) {
+        console.warn('[Health Monitor] ADB service not running on startup, attempting auto-restart...');
+        this.attemptAdbRestart();
+      }
+
       // Detect changes and generate alerts
       if (this.lastHealthData) {
-        // ADB status change
-        if (this.lastHealthData.adbRunning !== adbRunning) {
-          if (!adbRunning) {
+        // ADB status change and auto-restart
+        if (!adbRunning) {
+          if (this.lastHealthData.adbRunning) {
             alerts.push('ADB service is not running');
-            console.warn('[Health Monitor] ADB service stopped');
+            console.warn('[Health Monitor] ADB service stopped, attempting auto-restart...');
           } else {
-            console.debug('[Health Monitor] ADB service started');
+            console.warn('[Health Monitor] ADB service still not running, scheduling retry...');
           }
+          this.attemptAdbRestart();
+        } else if (!this.lastHealthData.adbRunning) {
+          console.debug('[Health Monitor] ADB service recovered');
         }
         
         // Device connectivity change
@@ -163,48 +184,156 @@ class HealthMonitor {
   }
   
   /**
-   * Check if ADB service is running
+   * Check if ADB service is running and responsive
    * @returns {Promise<boolean>}
    */
   checkAdbStatus() {
-    return new Promise((resolve) => {
-      exec('adb version', (error, stdout, stderr) => {
-        if (!error && stdout.includes('Android Debug Bridge')) {
-          resolve(true);
-        } else {
-          resolve(false);
+    if (!this.adbManager || typeof this.adbManager.runCommand !== 'function') {
+      return Promise.resolve(false);
+    }
+    return this.adbManager.runCommand(['devices'], { timeout: 5000 })
+      .then(({ stdout }) => {
+        return !!(stdout && stdout.includes('List of devices'));
+      })
+      .catch(() => false);
+  }
+
+  /**
+   * Automatically restart the ADB server via adbManager (BaseToolManager pattern).
+   * Falls back to a console warning (no crash) when adbManager/notificationManager
+   * are not provided so older callers/tests still work.
+   * @returns {Promise<boolean>} True if restart was successful, false otherwise
+   */
+  async restartAdbServer() {
+    const now = Date.now();
+    this.restartHistory = this.restartHistory.filter(time => now - time < this.RESTART_WINDOW_MS);
+
+    if (this.restartHistory.length >= this.MAX_RESTARTS_PER_HOUR) {
+      console.error('[Health Monitor] ADB restart rate limit exceeded. Max 3 restarts per hour.');
+      this.notifyAdbRestartFailure('ADB restart rate limit exceeded (3/hour).');
+      return false;
+    }
+
+    if (!this.adbManager || typeof this.adbManager.startServer !== 'function') {
+      console.warn('[Health Monitor] adbManager not available; cannot restart ADB server.');
+      this.notifyAdbRestartFailure('adbManager dependency is missing.');
+      return false;
+    }
+
+    console.log('[Health Monitor] Attempting to restart ADB server...');
+    this.restartHistory.push(now);
+
+    try {
+      if (typeof this.adbManager.stopServer === 'function') {
+        const stopResult = await this.adbManager.stopServer();
+        if (!stopResult || !stopResult.success) {
+          console.warn('[Health Monitor] Error killing ADB server:', stopResult && stopResult.error);
         }
+      }
+
+      const startResult = await this.adbManager.startServer();
+      if (startResult && startResult.success) {
+        console.log('[Health Monitor] ADB server restarted successfully');
+        return true;
+      }
+
+      console.error('[Health Monitor] Failed to start ADB server:', startResult && startResult.error);
+      this.notifyAdbRestartFailure(startResult && startResult.error ? `start-server failed: ${startResult.error}` : undefined);
+      return false;
+    } catch (e) {
+      console.error('[Health Monitor] ADB restart threw:', e && e.message ? e.message : e);
+      this.notifyAdbRestartFailure(e && e.message ? e.message : undefined);
+      return false;
+    }
+  }
+
+  /**
+   * Notify the user (via injected notificationManager) that ADB could not be
+   * restarted automatically. Defensive: silently no-ops if notificationManager
+   * is missing or the show() call throws.
+   * @param {string} [reason] - Optional internal reason for log correlation.
+   */
+  notifyAdbRestartFailure(reason) {
+    if (!this.notificationManager || typeof this.notificationManager.show !== 'function') {
+      console.warn('[Health Monitor] notificationManager not available; skipping user notification.');
+      return;
+    }
+
+    try {
+      this.notificationManager.show({
+        title: 'ADB Server Failed',
+        body: 'ADB server could not be restarted automatically. Please reconnect your device.',
+        type: 'error',
+        urgency: 'critical'
       });
-    });
+      if (reason) {
+        console.log('Notified user of ADB restart failure:', reason);
+      } else {
+        console.log('Notified user of ADB restart failure');
+      }
+    } catch (e) {
+      console.warn('[Health Monitor] Notification dispatch failed:', e && e.message ? e.message : e);
+    }
+  }
+
+  /**
+   * Attempt to restart ADB server with backoff and retry limits
+   */
+  async attemptAdbRestart() {
+    if (this.isRestartingAdb) {
+      console.debug('[Health Monitor] ADB restart already in progress or scheduled.');
+      return;
+    }
+
+    if (this.adbRestartAttempts >= this.MAX_ADB_RESTART_ATTEMPTS) {
+      console.error('[Health Monitor] Max ADB restart attempts reached. Manual intervention required.');
+      this.notifyAdbRestartFailure(`Max consecutive restart attempts (${this.MAX_ADB_RESTART_ATTEMPTS}) reached.`);
+      return;
+    }
+
+    this.isRestartingAdb = true;
+    const delay = this.adbRestartBackoffMs;
+    console.log(`[Health Monitor] Scheduling ADB restart in ${delay}ms (attempt ${this.adbRestartAttempts + 1}/${this.MAX_ADB_RESTART_ATTEMPTS})`);
+
+    setTimeout(async () => {
+      const success = await this.restartAdbServer();
+      this.isRestartingAdb = false;
+      if (success) {
+        console.log('[Health Monitor] ADB restarted successfully. Resetting restart attempts.');
+        this.adbRestartAttempts = 0;
+        this.adbRestartBackoffMs = 5000;
+      } else {
+        this.adbRestartAttempts++;
+        this.adbRestartBackoffMs = Math.min(this.adbRestartBackoffMs * 2, this.MAX_ADB_RESTART_BACKOFF_MS);
+        console.warn(`[Health Monitor] ADB restart failed. Backoff increased to ${this.adbRestartBackoffMs}ms`);
+      }
+    }, delay);
   }
   
   /**
    * Check how many devices are connected
    * @returns {Promise<number>}
    */
-  checkDeviceConnectivity() {
-    return new Promise((resolve) => {
-      // Use the deviceStore to get connected devices
-      try {
-        const devices = this.deviceStore.getAll ? this.deviceStore.getAll() : [];
-        resolve(devices.length);
-      } catch (error) {
-        console.warn('[Health Monitor] Could not get device count from store:', error);
-        // Fallback to adb devices
-        exec('adb devices', (error, stdout, stderr) => {
-          if (error) {
-            resolve(0);
-            return;
-          }
-          // Parse output: first line is header, then each device line
-          const lines = stdout.trim().split('\n');
-          // Skip header line, count non-empty lines that contain a device
-          const deviceLines = lines.slice(1).filter(line => line.trim() && !line.includes('List of devices'));
-          resolve(deviceLines.length);
-        });
-      }
-    });
-  }
+   checkDeviceConnectivity() {
+     return new Promise((resolve) => {
+       try {
+         const dm = this.manager?.dm;
+         if (dm && typeof dm.online_devices === 'object') {
+           resolve(Object.keys(dm.online_devices).length);
+           return;
+         }
+       } catch (error) {
+         console.warn('[Health Monitor] Could not get device count from DeviceManager:', error);
+       }
+       if (this.adbManager && typeof this.adbManager.getDevices === 'function') {
+         this.adbManager.getDevices()
+           .then(result => resolve(result && result.devices ? result.devices.length : 0))
+           .catch(() => resolve(0));
+       } else {
+         resolve(0);
+       }
+     });
+   }
   
   /**
    * Check if license is still valid
@@ -217,7 +346,7 @@ class HealthMonitor {
         if (typeof this.licenseManager.isValid === 'function') {
           resolve(this.licenseManager.isValid());
         } else if (typeof this.licenseManager.checkLicense === 'function') {
-          this.licenseManager.checkLicense().then(valid => resolve(valid)).catch(() => resolve(false));
+          this.licenseManager.checkLicense().then(valid => resolve(valid?.isValid ?? false)).catch(() => resolve(false));
         } else {
           // Fallback: check if license file exists and is recent
           const licensePath = path.join(this.paths.getAppDataPath(), 'license.json');

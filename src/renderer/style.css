@@ -1203,6 +1203,154 @@ body {
 }
 
 /* =====================================================
+   HEALTH TREND CHARTS (24h ring buffer, CSS-only SVG)
+   ===================================================== */
+
+.health-trend-panel {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.health-trend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.health-trend-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.health-trend-tabs {
+  display: inline-flex;
+  background: var(--bg-tertiary, rgba(15, 23, 42, 0.5));
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 2px;
+  gap: 2px;
+}
+
+.health-trend-tab {
+  appearance: none;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: var(--transition-normal);
+  font-family: inherit;
+}
+
+.health-trend-tab:hover {
+  color: var(--text-primary, #f1f5f9);
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.health-trend-tab.active {
+  background: var(--accent-primary);
+  color: #fff;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.35);
+}
+
+.health-trend-tab:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+.health-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-trend-chart-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.health-trend-svg {
+  width: 100%;
+  height: 80px;
+  display: block;
+  background: var(--bg-tertiary, rgba(15, 23, 42, 0.35));
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+}
+
+.health-trend-gridline {
+  stroke: var(--border-color);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 3;
+  opacity: 0.6;
+}
+
+.health-trend-axis-label {
+  fill: var(--text-muted);
+  font-size: 7px;
+  font-family: monospace;
+  text-anchor: end;
+}
+
+.health-trend-line {
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: var(--transition-normal);
+}
+
+.health-trend-line-battery {
+  stroke: var(--success);
+}
+
+.health-trend-line-cpu {
+  stroke: var(--warning);
+}
+
+.health-trend-dot {
+  stroke: var(--bg-secondary);
+  stroke-width: 1;
+}
+
+.health-trend-dot-battery {
+  fill: var(--success);
+}
+
+.health-trend-dot-cpu {
+  fill: var(--warning);
+}
+
+.health-trend-latest {
+  fill: var(--text-secondary);
+  font-size: 8px;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+.health-trend-empty-text {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-family: monospace;
+  letter-spacing: 0.04em;
+}
+
+/* =====================================================
    CALL HISTORY
    ===================================================== */
 
@@ -1909,4 +2057,294 @@ body {
 button:focus-visible, [role="button"]:focus-visible {
   outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
+}
+
+/* =====================================================
+   THEME: LIGHT
+   Overrides for [data-theme="light"]. Dark theme is the
+   default and is defined in :root above.
+   ===================================================== */
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #e2e8f0;
+  --bg-card: #ffffff;
+  --bg-hover: #e2e8f0;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-active: #1e40af;
+
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --info: #2563eb;
+
+  --border-color: #cbd5e1;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 15px rgba(15, 23, 42, 0.10);
+
+  --sergio-primary: #4f46e5;
+  --sergio-secondary: #7c3aed;
+  --sergio-text: #4f46e5;
+  --sergio-glow: rgba(79, 70, 229, 0.10);
+}
+
+/* Smooth theme transitions on color-bearing properties so
+   swapping [data-theme] does not flash / pop harshly. */
+html,
+body,
+.card,
+.app-header,
+.app-footer,
+.control-panel,
+.btn,
+input,
+select,
+textarea,
+.toggle-slider,
+.status-badge,
+.mode-card,
+.device-card,
+.health-card,
+.shortcut-item,
+.csv-upload-zone,
+.csv-upload-container,
+.modal-card,
+.notification-item {
+  transition: background-color var(--transition-normal),
+              color var(--transition-normal),
+              border-color var(--transition-normal),
+              box-shadow var(--transition-normal);
+}
+
+/* =====================================================
+   LOG VIEWER
+   ===================================================== */
+
+.log-viewer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-viewer-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.log-viewer-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.log-viewer-row-actions {
+  justify-content: space-between;
+}
+
+.log-viewer-text-input {
+  flex: 1 1 220px;
+  min-width: 200px;
+  padding: 8px 12px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.log-viewer-text-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.log-viewer-filter-group {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.log-viewer-custom-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-viewer-date-input {
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  color-scheme: dark;
+}
+
+.log-viewer-date-sep {
+  color: var(--text-muted);
+}
+
+.log-viewer-status {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.log-viewer-status-error { color: var(--error); }
+.log-viewer-status-info { color: var(--info); }
+
+.log-viewer-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.log-viewer-scroll {
+  position: relative;
+  height: 480px;
+  min-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+}
+
+.log-viewer-header,
+.log-viewer-row {
+  display: grid;
+  grid-template-columns: 180px 80px 140px 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  font-size: 0.85rem;
+}
+
+.log-viewer-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 40px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.log-viewer-spacer {
+  position: relative;
+  width: 100%;
+}
+
+.log-viewer-rows {
+  position: relative;
+  width: 100%;
+}
+
+.log-viewer-row {
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
+  transition: background-color var(--transition-fast);
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  color: var(--text-primary);
+  will-change: transform;
+}
+
+.log-viewer-row:hover {
+  background: var(--bg-hover);
+}
+
+.log-viewer-row.log-level-error {
+  border-left: 3px solid var(--error);
+}
+
+.log-viewer-row.log-level-warning {
+  border-left: 3px solid var(--warning);
+}
+
+.log-viewer-row.log-level-info {
+  border-left: 3px solid var(--info);
+}
+
+.log-viewer-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.log-viewer-cell-ts {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.log-viewer-cell-source {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+.log-viewer-cell-message {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.log-level-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.log-level-badge.log-level-info {
+  background: rgba(96, 165, 250, 0.15);
+  color: var(--info);
+}
+
+.log-level-badge.log-level-warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--warning);
+}
+
+.log-level-badge.log-level-error {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--error);
+}
+
+.log-level-badge.log-level-default {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.log-viewer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.log-viewer-foot-hint {
+  color: var(--text-muted);
+  font-size: 0.8rem;
 }

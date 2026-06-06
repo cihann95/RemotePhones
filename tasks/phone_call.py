@@ -4,7 +4,6 @@ import re
 import time
 import logging
 
-from core.adb import ADBClient
 from core.phone import PhoneOperations
 from tasks.base_task import BaseTask, TaskConfig, TaskResult
 

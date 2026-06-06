@@ -111,9 +111,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   tailscaleLogin: () => ipcRenderer.invoke('tailscale-login'),
   /** IPC: Opens the Tailscale admin web UI */
   tailscaleOpenAdmin: () => ipcRenderer.invoke('tailscale-open-admin'),
-  /** IPC: Subscribes to Tailscale install progress events */
   onTailscaleInstallProgress: (callback) => {
-    return ipcRenderer.on('tailscale-install-progress', (event, progress) => callback(progress));
+    const handler = (_event, progress) => callback(progress);
+    ipcRenderer.on('tailscale-install-progress', handler);
+    return () => { ipcRenderer.removeListener('tailscale-install-progress', handler); };
   },
 
   // =====================================================
@@ -127,9 +128,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   parsecOpen: () => ipcRenderer.invoke('parsec-open'),
   /** IPC: Starts the Parsec streaming session */
   parsecStart: () => ipcRenderer.invoke('parsec-start'),
-  /** IPC: Subscribes to Parsec install progress events */
   onParsecInstallProgress: (callback) => {
-    return ipcRenderer.on('parsec-install-progress', (event, progress) => callback(progress));
+    const handler = (_event, progress) => callback(progress);
+    ipcRenderer.on('parsec-install-progress', handler);
+    return () => { ipcRenderer.removeListener('parsec-install-progress', handler); };
   },
 
   // =====================================================
@@ -265,6 +267,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getShortcuts: () => ipcRenderer.invoke('get-shortcuts'),
 
   // =====================================================
+  // THEME
+  // =====================================================
+  /** IPC: Returns the saved UI theme ('light' | 'dark'). Default 'dark'. */
+  getTheme: () => ipcRenderer.invoke('theme:get'),
+  /** IPC: Persists the UI theme and returns { success, theme }. */
+  setTheme: (theme) => ipcRenderer.invoke('theme:set', theme),
+
+  // =====================================================
   // FARM STATE
   // =====================================================
   /** IPC: Sets whether the farm loop is actively running */
@@ -297,6 +307,24 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getDeviceHealth: (deviceId) => ipcRenderer.invoke('health:get', deviceId),
 
   // =====================================================
+  // PHONE
+  // =====================================================
+  /** IPC: Initiates a phone call */
+  phoneCall: (params) => ipcRenderer.invoke('phone:call', params),
+  /** IPC: Answers an incoming phone call */
+  phoneAnswer: (params) => ipcRenderer.invoke('phone:answer', params),
+  /** IPC: Ends an active phone call */
+  phoneHangup: (params) => ipcRenderer.invoke('phone:hangup', params),
+  /** IPC: Gets current phone state */
+  phoneState: (params) => ipcRenderer.invoke('phone:state', params),
+  /** IPC: Initiates bulk phone calls from a list of numbers */
+  phoneCallBulk: (numbers) => ipcRenderer.invoke('phone:call-bulk', numbers),
+  /** IPC: Listens for phone state update events */
+  onPhoneStateUpdate: (callback) => ipcRenderer.on('phone-state-update', (event, ...args) => callback(...args)),
+  /** IPC: Sends a raw IPC message */
+  send: (channel, data) => ipcRenderer.send(channel, data),
+
+  // =====================================================
   // SYSTEM HEALTH
   // =====================================================
   getSystemHealth: () => ipcRenderer.invoke('health:system'),
@@ -309,6 +337,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // =====================================================
   /** IPC: Returns all call log records read from JSON files in logs/ */
   getCallHistory: () => ipcRenderer.invoke('call-history:get'),
+
+  // =====================================================
+  // LOG VIEWER
+  // =====================================================
+  /**
+   * IPC: Returns paginated log entries from electron-log + crash-logs.
+   * @param {{offset?:number,limit?:number,level?:string,text?:string,since?:string,until?:string}} [opts]
+   * @returns {Promise<{entries:Array,total:number,offset:number,limit:number}>}
+   */
+  getLogs: (opts) => ipcRenderer.invoke('get-logs', opts || {}),
 
   // =====================================================
   // UTILITY

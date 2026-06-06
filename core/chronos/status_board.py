@@ -5,8 +5,6 @@ from __future__ import annotations
 import os
 from typing import List
 
-from core.plugins.base_plugin import StatusBoardProtocol
-
 
 class StatusBoard:
     """Simple status board that writes entries to a markdown file."""
@@ -15,6 +13,7 @@ class StatusBoard:
         self.file_path = file_path
         # Ensure the file exists
         if not os.path.exists(self.file_path):
+            os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
             with open(self.file_path, "w", encoding="utf-8") as f:
                 f.write("# Status Board\n\n")
 

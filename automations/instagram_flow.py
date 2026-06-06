@@ -175,7 +175,7 @@ class InstagramFollowSequenceTask(BaseTask):
         for attempt in range(max_retries):
             time.sleep(wait_s)
             r = adb.alive(device_id=device_id)
-            if not r.get("ok", False):
+            if not r:
                 logger.warning("[%s] Verify attempt %d: device not reachable",
                                device_id, attempt)
                 continue

@@ -24,6 +24,7 @@ class DeviceManager:
         self.adb: ADBClient = adb_client
         self._connected: Dict[str, dict] = {}
         self._lock = threading.Lock()
+        self._device_locks: Dict[str, threading.Lock] = {}
 
     def discover(self) -> List[str]:
         """Return a list of connected device IDs.
@@ -130,3 +131,20 @@ class DeviceManager:
                 k: v for k, v in self._connected.items()
                 if v.get("status") == "online"
             }
+
+    def acquire_device(self, device_id: str) -> bool:
+        """Attempt to acquire a lock for the device. Returns True if successful."""
+        with self._lock:
+            if device_id not in self._device_locks:
+                self._device_locks[device_id] = threading.Lock()
+            lock = self._device_locks[device_id]
+        
+        return lock.acquire(blocking=False)
+
+    def release_device(self, device_id: str) -> None:
+        """Release the lock for the device."""
+        with self._lock:
+            if device_id in self._device_locks:
+                lock = self._device_locks[device_id]
+                if lock.locked():
+                    lock.release()

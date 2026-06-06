@@ -75,27 +75,26 @@ async function runSyntaxCheck(filePaths, _rootDir, config) {
     while (i < filePaths.length) {
       const fp = filePaths[i++];
       try {
-        await new Promise((resolve) => {
-          const p = execFile('node', ['--check', fp], { timeout }, (err, stdout, stderr) => {
-            if (stderr) {
-              const lines = stderr.trim().split('\n').filter(Boolean);
-              for (const ln of lines) {
-                const m = ln.match(/(?:^|:)([^:]+?):(\d+):/);
-                const lineNum = m ? parseInt(m[2], 10) : 1;
-                findings.push({
-                  id: `syntax-${path.basename(fp)}-${lineNum}`,
-                  severity: 'critical',
-                  file: safeRel(fp, getCurrentRootDir()),
-                  line: lineNum,
-                  message: `Syntax error: ${ln}`,
-                  suggestion: 'Fix the JS syntax error before proceeding.',
-                });
-              }
-            }
-            resolve();
-          });
-          if (err && !err.killed) { /* already captured via stderr */ }
-        });
+         await new Promise((resolve) => {
+           const p = execFile('node', ['--check', fp], { timeout }, (err, stdout, stderr) => {
+             if (stderr) {
+               const lines = stderr.trim().split('\n').filter(Boolean);
+               for (const ln of lines) {
+                 const m = ln.match(/(?:^|:)([^:]+?):(\d+):/);
+                 const lineNum = m ? parseInt(m[2], 10) : 1;
+                 findings.push({
+                   id: `syntax-${path.basename(fp)}-${lineNum}`,
+                   severity: 'critical',
+                   file: safeRel(fp, getCurrentRootDir()),
+                   line: lineNum,
+                   message: `Syntax error: ${ln}`,
+                   suggestion: 'Fix the JS syntax error before proceeding.',
+                 });
+               }
+             }
+             resolve();
+           });
+         });
       } catch (e) {
         // timeout or other exec error — still record if stderr was produced
       }

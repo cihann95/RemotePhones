@@ -3,7 +3,7 @@
 // Keyboard shortcuts management
 // =====================================================
 
-const { globalShortcut, BrowserWindow } = require('electron');
+const { globalShortcut } = require('electron');
 
 class ShortcutManager {
   constructor() {

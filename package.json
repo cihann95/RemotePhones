@@ -34,7 +34,7 @@
     ],
     "extraResources": [
       {
-        "from": "../tools",
+        "from": "tools",
         "to": "tools",
         "filter": [
           "**/*"

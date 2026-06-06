@@ -207,13 +207,20 @@ function showVCRuntimeError(errorMsg) {
   elements.errorMessage.innerHTML = `
     <strong>Lisans Sistemi Baslatilamadi</strong><br>
     <span style="font-size: 0.9em;">Visual C++ Runtime gerekli olabilir.</span><br><br>
-    <a href="#" onclick="window.electronAPI.openExternal('${vcDownloadUrl}'); return false;"
+    <a href="#" id="vc-download-link"
        style="color: #60a5fa; text-decoration: underline;">
        Visual C++ Runtime Indir (x64)
     </a>
     <br><br>
     <span style="font-size: 0.8em; color: #888;">Indirdikten sonra kurun ve uygulamayi yeniden baslatin.</span>
   `;
+  const vcLink = document.getElementById('vc-download-link');
+  if (vcLink) {
+    vcLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.electronAPI.openExternal(vcDownloadUrl);
+    });
+  }
   elements.errorMessage.classList.add('show');
   elements.successMessage.classList.remove('show');
 }

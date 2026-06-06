@@ -3,13 +3,14 @@
 // Unified Application
 // =====================================================
 
-const { exec, execSync, spawn, execFile } = require('child_process');
+const { exec, spawn, execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const https = require('https');
 const { shell } = require('electron');
 const { validateExecArg } = require('./device-id-validator');
+const crypto = require('crypto');
 
 class TailscaleManager {
   constructor() {
@@ -145,8 +146,7 @@ class TailscaleManager {
   async login() {
     return new Promise((resolve) => {
       const proc = spawn(this.tailscalePath, ['up'], {
-        windowsHide: false,
-        shell: true
+        windowsHide: false
       });
 
       let output = '';
@@ -217,21 +217,22 @@ class TailscaleManager {
    * Download Tailscale installer
    */
   async downloadInstaller(progressCallback) {
-    const downloadPath = path.join(os.tmpdir(), 'tailscale-setup.exe');
+    const downloadPath = path.join(os.tmpdir(), 'tailscale-' + crypto.randomUUID() + '.exe');
 
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(downloadPath);
 
-      const makeRequest = (url) => {
+      const MAX_REDIRECTS = 5;
+      const makeRequest = (url, depth = 0) => {
+        if (depth >= MAX_REDIRECTS) {
+          reject(new Error(`Too many redirects (max ${MAX_REDIRECTS})`));
+          return;
+        }
         https.get(url, (response) => {
           if (response.statusCode === 302 || response.statusCode === 301) {
             // Follow redirect
             const location = response.headers.location;
-            https.get(location, (r) => {
-              makeRequest(r);
-            }).on('error', (e) => {
-              reject(e);
-            });
+            makeRequest(location, depth + 1);
             return;
           }
 

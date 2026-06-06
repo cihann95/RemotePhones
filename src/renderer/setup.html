@@ -14,7 +14,7 @@
     }
     .setup-header {
       text-align: center;
-      padding: 48px 24px 32px;
+      padding: 32px 24px 24px;
       background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
     }
     .setup-header h1 {
@@ -23,17 +23,79 @@
     }
     .setup-content {
       flex: 1;
-      padding: 32px 24px;
+      padding: 24px;
       max-width: 800px;
       margin: 0 auto;
       width: 100%;
     }
+
+    /* =====================================================
+       STEP INDICATOR
+       ===================================================== */
+    .step-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 16px auto 32px;
+      flex-wrap: wrap;
+    }
+    .step-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border: 2px solid var(--border-color);
+      transition: all var(--transition-normal);
+    }
+    .step-dot.current {
+      background: var(--accent-primary);
+      color: white;
+      border-color: var(--accent-primary);
+      transform: scale(1.1);
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    }
+    .step-dot.completed {
+      background: var(--success);
+      color: var(--bg-primary);
+      border-color: var(--success);
+    }
+    .step-dot-line {
+      flex: 0 0 24px;
+      height: 2px;
+      background: var(--border-color);
+      border-radius: 1px;
+    }
+    .step-dot-line.completed {
+      background: var(--success);
+    }
+    .step-indicator-label {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    /* =====================================================
+       STEP BLOCK
+       ===================================================== */
     .setup-step {
       background: var(--bg-card);
       border: 1px solid var(--border-color);
       border-radius: var(--border-radius);
       padding: 24px;
       margin-bottom: 24px;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .setup-step-header {
       display: flex;
@@ -52,6 +114,7 @@
       justify-content: center;
       font-weight: 600;
       font-size: 1.1rem;
+      flex-shrink: 0;
     }
     .step-number.completed {
       background: var(--success);
@@ -97,6 +160,129 @@
       color: var(--text-secondary);
       font-size: 0.9rem;
     }
+
+    /* =====================================================
+       MODE SELECTOR
+       ===================================================== */
+    .mode-selector {
+      display: flex;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .mode-option {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg-tertiary);
+      border: 2px solid var(--border-color);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all var(--transition-normal);
+    }
+    .mode-option:hover {
+      border-color: var(--accent-primary);
+      transform: translateY(-2px);
+    }
+    .mode-option.selected {
+      border-color: var(--accent-primary);
+      background: rgba(59, 130, 246, 0.1);
+    }
+    .mode-option-icon {
+      font-size: 2.5rem;
+      margin-bottom: 8px;
+    }
+    .mode-option-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .mode-option-desc {
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+    }
+
+    /* =====================================================
+       DEVICE LIST (STEP 2)
+       ===================================================== */
+    .device-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .device-list-empty {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius-sm);
+    }
+    .device-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--border-radius-sm);
+      padding: 12px 16px;
+    }
+    .device-row-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .device-row-model {
+      font-weight: 600;
+    }
+    .device-row-serial {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+
+    /* =====================================================
+       FIRST TASK RESULT (STEP 5)
+       ===================================================== */
+    .first-task-result {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border-radius: var(--border-radius-sm);
+      border: 1px solid var(--border-color);
+    }
+    .first-task-result h4 {
+      margin-bottom: 12px;
+      color: var(--success);
+    }
+    .first-task-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+    .first-task-row:last-child {
+      border-bottom: none;
+    }
+    .first-task-label {
+      color: var(--text-secondary);
+    }
+    .first-task-value {
+      font-weight: 500;
+      font-family: monospace;
+    }
+
+    /* =====================================================
+       NAVIGATION
+       ===================================================== */
+    .wizard-nav {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 24px;
+    }
   </style>
 </head>
 <body>
@@ -109,80 +295,219 @@
 
     <!-- Content -->
     <main class="setup-content">
-      <!-- Step 1: Tailscale -->
-      <div class="setup-step" id="step-tailscale">
+
+      <!-- Step Indicator (rendered dynamically) -->
+      <div class="step-indicator-label" id="step-indicator-label">Mod Seçimi</div>
+      <div class="step-indicator" id="step-indicator"></div>
+
+      <!-- ============================================================
+           STEP 0: MODE SELECTION (Home vs Office)
+           ============================================================ -->
+      <div class="setup-step" id="step-mode">
         <div class="setup-step-header">
-          <span class="step-number" id="step-tailscale-number">1</span>
-          <h2 class="step-title">Tailscale Kurulumu</h2>
+          <span class="step-number">★</span>
+          <h2 class="step-title">Kullanım Modunu Seçin</h2>
+        </div>
+        <p class="step-description">
+          Telefonlarinizi nasil kontrol etmek istiyorsunuz?
+          Bu secim ag kurulumu adimini etkiler.
+        </p>
+
+        <div class="mode-selector">
+          <div class="mode-option" data-mode="home" id="mode-option-home">
+            <div class="mode-option-icon">🏠</div>
+            <div class="mode-option-title">Home Mode (Ev)</div>
+            <div class="mode-option-desc">USB kablo ile bagli telefonlar. Ag kurulumu gerekmez.</div>
+          </div>
+          <div class="mode-option" data-mode="office" id="mode-option-office">
+            <div class="mode-option-icon">🏢</div>
+            <div class="mode-option-title">Office Mode (Ofis)</div>
+            <div class="mode-option-desc">Tailscale/Parsec ile uzaktan erisim. Ag kurulumu gerekir.</div>
+          </div>
+        </div>
+
+        <div class="wizard-nav">
+          <div></div>
+          <button class="btn btn-primary" id="btn-mode-continue" disabled>Devam Et</button>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           STEP 1: ADB CHECK (auto-runs on load)
+           ============================================================ -->
+      <div class="setup-step hidden" id="step-adb">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-adb-number">1</span>
+          <h2 class="step-title">ADB Kontrolü</h2>
+        </div>
+        <p class="step-description">
+          ADB (Android Debug Bridge), bilgisayariniz ile telefon arasinda iletisim kurar.
+          Bu arac yuklu olmadan hicbir sey calismaz.
+        </p>
+
+        <div id="adb-status" class="step-status">
+          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+        </div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-outline" data-action="prev">← Geri</button>
+          <div class="step-actions">
+            <button class="btn btn-outline" id="btn-adb-retry" hidden>Yeniden Dene</button>
+            <button class="btn btn-primary" id="btn-adb-next" disabled>İleri →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           STEP 2: DEVICE DETECTION (auto-runs on load)
+           ============================================================ -->
+      <div class="setup-step hidden" id="step-device">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-device-number">2</span>
+          <h2 class="step-title">Cihaz Algılama</h2>
+        </div>
+        <p class="step-description">
+          USB ile bagli Android telefonlarinizi arayalim.
+          <br><small style="color: var(--text-muted);">
+            Telefonunuz gozukmuyorsa: USB kablosunu cikarip takın, telefonunuzda
+            "USB Debugging" iznini onaylayin, ve "Yeniden Dene" tiklayin.
+          </small>
+        </p>
+
+        <div id="device-status" class="step-status">
+          <span class="status-badge status-unknown">Cihazlar aranıyor...</span>
+        </div>
+
+        <div id="device-list" class="device-list"></div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-outline" data-action="prev">← Geri</button>
+          <div class="step-actions">
+            <button class="btn btn-outline" id="btn-device-retry" hidden>Yeniden Dene</button>
+            <button class="btn btn-primary" id="btn-device-next" disabled>İleri →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           STEP 3: NETWORK SETUP (Tailscale + Parsec, only Office Mode)
+           ============================================================ -->
+      <div class="setup-step hidden" id="step-network">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-network-number">3</span>
+          <h2 class="step-title">Ağ Kurulumu (Tailscale &amp; Parsec)</h2>
         </div>
         <p class="step-description">
           Tailscale, iki bilgisayarinizi internet uzerinden guvenli bir sekilde baglar.
-          VPN portu acmaniza veya karmasik ayarlar yapmaniza gerek kalmaz.
-        </p>
-
-        <div id="tailscale-status" class="step-status">
-          <span class="status-badge status-unknown">Kontrol ediliyor...</span>
-        </div>
-
-        <div id="tailscale-progress" class="hidden">
-          <div class="progress-bar">
-            <div class="progress-bar-fill" id="tailscale-progress-bar" style="width: 0%"></div>
-          </div>
-          <p class="progress-text" id="tailscale-progress-text">Indiriliyor... 0%</p>
-        </div>
-
-        <div class="step-actions" id="tailscale-actions">
-          <button class="btn btn-primary" id="btn-tailscale-install">Tailscale Kur</button>
-          <button class="btn btn-secondary" id="btn-tailscale-login" disabled>Giris Yap</button>
-          <button class="btn btn-outline" id="btn-tailscale-refresh">Yenile</button>
-        </div>
-      </div>
-
-      <!-- Step 2: Parsec -->
-      <div class="setup-step" id="step-parsec">
-        <div class="setup-step-header">
-          <span class="step-number" id="step-parsec-number">2</span>
-          <h2 class="step-title">Parsec Kurulumu</h2>
-        </div>
-        <p class="step-description">
           Parsec, ofis bilgisayarinizdan ev bilgisayarinizi gormenizi saglar.
-          Oyun icin tasarlandigi icin cok dusuk gecikme suresi sunar.
+          <br><small style="color: var(--text-muted);">
+            Bu adimi simdi atlayip sonra da kurabilirsiniz.
+          </small>
         </p>
 
-        <div id="parsec-status" class="step-status">
+        <!-- Tailscale subsection -->
+        <div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--border-radius-sm);">
+          <h3 style="font-size: 1rem; margin-bottom: 12px;">Tailscale</h3>
+          <div id="tailscale-status" class="step-status">
+            <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+          </div>
+          <div id="tailscale-progress" class="hidden">
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="tailscale-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="progress-text" id="tailscale-progress-text">Indiriliyor... 0%</p>
+          </div>
+          <div class="step-actions" id="tailscale-actions">
+            <button class="btn btn-primary" id="btn-tailscale-install">Tailscale Kur</button>
+            <button class="btn btn-secondary" id="btn-tailscale-login" disabled>Giris Yap</button>
+            <button class="btn btn-outline" id="btn-tailscale-refresh">Yenile</button>
+          </div>
+        </div>
+
+        <!-- Parsec subsection -->
+        <div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: var(--border-radius-sm);">
+          <h3 style="font-size: 1rem; margin-bottom: 12px;">Parsec</h3>
+          <div id="parsec-status" class="step-status">
+            <span class="status-badge status-unknown">Kontrol ediliyor...</span>
+          </div>
+          <div id="parsec-progress" class="hidden">
+            <div class="progress-bar">
+              <div class="progress-bar-fill" id="parsec-progress-bar" style="width: 0%"></div>
+            </div>
+            <p class="progress-text" id="parsec-progress-text">Indiriliyor... 0%</p>
+          </div>
+          <div class="step-actions" id="parsec-actions">
+            <button class="btn btn-primary" id="btn-parsec-install">Parsec Kur</button>
+            <button class="btn btn-secondary" id="btn-parsec-open" disabled>Parsec Aç</button>
+            <button class="btn btn-outline" id="btn-parsec-refresh">Yenile</button>
+          </div>
+        </div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-outline" data-action="prev">← Geri</button>
+          <div class="step-actions">
+            <button class="btn btn-outline" id="btn-network-skip">Atla</button>
+            <button class="btn btn-primary" id="btn-network-next">İleri →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================
+           STEP 4: LICENSE
+           ============================================================ -->
+      <div class="setup-step hidden" id="step-license">
+        <div class="setup-step-header">
+          <span class="step-number" id="step-license-number">4</span>
+          <h2 class="step-title">Lisans</h2>
+        </div>
+        <p class="step-description">
+          Lisans durumunuzu kontrol ediyoruz. Lisansiniz yoksa daha sonra
+          Ayarlar &gt; Lisans bölümünden etkinlestirebilirsiniz.
+        </p>
+
+        <div id="license-status" class="step-status">
           <span class="status-badge status-unknown">Kontrol ediliyor...</span>
         </div>
 
-        <div id="parsec-progress" class="hidden">
-          <div class="progress-bar">
-            <div class="progress-bar-fill" id="parsec-progress-bar" style="width: 0%"></div>
+        <div class="wizard-nav">
+          <button class="btn btn-outline" data-action="prev">← Geri</button>
+          <div class="step-actions">
+            <button class="btn btn-outline" id="btn-license-skip">Atla</button>
+            <button class="btn btn-primary" id="btn-license-next">İleri →</button>
           </div>
-          <p class="progress-text" id="parsec-progress-text">Indiriliyor... 0%</p>
-        </div>
-
-        <div class="step-actions" id="parsec-actions">
-          <button class="btn btn-primary" id="btn-parsec-install">Parsec Kur</button>
-          <button class="btn btn-secondary" id="btn-parsec-open" disabled>Parsec Aç</button>
-          <button class="btn btn-outline" id="btn-parsec-refresh">Yenile</button>
         </div>
       </div>
 
-      <!-- Step 3: Complete -->
-      <div class="setup-step" id="step-complete">
+      <!-- ============================================================
+           STEP 5: FIRST TASK
+           ============================================================ -->
+      <div class="setup-step hidden" id="step-first-task">
         <div class="setup-step-header">
-          <span class="step-number" id="step-complete-number">3</span>
-          <h2 class="step-title">Kurulumu Tamamla</h2>
+          <span class="step-number" id="step-first-task-number">5</span>
+          <h2 class="step-title">İlk Görev</h2>
         </div>
         <p class="step-description">
-          Tebrikler! Gerekli araclar kuruldu. Artik telefonlarinizi baglayabilir
-          ve uzaktan kontrol etmeye baslayabilirsiniz.
+          Cihazınız hazır! İlk testi çalıştırmak ister misiniz?
+          <br><small style="color: var(--text-muted);">
+            Bu, ilk cihaziniza basit bir saglik kontrolu gonderir ve sonucu gosterir.
+          </small>
         </p>
 
-        <div class="step-actions mt-2">
-           <button class="btn btn-success btn-lg" id="btn-complete-setup" disabled>Kurulumu Tamamla</button>
-           <button class="btn btn-outline btn-lg" id="btn-skip-setup">Atla</button>
-         </div>
+        <div id="first-task-status" class="step-status">
+          <span class="status-badge status-unknown">Hazır</span>
+        </div>
+
+        <div id="first-task-result" class="first-task-result hidden"></div>
+
+        <div class="wizard-nav">
+          <button class="btn btn-outline" data-action="prev">← Geri</button>
+          <div class="step-actions">
+            <button class="btn btn-outline" id="btn-first-task-skip">Hayır, Bitir</button>
+            <button class="btn btn-primary" id="btn-first-task-run">Evet, Çalıştır</button>
+          </div>
+        </div>
       </div>
+
     </main>
 
     <!-- Footer -->
@@ -195,6 +520,7 @@
     </footer>
   </div>
 
+  <script src="components/theme.js"></script>
   <script src="setup.js"></script>
 </body>
 </html>

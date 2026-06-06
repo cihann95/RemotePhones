@@ -12,8 +12,6 @@ import logging
 import time
 
 from core.mobile_ops import not_up, MobileOperations
-from core.adb import ADBClient
-from core.device_manager import DeviceManager
 from tasks.base_task import BaseTask, TaskConfig, TaskResult
 from tasks.phone_call import (
     PhoneCallTask,
@@ -119,7 +117,7 @@ class AppLaunchTask(BaseTask):
 
         adb = self._adb(device_id)
         if adb is not not_up:
-            r = adb.launch(package_name, activity or None, device_id)
+            r = adb.launch(package_name, activity if activity else None, device_id)
             return TaskResult(r["ok"], data=r)
 
         return TaskResult(False, error=f"Device {device_id} not reachable")

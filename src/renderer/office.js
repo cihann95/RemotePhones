@@ -63,7 +63,7 @@ async function refreshStatus() {
 
     // Update connect button state
     const canConnect = status.tailscale.loggedIn && status.parsec.loggedIn;
-    elements.btnConnect?.setAttribute('disabled', String(!canConnect));
+    elements.btnConnect.disabled = !canConnect;
   } catch (e) {
     console.error('Refresh status error:', e);
   }

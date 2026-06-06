@@ -47,11 +47,10 @@ function spawnPromise(command, args, options, timeout = SCRCPY_SPAWN_TIMEOUT_MS)
 // Unified Application
 // =====================================================
 
-const { spawn, execFile } = require('child_process');
+const { spawn } = require('child_process');
 const BaseToolManager = require('./base-tool-manager');
 const path = require('path');
 const fs = require('fs');
-const { app } = require('electron');
 const Store = require('electron-store');
 const { SCRCPY_SPAWN_TIMEOUT_MS } = require('./constants');
 const { STOP_DEVICE_TIMEOUT_MS: _STOP_TIMEOUT } = require('./constants');
@@ -63,6 +62,8 @@ class ScrcpyManager extends BaseToolManager {
     super({ logPrefix: '[Scrcpy]', subPath: 'scrcpy/scrcpy.exe' });
     this.scrcpyPath = null;
     this.activeProcesses = new Map(); // deviceId -> process
+    this._crashCounts = new Map(); // deviceId -> consecutive crash count
+    this._MAX_AUTO_RESTARTS = 3;
     this.options = new Store({
       name: 'scrcpy-options',
       defaults: {
@@ -211,6 +212,47 @@ class ScrcpyManager extends BaseToolManager {
       proc.on('close', (code) => {
         if (DEBUG) console.log(`[Scrcpy] Process closed for ${deviceId} with code ${code}`);
         this.activeProcesses.delete(deviceId);
+
+        const isAbnormalExit = code !== null && code !== 0 && code !== null;
+        if (isAbnormalExit) {
+          const crashCount = (this._crashCounts.get(deviceId) || 0) + 1;
+          this._crashCounts.set(deviceId, crashCount);
+
+          if (crashCount <= this._MAX_AUTO_RESTARTS) {
+            console.warn(
+              `[Scrcpy] Crash detected for ${deviceId} (exit code ${code}), ` +
+              `auto-restarting (${crashCount}/${this._MAX_AUTO_RESTARTS})`
+            );
+            if (global.mainWindow) {
+              global.mainWindow.webContents.send('scrcpy-crash-restart', {
+                deviceId,
+                exitCode: code,
+                attempt: crashCount,
+                maxAttempts: this._MAX_AUTO_RESTARTS,
+              });
+            }
+            setTimeout(() => {
+              if (!this.activeProcesses.has(deviceId)) {
+                this.startDevice(deviceId);
+              }
+            }, 1000);
+          } else {
+            console.error(
+              `[Scrcpy] Device ${deviceId} crashed ${crashCount} times — giving up auto-restart`
+            );
+            this._crashCounts.delete(deviceId);
+            if (global.mainWindow) {
+              global.mainWindow.webContents.send('scrcpy-crash-giveup', {
+                deviceId,
+                exitCode: code,
+                totalCrashes: crashCount,
+              });
+            }
+          }
+        } else {
+          this._crashCounts.delete(deviceId);
+        }
+
         if (global.mainWindow) {
           global.mainWindow.webContents.send('scrcpy-window-closed', { deviceId, code });
         }
@@ -229,33 +271,46 @@ class ScrcpyManager extends BaseToolManager {
   /**
    * Stop scrcpy for a device
    */
-  async stopDevice(deviceId) {
-    const proc = this.activeProcesses.get(deviceId);
-    if (!proc) {
-      return { success: true, alreadyStopped: true };
-    }
+   async stopDevice(deviceId) {
+     const proc = this.activeProcesses.get(deviceId);
+     if (!proc) {
+       return { success: true, alreadyStopped: true };
+     }
 
-    return new Promise((resolve) => {
-      proc.on('close', () => {
-        this.activeProcesses.delete(deviceId);
-        resolve({ success: true, deviceId });
-      });
+     this._crashCounts.delete(deviceId);
 
-      try {
-        proc.kill('SIGTERM');
-        // Force kill after timeout
-        setTimeout(() => {
-          if (this.activeProcesses.has(deviceId)) {
-            proc.kill('SIGKILL');
-          }
-        }, _STOP_TIMEOUT);
-      } catch (e) {
-        console.error(`[Scrcpy] Error killing process for ${deviceId}:`, e);
-        this.activeProcesses.delete(deviceId);
-        resolve({ success: false, error: e.message });
-      }
-    });
-  }
+     // Check if process already exited
+     if (proc.exitCode !== null || proc.killed) {
+       this.activeProcesses.delete(deviceId);
+       return { success: true, deviceId };
+     }
+
+     return new Promise((resolve) => {
+       const onClose = () => {
+         this.activeProcesses.delete(deviceId);
+         resolve({ success: true, deviceId });
+       };
+
+       proc.on('close', onClose);
+
+       try {
+         proc.kill('SIGTERM');
+         setTimeout(() => {
+           if (this.activeProcesses.has(deviceId)) {
+             proc.removeListener('close', onClose);
+             proc.kill('SIGKILL');
+             this.activeProcesses.delete(deviceId);
+             resolve({ success: true, deviceId });
+           }
+         }, _STOP_TIMEOUT);
+       } catch (e) {
+         console.error(`[Scrcpy] Error killing process for ${deviceId}:`, e);
+         proc.removeListener('close', onClose);
+         this.activeProcesses.delete(deviceId);
+         resolve({ success: false, error: e.message });
+       }
+     });
+   }
 
   /**
    * Start scrcpy for all devices
@@ -296,6 +351,13 @@ class ScrcpyManager extends BaseToolManager {
    */
   isDeviceActive(deviceId) {
     return this.activeProcesses.has(deviceId);
+  }
+
+  /**
+   * Check if scrcpy is running (has active mirror processes)
+   */
+  async _checkRunning() {
+    return this.activeProcesses.size > 0;
   }
 
   /**

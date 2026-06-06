@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const https = require('https');
+const crypto = require('crypto');
 
 class ParsecManager {
   constructor() {
@@ -16,6 +17,7 @@ class ParsecManager {
       path.join(os.homedir(), 'AppData', 'Local', 'Parsec', 'parsecd.exe')
     ];
     this.installerUrl = 'https://builds.parsec.app/package/parsec-windows.exe';
+    this.parsecdPid = null;
   }
 
   /**
@@ -118,6 +120,7 @@ class ParsecManager {
         windowsHide: true
       });
 
+      this.parsecdPid = proc.pid;
       proc.unref();
 
       // Give it time to start
@@ -152,8 +155,21 @@ class ParsecManager {
    * Stop Parsec
    */
   async stop() {
+    if (this.parsecdPid) {
+      return new Promise((resolve) => {
+        exec(`taskkill /F /PID ${this.parsecdPid}`, { windowsHide: true }, (err) => {
+          this.parsecdPid = null;
+          if (err) {
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true });
+          }
+        });
+      });
+    }
+
     return new Promise((resolve) => {
-      exec('taskkill /F /IM parsecd.exe', { windowsHide: true }, (err) => {
+      exec('taskkill /F /FI "USERNAME eq %USERNAME%" /IM parsecd.exe', { windowsHide: true }, (err) => {
         if (err) {
           resolve({ success: false, error: err.message });
         } else {
@@ -167,7 +183,7 @@ class ParsecManager {
    * Download Parsec installer
    */
   async downloadInstaller(progressCallback) {
-    const downloadPath = path.join(os.tmpdir(), 'parsec-installer.exe');
+    const downloadPath = path.join(os.tmpdir(), 'parsec-' + crypto.randomUUID() + '.exe');
 
     return new Promise((resolve, reject) => {
       const file = fs.createWriteStream(downloadPath);

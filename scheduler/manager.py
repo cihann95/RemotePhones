@@ -59,7 +59,7 @@ class PhoneFarmManager(ManagerProtocol):
         self.dm: DeviceManager = DeviceManager(adb_client)
         self.queue: JobQueue = JobQueue()
         self.registry: TaskRegistry = TaskRegistry()
-        self.runner: TaskRunner = TaskRunner(queue=self.queue, registry=self.registry)
+        self.runner: TaskRunner = TaskRunner(queue=self.queue, registry=self.registry, device_manager=self.dm)
         self._auto_discover = auto_discover
         self._lock = threading.Lock()
 
@@ -104,8 +104,10 @@ class PhoneFarmManager(ManagerProtocol):
     ) -> dict:
         """Enqueue *task_name* for *device_id* on the priority queue."""
         payload = {"task": task_name, "device_id": device_id,
-                   "params": params or {}}
-        return self.queue.enqueue(task_name, priority=priority, payload=payload)
+                    "params": params or {}}
+        import uuid
+        job_id = f"{task_name}-{uuid.uuid4().hex[:8]}"
+        return self.queue.enqueue(job_id, priority=priority, payload=payload)
 
     # ------------------------------------------------------------------
     def run_on_device(
@@ -139,8 +141,6 @@ class PhoneFarmManager(ManagerProtocol):
             params = step.get("params") or {}
             priority = step.get("priority", Priority.NORMAL)
             record = self.enqueue_task(task_name, device_id, params, priority)
-            if sequential:
-                self.queue.dequeue()
             results.append(record)
         return results
 

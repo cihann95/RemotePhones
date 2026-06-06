@@ -7,7 +7,6 @@ class PhonePanel {
         this.callState = 'idle'; // idle, ringing, active, ended
         this.currentNumber = '';
         this.csvUpload = null;
-        this.init();
     }
 
     init(host) {
@@ -26,7 +25,7 @@ class PhonePanel {
         document.getElementById('phone-number-input').addEventListener('input', (e) => this.handleNumberInput(e));
 
         // Set up IPC listeners for call state updates
-        window.electronAPI.on('phone-state-update', (event, state) => {
+        window.electronAPI.onPhoneStateUpdate((state) => {
             this.updateCallState(state);
         });
 
@@ -135,7 +134,7 @@ class PhonePanel {
 
         try {
             // Send IPC to main to initiate call
-            await window.electronAPI.invoke('phone:call', { deviceId: this.deviceId, number });
+            await window.electronAPI.phoneCall({ deviceId: this.deviceId, number });
             // Update UI to calling state
             this.setCallState('ringing');
         } catch (error) {
@@ -148,7 +147,7 @@ class PhonePanel {
     async handleAnswer() {
         if (!this.deviceId) return;
         try {
-            await window.electronAPI.invoke('phone:answer', { deviceId: this.deviceId });
+            await window.electronAPI.phoneAnswer({ deviceId: this.deviceId });
             this.setCallState('active');
         } catch (error) {
             console.error('Answer failed:', error);
@@ -160,7 +159,7 @@ class PhonePanel {
     async handleHangup() {
         if (!this.deviceId) return;
         try {
-            await window.electronAPI.invoke('phone:hangup', { deviceId: this.deviceId });
+            await window.electronAPI.phoneHangup({ deviceId: this.deviceId });
             this.setCallState('ended');
         } catch (error) {
             console.error('Hangup failed:', error);
@@ -172,7 +171,7 @@ class PhonePanel {
     async handleReject() {
         if (!this.deviceId) return;
         try {
-            await window.electronAPI.invoke('phone:hangup', { deviceId: this.deviceId }); // Reject is same as hangup for now
+            await window.electronAPI.phoneHangup({ deviceId: this.deviceId }); // Reject is same as hangup for now
             this.setCallState('ended');
         } catch (error) {
             console.error('Reject failed:', error);

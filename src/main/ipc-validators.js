@@ -3,7 +3,7 @@
 // Shared validators for all ipcMain.handle() argument boundaries
 // =====================================================
 
-const { validateDeviceId, validateExecArg, ValidationError } = require('./device-id-validator');
+const { validateDeviceId, ValidationError } = require('./device-id-validator');
 
 /**
  * Validate and coerce a device ID argument from a renderer IPC call.

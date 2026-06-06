@@ -1,0 +1,247 @@
+[
+  {
+    "id": "device_not_found",
+    "patterns": ["no devices", "no device found", "device not found", "device_not_found"],
+    "title": "Cihaz bulunamadı",
+    "hint": "USB kablosunu kontrol edin ve USB Debugging'i açın",
+    "fix_steps": [
+      "USB kablosunu çıkarıp tekrar takın",
+      "Telefonda Ayarlar > Geliştirici Seçenekleri > USB Debugging açık olmalı",
+      "'adb devices' komutu cihazı gösteriyor mu kontrol edin"
+    ]
+  },
+  {
+    "id": "adb_not_found",
+    "patterns": ["adb not found", "adb not recognized", "adb.exe not found", "which adb", "no such file.*adb", "adb.*not found"],
+    "title": "ADB yüklenmemiş",
+    "hint": "Google'dan 'platform-tools' indirin ve PATH'e ekleyin",
+    "fix_steps": [
+      "https://developer.android.com/tools/releases/platform-tools adresinden platform-tools indirin",
+      "İndirilen klasörü PATH'e ekleyin",
+      "Terminali yeniden başlatın ve 'adb version' komutuyla kontrol edin"
+    ]
+  },
+  {
+    "id": "device_offline",
+    "patterns": ["device offline", "device.*offline", "is offline"],
+    "title": "Cihaz çevrimdışı",
+    "hint": "USB kablosunu çıkarıp takın",
+    "fix_steps": [
+      "USB kablosunu çıkarıp tekrar takın",
+      "Telefonda Ayarlar > Geliştirici Seçenekleri > USB Debugging iznini kaldırıp yeniden onaylayın",
+      "'adb kill-server' ardından 'adb start-server' komutlarını çalıştırın"
+    ]
+  },
+  {
+    "id": "task_failed",
+    "patterns": ["task failed", "görev başarısız", "task.*fail", "run.*fail"],
+    "title": "Görev başarısız oldu",
+    "hint": "Cihaz ekranının açık ve kilitli olmadığından emin olun",
+    "fix_steps": [
+      "Cihaz ekranının açık ve kilitli olmadığından emin olun",
+      "'python phone_farm_cli.py health <device_id>' ile cihaz durumunu kontrol edin",
+      "Cihazın yeterli şarja sahip olduğunu doğrulayın"
+    ]
+  },
+  {
+    "id": "device_id_invalid",
+    "patterns": ["invalid device id", "device id.*format", "geçersiz cihaz"],
+    "title": "Geçersiz cihaz ID'si",
+    "hint": "Cihaz ID'si sadece harf, rakam, tire ve alt çizgi içerebilir",
+    "fix_steps": [
+      "'adb devices' komutuyla bağlı cihazların ID'lerini kontrol edin",
+      "Cihaz ID'sinde boşluk veya özel karakter olmadığından emin olun",
+      "ID büyük/küçük harf duyarlıdır, doğru yazdığınızdan emin olun"
+    ]
+  },
+  {
+    "id": "invalid_phone_number",
+    "patterns": ["invalid phone", "geçersiz telefon", "phone.*format", "number.*format", "invalid.*number"],
+    "title": "Geçersiz telefon numarası",
+    "hint": "Format: +905XXXXXXXXX",
+    "fix_steps": [
+      "Telefon numarasını uluslararası formatta girin: +905XXXXXXXXX",
+      "veya yerel formatta: 05XXXXXXXXX (10-15 rakam)",
+      "Numarada boşluk veya tire olmamalı"
+    ]
+  },
+  {
+    "id": "csv_file_not_found",
+    "patterns": ["csv file not found", "csv.*not found", "file not found.*csv", "no such file.*csv"],
+    "title": "CSV dosyası bulunamadı",
+    "hint": "Dosya yolunu kontrol edin",
+    "fix_steps": [
+      "Dosya yolunun doğru olduğunu kontrol edin",
+      "Dosya adında yazım hatası olup olmadığını kontrol edin",
+      "Dosyanın bulunduğu klasörde 'dir' veya 'ls' ile doğrulayın"
+    ]
+  },
+  {
+    "id": "connection_timeout",
+    "patterns": ["connection timeout", "bağlantı zaman", "timeout", "timed out", "time out"],
+    "title": "Bağlantı zaman aşımı",
+    "hint": "SIM kart ve sinyal kontrolü yapın",
+    "fix_steps": [
+      "SIM kartın takılı ve aktif olduğunu kontrol edin",
+      "Sinyal gücünü telefonun üst çubuğundan kontrol edin",
+      "Cihazın airplane modda olmadığından emin olun",
+      "İşlemi biraz bekleyip tekrar deneyin"
+    ]
+  },
+  {
+    "id": "permission_denied",
+    "patterns": ["permission denied", "izin reddedildi", "access denied", "izn yok"],
+    "title": "İzin reddedildi",
+    "hint": "USB Debugging iznini telefon ekranında onaylayın",
+    "fix_steps": [
+      "Telefonda USB Debugging izni popup'ı gelip gelmediğini kontrol edin",
+      "Ayarlar > Geliştirici Seçenekleri > USB Debugging'i kapatıp tekrar açın",
+      "Bilinen bilgisayarları kaldırıp yeniden onaylayın"
+    ]
+  },
+  {
+    "id": "device_unauthorized",
+    "patterns": ["unauthorized", "yetkilendirilmemiş", "device unauthorized", "not authorized"],
+    "title": "Cihaz yetkilendirilmemiş",
+    "hint": "Telefondaki USB Debugging onayını kabul edin",
+    "fix_steps": [
+      "Telefonda 'Bu bilgisayara güvenilsin mi?' sorusuna EVET deyin",
+      "Eğer popup gelmiyorsa: Ayarlar > Geliştirici Seçenekleri > USB Debugging izinlerini sıfırlayın",
+      "USB kablosunu çıkarıp tekrar takın ve onaylayın"
+    ]
+  },
+  {
+    "id": "no_valid_numbers_in_csv",
+    "patterns": ["no valid numbers", "geçerli numara yok", "empty.*csv", "csv.*empty"],
+    "title": "CSV dosyasında geçerli numara bulunamadı",
+    "hint": "CSV dosyasının doğru formatta olduğunu kontrol edin",
+    "fix_steps": [
+      "CSV dosyasında 'number' sütunu olduğundan emin olun",
+      "Numaraların uluslararası formatta (+905...) olduğunu kontrol edin",
+      "Dosyanın UTF-8编码'lı olduğunu doğrulayın"
+    ]
+  },
+  {
+    "id": "call_failed",
+    "patterns": ["call failed", "arama başarısız", "arama başarısız oldu", "could not call"],
+    "title": "Arama başarısız oldu",
+    "hint": "SIM kart ve sinyal durumunu kontrol edin",
+    "fix_steps": [
+      "SIM kartın takılı ve aktif olduğunu kontrol edin",
+      "Telefonun sinyal alıp almadığını kontrol edin",
+      "Arama yapılacak numaranın doğru olduğunu doğrulayın",
+      "Başka bir numara ile test araması yapın"
+    ]
+  },
+  {
+    "id": "config_not_found",
+    "patterns": ["config not found", "config.*not found", "no such file.*config", "configuration file", "phone_farm.yaml.*not found"],
+    "title": "Yapılandırma dosyası bulunamadı",
+    "hint": "Varsayılan yapılandırma oluşturuldu mu kontrol edin",
+    "fix_steps": [
+      "'config/phone_farm.yaml' dosyasının varlığını kontrol edin",
+      "'--config' parametresi ile doğru yolu belirtin",
+      "Varsayılan yapılandırma ile devam etmek için parametre vermeden çalıştırın"
+    ]
+  },
+  {
+    "id": "json_parse_error",
+    "patterns": ["json decode", "json parse", "unexpected character", "expecting.*json", "invalid json"],
+    "title": "JSON biçimi hatalı",
+    "hint": "Girilen verinin geçerli JSON olduğundan emin olun",
+    "fix_steps": [
+      "JSON verisinin doğru formatta olduğunu kontrol edin (virgül, tırnak işareti)",
+      "Online JSON validator ile doğrulama yapın",
+      "Özel karakterleri escape etmeyi unutmayın"
+    ]
+  },
+  {
+    "id": "steps_file_not_array",
+    "patterns": ["steps file must contain a json array", "steps.*array", "must be.*array"],
+    "title": "Adım dosyası JSON dizisi içermeli",
+    "hint": "Dosya bir JSON array [] içermelidir",
+    "fix_steps": [
+      "Dosyanın '[' ile başlayıp ']' ile bittiğinden emin olun",
+      "Her adımın '{' ve '}' ile sarılı olduğundan emin olun",
+      "Örnek format: [{\"action\": \"call\", \"number\": \"+905...\"}]"
+    ]
+  },
+  {
+    "id": "file_permission_error",
+    "patterns": ["permission.*file", "file.*permission", "cannot open", "ermission denied.*file"],
+    "title": "Dosya erişim izni reddedildi",
+    "hint": "Dosya yolunu ve izinlerini kontrol edin",
+    "fix_steps": [
+      "Dosya yolunun doğru olduğunu kontrol edin",
+      "Dosyanın okunabilir olduğundan emin olun",
+      "Klasör izinlerini kontrol edin (yazma izni gerekebilir)"
+    ]
+  },
+  {
+    "id": "network_error",
+    "patterns": ["network error", "network.*error", "connection refused", "connection reset", "enetunreach"],
+    "title": "Ağ hatası",
+    "hint": "Ağ bağlantınızı kontrol edin",
+    "fix_steps": [
+      "İnternet bağlantınızın aktif olduğunu kontrol edin",
+      "Eğer uzak cihaz kullanıyorsanız, VPN/Tailscale bağlantısını kontrol edin",
+      "Güvenlik duvarı ayarlarını kontrol edin",
+      "İşlemi biraz bekleyip tekrar deneyin"
+    ]
+  },
+  {
+    "id": "license_expired",
+    "patterns": ["license.*expired", "lisans.*süresi", "license.*invalid", "lisans.*geçersiz"],
+    "title": "Lisans süresi dolmuş",
+    "hint": "Lisansınızı yenileyin",
+    "fix_steps": [
+      "Lisans durumunu kontrol edin",
+      "Yeni bir lisans anahtarı girin",
+      "Destek ekibiyle iletişime geçin"
+    ]
+  },
+  {
+    "id": "memory_low",
+    "patterns": ["out of memory", "memory.*low", "bellek.*yetersiz", "cannot allocate", "oom"],
+    "title": "Yetersiz bellek",
+    "hint": "Diğer uygulamaları kapatıp tekrar deneyin",
+    "fix_steps": [
+      "Gereksiz uygulamaları kapatın",
+      "Cihazın yeterli belleğe sahip olduğunu kontrol edin",
+      "İş sayısını azaltın (aynı anda daha az cihaz)"
+    ]
+  },
+  {
+    "id": "disk_full",
+    "patterns": ["disk full", "no space left", "disk.*dolu", "yetersiz disk"],
+    "title": "Disk alanı yetersiz",
+    "hint": "Disk alanını temizleyin",
+    "fix_steps": [
+      "Eski log dosyalarını temizleyin: logs/ klasörünü kontrol edin",
+      "Geçici dosyaları silin",
+      "Yeterli disk alanı olduğundan emin olun"
+    ]
+  },
+  {
+    "id": "adb_server_crash",
+    "patterns": ["adb server", "server.*crash", "server.*killed", "failed to start.*server"],
+    "title": "ADB sunucusu çöktü",
+    "hint": "ADB sunucusunu yeniden başlatın",
+    "fix_steps": [
+      "'adb kill-server' komutunu çalıştırın",
+      "'adb start-server' ile yeniden başlatın",
+      "'adb devices' ile cihazların görünüp olmadığını kontrol edin"
+    ]
+  },
+  {
+    "id": "unknown_error",
+    "patterns": [],
+    "title": "Bilinmeyen hata oluştu",
+    "hint": "Hata detaylarını kontrol edin ve gerekirse destek ekibiyle iletişime geçin",
+    "fix_steps": [
+      "Hata mesajını kontrol edin ve not edin",
+      "'python phone_farm_cli.py health <device_id>' ile cihaz durumunu kontrol edin",
+      "Sorun devam ederse destek ekibiyle iletişime geçin"
+    ]
+  }
+]

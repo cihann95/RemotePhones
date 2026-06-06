@@ -161,6 +161,20 @@
 
      <!-- Call History -->
      <div id="call-history-container" class="mt-3"></div>
+
+     <!-- Log Viewer -->
+     <section class="card mt-3" id="log-viewer-section">
+       <div class="card-header">
+         <h2 class="card-title">
+           <span class="icon">📋</span>
+           <span>Log Viewer</span>
+         </h2>
+         <button class="btn btn-sm btn-outline" id="btn-toggle-log-viewer" aria-label="Log viewer panelini aç/kapa">📋</button>
+       </div>
+       <div class="card-body" id="log-viewer-body">
+         <div id="log-viewer-host"></div>
+       </div>
+     </section>
   </main>
 
    <!-- Settings Modal -->
@@ -210,6 +224,15 @@
             <input type="checkbox" id="setting-always-on-top">
             <span class="toggle-slider"></span>
           </label>
+        </div>
+        <hr class="settings-divider">
+        <h3 class="settings-subtitle">🎨 Görünüm</h3>
+        <div class="status-row">
+          <span class="status-label">Tema</span>
+          <div class="theme-toggle-group" role="group" aria-label="Tema seçimi">
+            <button class="btn btn-sm theme-btn" type="button" data-theme-value="dark" aria-pressed="false" aria-label="Koyu tema">🌙 Koyu</button>
+            <button class="btn btn-sm theme-btn" type="button" data-theme-value="light" aria-pressed="false" aria-label="Açık tema">☀️ Açık</button>
+          </div>
         </div>
         <hr class="settings-divider">
         <h3 class="settings-subtitle">🔄 Güncellemeler</h3>
@@ -350,12 +373,19 @@
     <script src="components/call-history.js"></script>
     <script src="components/phone-panel.js"></script>
     <script src="components/health-dashboard.js"></script>
+    <script src="components/log-viewer.js"></script>
+    <script src="components/theme.js"></script>
     <script src="renderer.js"></script>
     <script>
       (function() {
         var host = document.getElementById('phone-panel-host');
         if (host && window.PhonePanel && typeof window.PhonePanel.init === 'function') {
           window.PhonePanel.init(host);
+        }
+
+        var logHost = document.getElementById('log-viewer-host');
+        if (logHost && window.LogViewer && typeof window.LogViewer.init === 'function') {
+          window.LogViewer.init(logHost);
         }
       })();
     </script>

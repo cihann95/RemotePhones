@@ -91,7 +91,7 @@ class AppUsagePredictor:
         ])
         
         # Pad or truncate to fixed size
-        target_size = 10
+        target_size = 11
         if len(features) < target_size:
             features.extend([0.0] * (target_size - len(features)))
         else:

@@ -58,16 +58,17 @@ class DeviceStore {
     return this.store.get('devices', {});
   }
 
-  /**
-   * Update device positions (for drag and drop)
-   */
-  updateDevicePositions(positions) {
-    for (const [deviceId, position] of Object.entries(positions)) {
-      const data = this.getDeviceData(deviceId) || {};
-      data.position = position;
-      this.saveDeviceData(deviceId, data);
-    }
-  }
+   /**
+    * Update device positions (for drag and drop)
+    */
+   updateDevicePositions(positions) {
+     for (const pos of positions) {
+       if (!pos || !pos.id) continue;
+       const data = this.getDeviceData(pos.id) || {};
+       data.position = { col: pos.col, row: pos.row, group: pos.group };
+       this.saveDeviceData(pos.id, data);
+     }
+   }
 
   /**
    * Merge device data with ADB device info
@@ -207,23 +208,47 @@ class DeviceStore {
    * Import data
    */
   importData(data) {
-    if (data.devices) {
-      for (const [deviceId, deviceData] of Object.entries(data.devices)) {
-        this.saveDeviceData(deviceId, deviceData);
+    let devices;
+
+    if (Array.isArray(data)) {
+      devices = data;
+    } else if (data && typeof data === 'object') {
+      // Legacy format: object with devices/groups/settings keys
+      if (data.devices && typeof data.devices === 'object') {
+        devices = Object.entries(data.devices).map(([id, dev]) => ({
+          id,
+          ...dev
+        }));
+      } else {
+        devices = [];
       }
+
+      if (data.groups) {
+        const currentGroups = this.getGroups();
+        const newGroups = [...new Set([...currentGroups, ...data.groups])];
+        this.store.set('groups', newGroups);
+      }
+
+      if (data.settings) {
+        this.updateSettings(data.settings);
+      }
+    } else {
+      throw new Error(
+        'Import data must be a non-null array of devices or an object with devices/groups/settings keys'
+      );
     }
 
-    if (data.groups) {
-      const currentGroups = this.getGroups();
-      const newGroups = [...new Set([...currentGroups, ...data.groups])];
-      this.store.set('groups', newGroups);
+     for (const device of devices) {
+       if (typeof device.id !== 'string' || device.id.trim() === '') {
+         throw new Error('Each device must have a non-empty string "id" field');
+       }
+     }
+
+    for (const device of devices) {
+      this.saveDeviceData(device.id, device);
     }
 
-    if (data.settings) {
-      this.updateSettings(data.settings);
-    }
-
-    return { success: true };
+    return { success: true, count: devices.length };
   }
 
   /**
