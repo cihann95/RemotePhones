@@ -9,7 +9,7 @@ from typing import Any
 import yaml
 
 try:
-    from pydantic import BaseModel, Field, validator
+    from pydantic import BaseModel, Field, field_validator
     _HAS_PYDANTIC = True
 except ImportError:
     _HAS_PYDANTIC = False
@@ -51,7 +51,8 @@ if _HAS_PYDANTIC:
         monitor: MonitorConfig = Field(default_factory=MonitorConfig)
         devices: list[dict[str, Any]] = Field(default_factory=list)
 
-        @validator("devices", pre=True)
+        @field_validator("devices", mode="before")
+        @classmethod
         def _ensure_list(cls, v: Any) -> list[Any]:
             if v is None:
                 return []
@@ -109,8 +110,8 @@ def load_config(path: str | None = None) -> dict[str, Any]:
                     warnings.warn(f"Deprecated config key '{key}': {msg}", DeprecationWarning, stacklevel=2)
             if _HAS_PYDANTIC:
                 try:
-                    validated = PhoneFarmConfig.parse_obj(data)
-                    data = validated.dict()
+                    validated = PhoneFarmConfig.model_validate(data)
+                    data = validated.model_dump()
                 except Exception as exc:
                     raise ValueError(
                         f"Config validation failed for {candidate}: {exc}"
