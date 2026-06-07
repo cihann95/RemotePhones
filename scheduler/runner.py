@@ -119,9 +119,14 @@ class TaskRunner:
                 return
 
         try:
-            handler = self.registry.get(payload["task"])
+            task_name = payload.get("task")
+            if task_name is None:
+                logger.error("Job %s has no task in payload", job_id)
+                self.queue.permanent_fail(job_id, "No handler for None")
+                return
+            handler = self.registry.get(task_name)
             if handler is None:
-                raise RuntimeError(f"No handler for {payload['task']}")
+                raise RuntimeError(f"No handler for {task_name}")
 
             if isinstance(handler, type):
                 handler = handler(device_manager=self.device_manager)
@@ -132,7 +137,11 @@ class TaskRunner:
             task_params = payload.get("params", {})
             import inspect
             sig = inspect.signature(callable_fn)
-            if "device_id" in sig.parameters:
+            has_kwargs = any(
+                p.kind == inspect.Parameter.VAR_KEYWORD
+                for p in sig.parameters.values()
+            )
+            if "device_id" in sig.parameters or has_kwargs:
                 result = callable_fn(device_id=device_id, params=task_params)
             else:
                 result = callable_fn(payload)
