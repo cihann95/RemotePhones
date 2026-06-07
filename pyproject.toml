@@ -8,7 +8,7 @@ version = "2.0.0"
 description = "Mobile device automation platform"
 requires-python = ">=3.8"
 dependencies = [
-    "pure-python-adb>=1.0.0",
+    "pure-python-adb>=0.3.0.dev0",
     "scrcpy-client>=0.1.0",
     "schedule>=1.2.0",
     "apscheduler>=3.11.0",

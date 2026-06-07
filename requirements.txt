@@ -6,7 +6,7 @@
 # Pin: fastapi==0.115.6 in production.
 
 # ADB interaction
-pure-python-adb>=1.0.0
+pure-python-adb>=0.3.0.dev0
 
 # Device automation (screen touch/swipe)
 scrcpy-client>=0.1.0
