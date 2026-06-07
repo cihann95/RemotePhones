@@ -145,7 +145,7 @@ class JobQueue:
             return None
 
     def complete(self, job_id: str, result: Any = None) -> None:
-        result_str = json.dumps(result) if result is not None else None
+        result_str = json.dumps(result.as_dict() if hasattr(result, "as_dict") else result) if result is not None else None
         with self._lock:
             conn = self._conn
             conn.execute(
@@ -202,7 +202,7 @@ class JobQueue:
                 conn.commit()
                 return False
             conn.commit()
-        
+
         if retries < self.max_retries:
             time.sleep(self.retry_delay_s * retries)
             with self._lock:
@@ -219,6 +219,21 @@ class JobQueue:
                     conn.commit()
             return True
         return False
+
+    def permanent_fail(self, job_id: str, error: str | None = None) -> None:
+        """Fail a job permanently without retries."""
+        with self._lock:
+            conn = self._conn
+            conn.execute(
+                """
+                UPDATE jobs
+                SET status = ?, error = ?, finished_at = ?
+                WHERE job_id = ?
+                """,
+                (JobStatus.FAILED, error, time.time(), job_id)
+            )
+            conn.commit()
+            logger.error("Job %s failed permanently: %s", job_id, error)
 
     def cancel(self, job_id: str) -> bool:
         with self._lock:
