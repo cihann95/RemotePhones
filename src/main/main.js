@@ -733,6 +733,25 @@ ipcMain.handle('parsec-start', async () => {
 });
 
 // =====================================================
+// IPC: AUTO INSTALLER (Office Mode)
+// =====================================================
+
+/**
+ * IPC: Auto-installs missing Tailscale and Parsec for Office Mode.
+ * Runs installations sequentially and reports progress via 'auto-install-progress' events.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @returns {Promise<{success:boolean,results:{tailscale:object,parsec:object},logs:string[]}>}
+ */
+ipcMain.handle('auto-install-missing-tools', async (event) => {
+  const AutoInstaller = require('./auto-installer');
+  const installer = new AutoInstaller();
+  
+  return await installer.checkAndInstallMissing((progress) => {
+    event.sender.send('auto-install-progress', progress);
+  });
+});
+
+// =====================================================
 // IPC: DEVICES
 // =====================================================
 

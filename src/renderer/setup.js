@@ -241,12 +241,94 @@ function selectMode(mode) {
 
 els.modeOptionHome.addEventListener('click', () => selectMode('home'));
 els.modeOptionOffice.addEventListener('click', () => selectMode('office'));
-els.btnModeContinue.addEventListener('click', () => {
+els.btnModeContinue.addEventListener('click', async () => {
   if (!selectedMode) return;
   // Reset completion state for the new flow
   completedSteps = new Set();
-  // Advance to first real step
-  showStep(ALL_STEPS[0]);
+
+  // If Office mode selected, auto-install missing tools (Tailscale/Parsec)
+  if (selectedMode === 'office' && window.electronAPI && window.electronAPI.autoInstallMissingTools) {
+    // Show network step directly with progress UI
+    showStep('network');
+    
+    // Disable skip/next buttons during auto-install
+    els.btnNetworkSkip.disabled = true;
+    els.btnNetworkNext.disabled = true;
+    
+    // Show progress indicators
+    els.tailscaleProgress.classList.remove('hidden');
+    els.parsecProgress.classList.remove('hidden');
+    els.tailscaleProgressText.textContent = 'Hazirlaniyor...';
+    els.parsecProgressText.textContent = 'Hazirlaniyor...';
+    els.tailscaleProgressBar.style.width = '0%';
+    els.parsecProgressBar.style.width = '0%';
+
+    // Listen for progress updates
+    const cleanupTailscale = window.electronAPI.onAutoInstallProgress((data) => {
+      if (data.tool === 'tailscale') {
+        els.tailscaleProgressBar.style.width = data.percent + '%';
+        els.tailscaleProgressText.textContent = data.status === 'skipped' ? 'Zaten kurulu' : 
+          data.status === 'completed' ? 'Tamamlandi!' : 
+          data.status === 'failed' ? 'Basarisiz: ' + (data.error || '') : `Indiriliyor... ${data.percent}%`;
+      } else if (data.tool === 'parsec') {
+        els.parsecProgressBar.style.width = data.percent + '%';
+        els.parsecProgressText.textContent = data.status === 'skipped' ? 'Zaten kurulu' : 
+          data.status === 'completed' ? 'Tamamlandi!' : 
+          data.status === 'failed' ? 'Basarisiz: ' + (data.error || '') : `Indiriliyor... ${data.percent}%`;
+      }
+    });
+
+    try {
+      const result = await window.electronAPI.autoInstallMissingTools();
+      
+      // Clean up progress listener
+      cleanupTailscale();
+      
+      // Update UI based on results
+      if (result.results.tailscale.skipped) {
+        els.tailscaleProgressText.textContent = 'Zaten kurulu';
+      } else if (result.results.tailscale.success) {
+        els.tailscaleProgressText.textContent = 'Tamamlandi!';
+      } else {
+        els.tailscaleProgressText.textContent = 'Basarisiz: ' + (result.results.tailscale.error || 'Bilinmeyen hata');
+      }
+      
+      if (result.results.parsec.skipped) {
+        els.parsecProgressText.textContent = 'Zaten kurulu';
+      } else if (result.results.parsec.success) {
+        els.parsecProgressText.textContent = 'Tamamlandi!';
+      } else {
+        els.parsecProgressText.textContent = 'Basarisiz: ' + (result.results.parsec.error || 'Bilinmeyen hata');
+      }
+
+      // Re-enable skip button (always allow user to skip)
+      els.btnNetworkSkip.disabled = false;
+      
+      // If both successful, enable next button
+      if (result.success) {
+        els.btnNetworkNext.disabled = false;
+      } else {
+        // Even if failed, allow user to continue (they can retry manually)
+        els.btnNetworkNext.disabled = false;
+        els.tailscaleProgressText.textContent += ' (Devam edebilirsiniz)';
+        els.parsecProgressText.textContent += ' (Devam edebilirsiniz)';
+      }
+      
+      // Refresh status to update button states
+      await checkStatus();
+      
+    } catch (e) {
+      cleanupTailscale();
+      console.error('Auto-install error:', e);
+      els.tailscaleProgressText.textContent = 'Hata: ' + e.message;
+      els.parsecProgressText.textContent = 'Hata: ' + e.message;
+      els.btnNetworkSkip.disabled = false;
+      els.btnNetworkNext.disabled = false;
+    }
+  } else {
+    // Home mode or no auto-install API - proceed normally
+    showStep(ALL_STEPS[0]);
+  }
 });
 
 // =====================================================

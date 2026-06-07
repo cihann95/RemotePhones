@@ -135,6 +135,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // =====================================================
+  // AUTO INSTALLER (Office Mode)
+  // =====================================================
+  /** IPC: Auto-installs missing Tailscale/Parsec for Office Mode; fires progress via 'auto-install-progress' */
+  autoInstallMissingTools: () => ipcRenderer.invoke('auto-install-missing-tools'),
+  onAutoInstallProgress: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('auto-install-progress', handler);
+    return () => { ipcRenderer.removeListener('auto-install-progress', handler); };
+  },
+
+  // =====================================================
   // DEVICES
   // =====================================================
   /** IPC: Returns the current list of connected ADB devices */
