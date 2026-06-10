@@ -22,6 +22,10 @@ import sys
 import time
 from typing import Any
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 DEVICE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
 PHONE_RE = re.compile(r'^\+?[0-9]{7,15}$')
 MAX_CSV_BODY = 512 * 1024  # 512 KB
@@ -40,8 +44,6 @@ try:
     from fastapi import FastAPI, HTTPException, Header, Depends, Body
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import JSONResponse
-    from dotenv import load_dotenv
-    load_dotenv()
 except ImportError:  # pragma: no cover
     FastAPI = None  # type: ignore[assignment,misc]
     HTTPException = None  # type: ignore[assignment]
@@ -55,6 +57,9 @@ from scheduler.manager import PhoneFarmManager
 
 logger = logging.getLogger(__name__)
 
+def _get_api_key() -> str:
+    return os.getenv("API_SECRET_KEY", "")
+
 if FastAPI is None:
     logger.warning(
         "FastAPI is not installed — monitor/api.py routes will raise ImportError "
@@ -62,18 +67,6 @@ if FastAPI is None:
     )
     app = None  # type: ignore[assignment]
 else:
-    def _get_api_key() -> str:
-        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-        if os.path.exists(env_path):
-            try:
-                with open(env_path, "r", encoding="utf-8") as fh:
-                    for line in fh:
-                        if line.startswith("API_SECRET_KEY="):
-                            return line.split("=", 1)[1].strip().strip('"').strip("'")
-            except OSError:
-                pass
-        return os.getenv("API_SECRET_KEY", "")
-
     def verify_api_key(authorization: str = Header(None)) -> str:
         expected_token = _get_api_key()
         if not expected_token:
