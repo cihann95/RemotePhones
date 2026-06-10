@@ -50,6 +50,21 @@ function humanizeError(errStr) {
   if (fallback) return { id: fallback.id, title: fallback.title, hint: fallback.hint, fix_steps: fallback.fix_steps || [], raw: errStr };
   return { id: 'unknown_error', title: 'Bilinmeyen hata', hint: errStr, fix_steps: [], raw: errStr };
 }
+
+/**
+ * Returns the path to the phone_farm_cli bundled executable.
+ * In packaged Electron app (process.resourcesPath exists), uses the bundled executable
+ * from extraResources. In development, uses the PyInstaller-built executable from dist/.
+ */
+function getCliPath() {
+  if (process.resourcesPath) {
+    const ext = process.platform === 'win32' ? '.exe' : '';
+    return path.join(process.resourcesPath, `phone_farm_cli${ext}`);
+  }
+  // Development mode — use PyInstaller-built executable
+  return path.join(__dirname, '..', '..', 'dist', 'phone_farm_cli');
+}
+
 let LicenseManager;
 try {
   LicenseManager = require('./license');
@@ -1422,10 +1437,10 @@ async function submitBulkCallJob(deviceId, numbers) {
   fs.writeFileSync(jobFilePath, JSON.stringify(jobData, null, 2));
   
    try {
-     const { execFile: execFileCmd } = require('child_process');
-     const cliPath = path.join(__dirname, '..', '..', 'phone_farm_cli.py');
-     const result = await new Promise((resolve, reject) => {
-       execFileCmd('python', [cliPath, 'submit', deviceId, jobFilePath], { timeout: 30000 }, (err, stdout, stderr) => {
+      const { execFile: execFileCmd } = require('child_process');
+      const cliPath = getCliPath();
+      const result = await new Promise((resolve, reject) => {
+        execFileCmd(cliPath, ['submit', deviceId, jobFilePath], { timeout: 30000 }, (err, stdout, stderr) => {
          if (err) { reject(err); return; }
          resolve({ stdout: stdout || '', stderr: stderr || '' });
        });
@@ -1943,9 +1958,9 @@ ipcMain.handle('phone:call', async (event, params) => {
    assertValidPhoneNumber(number);
    try {
       const { execFile } = require('child_process');
-      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile('python', [cliPath, 'call', deviceId, '--number', number], (error, stdout, stderr) => {
+         execFile(cliPath, ['call', deviceId, '--number', number], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:call error:', error);
                resolve({ success: false, error: humanizeError(error.message) });
@@ -1981,9 +1996,9 @@ ipcMain.handle('phone:answer', async (event, params) => {
    assertValidDeviceId(deviceId, 'deviceId');
    try {
       const { execFile } = require('child_process');
-      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile('python', [cliPath, 'run', deviceId, 'answer'], (error, stdout, stderr) => {
+         execFile(cliPath, ['run', deviceId, 'answer'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:answer error:', error);
                resolve({ success: false, error: humanizeError(error.message) });
@@ -2019,9 +2034,9 @@ ipcMain.handle('phone:hangup', async (event, params) => {
    assertValidDeviceId(deviceId, 'deviceId');
    try {
       const { execFile } = require('child_process');
-      const cliPath = require('path').join(__dirname, '..', '..', 'phone_farm_cli.py');
+      const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile('python', [cliPath, 'run', deviceId, 'hangup'], (error, stdout, stderr) => {
+         execFile(cliPath, ['run', deviceId, 'hangup'], (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:hangup error:', error);
                resolve({ success: false, error: humanizeError(error.message) });

@@ -31,8 +31,17 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Install Python dev tools
+        run: pip install mypy ruff
+
       - name: Run pytest
         run: python -m pytest
+
+      - name: Run mypy type checking
+        run: python -m mypy --ignore-missing-imports .
+
+      - name: Run ruff linter
+        run: python -m ruff check .
 
       # ── Node.js ─────────────────────────────────────────────────────
       - name: Set up Node.js 20
@@ -53,3 +62,59 @@ jobs:
 
       - name: Check JavaScript syntax
         run: node -c src/main/main.js
+
+  build:
+    needs: test
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Python ──────────────────────────────────────────────────────
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # ── Node.js ─────────────────────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install npm dependencies
+        run: npm install
+
+      # ── Code Signing & Build ────────────────────────────────────────
+      - name: Build Electron app (signed)
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --win --x64 --dir
+
+      # ── Upload Artifact ─────────────────────────────────────────────
+      - name: Upload built installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: RemotePhones-win-x64
+          path: dist/

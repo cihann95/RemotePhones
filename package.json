@@ -43,6 +43,14 @@
       {
         "from": "src/main/Product.dat",
         "to": "Product.dat"
+      },
+      {
+        "from": "dist/phone_farm_cli",
+        "to": "phone_farm_cli"
+      },
+      {
+        "from": "dist/phone_farm_cli.exe",
+        "to": "phone_farm_cli.exe"
       }
     ],
     "asar": true,
