@@ -46,6 +46,13 @@
       }
     ],
     "asar": true,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "cihann95",
+        "repo": "RemotePhones"
+      }
+    ],
     "win": {
       "target": [
         {
@@ -56,7 +63,9 @@
         }
       ],
       "icon": "assets/phoneFarm.ico",
-      "signAndEditExecutable": true
+      "signAndEditExecutable": true,
+      "certificateFile": "${env.CSC_LINK}",
+      "certificatePassword": "${env.CSC_KEY_PASSWORD}"
     },
     "nsis": {
       "oneClick": false,
