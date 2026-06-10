@@ -10,10 +10,15 @@ node_modules/
 *.adb
 *.apk
 dist/
-build/
+build/*
+!build/installer.nsh
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Data
+data/*
+!data/.gitkeep
 
 # Logs
 logs/

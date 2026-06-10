@@ -96,6 +96,10 @@ def load_config(path: str | None = None) -> dict[str, Any]:
     if env_path:
         candidates.append(Path(env_path))
 
+    data_dir = os.environ.get("DATA_DIR")
+    if data_dir:
+        candidates.append(Path(data_dir) / "phone_farm.yaml")
+
     candidates.append(Path(__file__).parent.parent / "config" / "phone_farm.yaml")
 
     for candidate in candidates:

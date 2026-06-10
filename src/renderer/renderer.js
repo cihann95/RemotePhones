@@ -396,7 +396,7 @@ function updateDevicesList() {
           <span class="device-emoji">${escapeHtml(emoji)}</span>
           <div class="device-info-compact">
             <span class="device-name-compact">${escapeHtml(displayName)}</span>
-            <span class="device-battery-compact">${getBatteryIcon(device.battery)} ${device.battery ?? '?'}%</span>
+            <span class="device-battery-compact">${getBatteryIcon(device.battery)} ${escapeHtml(String(device.battery ?? '?'))}%</span>
           </div>
           <span class="status-badge ${statusClass}">${statusText}</span>
         </div>
@@ -444,8 +444,8 @@ function renderDeviceCards() {
         ${originalName ? `<div class="device-id">${escapeHtml(originalName)}</div>` : ''}
         <div class="device-id">${escapeHtml(device.id)}</div>
         <div class="device-info">
-          <span class="device-info-item ${batteryClass}">${batteryIcon} ${device.battery ?? '?'}%</span>
-          <span class="device-info-item">${device.screenSize?.width || '?'}x${device.screenSize?.height || '?'}</span>
+          <span class="device-info-item ${batteryClass}">${batteryIcon} ${escapeHtml(String(device.battery ?? '?'))}%</span>
+          <span class="device-info-item">${escapeHtml(device.screenSize?.width || '?')}x${escapeHtml(device.screenSize?.height || '?')}</span>
         </div>
         <div class="device-actions">
           ${isActive

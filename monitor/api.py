@@ -60,6 +60,17 @@ logger = logging.getLogger(__name__)
 def _get_api_key() -> str:
     return os.getenv("API_SECRET_KEY", "")
 
+
+def _parse_cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000")
+    origins = [o.strip() for o in raw.split(",") if o.strip()]
+    # Reject wildcard for security
+    if "*" in origins:
+        logger.warning("Wildcard '*' CORS origin ignored — using defaults")
+        return ["http://127.0.0.1:8000", "http://localhost:8000"]
+    return origins
+
+
 if FastAPI is None:
     logger.warning(
         "FastAPI is not installed — monitor/api.py routes will raise ImportError "
@@ -84,10 +95,7 @@ else:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://127.0.0.1:8000",
-            "http://localhost:8000",
-        ],
+        allow_origins=_parse_cors_origins(),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],

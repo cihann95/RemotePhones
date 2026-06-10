@@ -351,7 +351,7 @@ async function checkAdb() {
     if (status && status.running) {
       const version = status.version || 'bilinmiyor';
       els.adbStatus.innerHTML =
-        `<span class="status-badge status-online">✓ ADB hazır (v${version})</span>`;
+        `<span class="status-badge status-online">✓ ADB hazır (v${escapeHtml(version)})</span>`;
       els.btnAdbNext.disabled = false;
     } else if (status && status.installed) {
       els.adbStatus.innerHTML =

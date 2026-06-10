@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 import threading
 import time
@@ -27,7 +28,14 @@ class JobQueue:
         Seconds to wait before re-enqueuing a failed job.
     """
 
-    def __init__(self, db_path: str = "job_queue.db", max_retries: int = 3, retry_delay_s: float = 5.0) -> None:
+    def __init__(self, db_path: str | None = None, max_retries: int = 3, retry_delay_s: float = 5.0) -> None:
+        if db_path is None:
+            data_dir = os.getenv(
+                "DATA_DIR",
+                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"),
+            )
+            os.makedirs(data_dir, exist_ok=True)
+            db_path = os.path.join(data_dir, "job_queue.db")
         self.db_path = db_path
         self.max_retries = max_retries
         self.retry_delay_s = retry_delay_s
