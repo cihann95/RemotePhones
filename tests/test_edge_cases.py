@@ -12,7 +12,7 @@ from core.adb import (
     ADBServerDownError, ADBInstallError, ADBPullError, ADBPushError
 )
 from scheduler.runner import TaskRunner
-from scheduler.job_queue import JobQueue, JobStatus
+from scheduler.job_queue import JobStatus
 from scheduler.priority import Priority
 from core.phone import PhoneOperations
 
@@ -56,8 +56,9 @@ class TestADBEdgeCases:
 
 
 class TestRunnerEdgeCases:
-    def setup_method(self):
-        self.queue = JobQueue()
+    @pytest.fixture(autouse=True)
+    def _setup(self, isolated_job_queue):
+        self.queue = isolated_job_queue
         self.registry = MagicMock()
         self.device_manager = MagicMock()
         self.runner = TaskRunner(

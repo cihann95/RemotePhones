@@ -78,28 +78,35 @@ class _BrokenHandler:
 
 class TestIntegrationSmoke:
 
-    def make_mgr(self) -> PhoneFarmManager:
+    def make_mgr(self, queue: JobQueue | None = None) -> PhoneFarmManager:
         adb = make_mock_adb()
         mgr = PhoneFarmManager(adb, auto_discover=True)
+        if queue is not None:
+            mgr.queue = queue
+            mgr.runner.queue = queue
         mgr.start()
         return mgr
 
     # ── local runner helpers ──────────────────────────────────────────────────
 
     def _make_runner(self, registry: TaskRegistry,
-                     max_retries: int = 0) -> TaskRunner:
+                     max_retries: int = 0,
+                     queue: JobQueue | None = None) -> TaskRunner:
         adb = make_mock_adb()
         dm = DeviceManager(adb)
         dm.connect("mock-device-1")
-        q = JobQueue(max_retries=max_retries, retry_delay_s=0.02)
+        if queue is None:
+            q = JobQueue(db_path=":memory:", max_retries=max_retries, retry_delay_s=0.02)
+        else:
+            q = queue
         return TaskRunner(queue=q, registry=registry)
 
     # ── synchronous run_once ─────────────────────────────────────────────────
 
-    def test_runner_drains_ok_task(self):
+    def test_runner_drains_ok_task(self, isolated_job_queue):
         registry = TaskRegistry()
         register(registry, "ok_task", _OkHandler())
-        runner = self._make_runner(registry)
+        runner = self._make_runner(registry, queue=isolated_job_queue)
 
         runner.queue.enqueue(
             "ok_task", priority=Priority.URGENT,
@@ -114,9 +121,9 @@ class TestIntegrationSmoke:
 
     # ── background thread runner ───────────────────────────────────────────────
 
-    def test_bg_runner_drains_queue(self):
+    def test_bg_runner_drains_queue(self, isolated_job_queue):
         """Background runner empties the queue within the timeout."""
-        mgr = self.make_mgr()
+        mgr = self.make_mgr(queue=isolated_job_queue)
         from tasks.concrete import register_all
         register_all(mgr.registry)
         register(mgr.registry, "ok_task", _OkHandler())
@@ -148,7 +155,7 @@ class TestIntegrationSmoke:
         registry = TaskRegistry()
         flaky = _FlakyHandler()
         register(registry, "flaky", flaky)
-        q = JobQueue(max_retries=2, retry_delay_s=0.05)
+        q = JobQueue(db_path=":memory:", max_retries=2, retry_delay_s=0.05)
         runner = TaskRunner(queue=q, registry=registry)
         runner.start(daemon=True)
 
@@ -180,7 +187,7 @@ class TestIntegrationSmoke:
         registry = TaskRegistry()
         broken = _BrokenHandler()
         register(registry, "broken", broken)
-        q = JobQueue(max_retries=1, retry_delay_s=0.02)
+        q = JobQueue(db_path=":memory:", max_retries=1, retry_delay_s=0.02)
         runner = TaskRunner(queue=q, registry=registry)
         runner.start(daemon=True)
 
