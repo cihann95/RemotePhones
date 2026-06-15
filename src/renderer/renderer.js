@@ -1140,6 +1140,46 @@ window.electronAPI.onUpdateDownloaded((info) => {
 });
 
 // =====================================================
+// HEALTH ALERT NOTIFICATIONS
+// =====================================================
+
+// Connection lost — show warning notification
+if (window.electronAPI.onConnectionLost) {
+  window.electronAPI.onConnectionLost(function(data) {
+    if (data && data.message && window.PhoneFarmNotification) {
+      window.PhoneFarmNotification.show(data.message, 'warning');
+    }
+  });
+}
+
+// Connection restored — show info notification
+if (window.electronAPI.onConnectionRestored) {
+  window.electronAPI.onConnectionRestored(function(data) {
+    if (data && data.message && window.PhoneFarmNotification) {
+      window.PhoneFarmNotification.show(data.message, 'info');
+    }
+  });
+}
+
+// Health system critical — show sticky error notification via humanizeError
+if (window.electronAPI.onHealthCritical) {
+  window.electronAPI.onHealthCritical(async function(alerts) {
+    if (Array.isArray(alerts) && window.PhoneFarmNotification) {
+      for (const alert of alerts) {
+        try {
+          var h = await window.electronAPI.humanizeError(alert);
+          window.PhoneFarmNotification.show(h.title + (h.hint ? ': ' + h.hint : ''), 'error');
+        } catch (_e) {
+          if (typeof alert === 'string') {
+            window.PhoneFarmNotification.show(alert, 'error');
+          }
+        }
+      }
+    }
+  });
+}
+
+// =====================================================
 // UTILITY FUNCTIONS
 // =====================================================
 // UTILITY FUNCTIONS

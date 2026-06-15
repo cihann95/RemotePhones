@@ -420,6 +420,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** IPC: Subscribes to error notifications from the main process */
   onShowErrorNotification: (callback) => {
     return ipcRenderer.on('show-error-notification', (event, data) => callback(data));
+  },
+
+  // =====================================================
+  // HEALTH ALERT NOTIFICATIONS
+  // =====================================================
+  /** IPC: Subscribes to connection-lost events from device monitor */
+  onConnectionLost: (callback) => {
+    return ipcRenderer.on('connection:lost', (event, data) => callback(data));
+  },
+  /** IPC: Subscribes to connection-restored events from device monitor */
+  onConnectionRestored: (callback) => {
+    return ipcRenderer.on('connection:restored', (event, data) => callback(data));
+  },
+  /** IPC: Subscribes to health-critical notification events */
+  onHealthCriticalNotification: (callback) => {
+    return ipcRenderer.on('health:critical', (event, data) => callback(data));
   }
 });
 
