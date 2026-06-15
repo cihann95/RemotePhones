@@ -52,6 +52,46 @@ function humanizeError(errStr) {
 }
 
 /**
+ * Sends an error notification to the renderer process via IPC.
+ * Uses humanizeError() to produce a Turkish user-facing message.
+ * @param {string} channel - The IPC channel name (for logging/debugging)
+ * @param {string} errStr  - Raw error string to humanize
+ */
+function sendErrorNotification(channel, errStr) {
+  const h = humanizeError(errStr || '');
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('show-error-notification', {
+        title: h.title,
+        message: h.hint || h.raw
+      });
+    }
+  } catch (_) { /* window may be closed or not yet ready */ }
+}
+
+/**
+ * Wraps an IPC handler with try/catch that logs the error, writes a crash
+ * report, sends a notification to the renderer, and returns a structured
+ * error object.  This is the default safety-net for every IPC handler.
+ *
+ * @param {string}   channel - IPC channel name
+ * @param {Function} handler - The async handler function(event, ...args)
+ */
+function safeHandle(channel, handler) {
+  ipcMain.handle(channel, async (event, ...args) => {
+    try {
+      return await handler(event, ...args);
+    } catch (e) {
+      const errStr = e?.message || String(e);
+      console.error(`[IPC] ${channel} error:`, e);
+      try { writeCrashLog(e, `ipc-${channel}`); } catch (_) {}
+      sendErrorNotification(channel, errStr);
+      return { success: false, error: humanizeError(errStr) };
+    }
+  });
+}
+
+/**
  * Returns the path to the phone_farm_cli bundled executable.
  * In packaged Electron app (process.resourcesPath exists), uses the bundled executable
  * from extraResources. In development, uses the PyInstaller-built executable from dist/.
@@ -140,12 +180,12 @@ const appStore = new Store({
 
 const VALID_THEMES = ['dark', 'light'];
 
-ipcMain.handle('theme:get', async () => {
+safeHandle('theme:get', async () => {
   const theme = appStore.get('theme', 'dark');
   return VALID_THEMES.includes(theme) ? theme : 'dark';
 });
 
-ipcMain.handle('theme:set', async (event, theme) => {
+safeHandle('theme:set', async (event, theme) => {
   if (typeof theme !== 'string' || !VALID_THEMES.includes(theme)) {
     return { success: false, error: 'Invalid theme value' };
   }
@@ -507,7 +547,7 @@ app.on('before-quit', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{isValid:boolean,type?:string,expiryDate?:string,gracePeriodDays?:number,error?:string}>}
  */
-ipcMain.handle('check-license', async () => {
+safeHandle('check-license', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] check-license called');
   const result = await LicenseManager.checkLicense();
   isLicenseValid = result.isValid;
@@ -520,7 +560,7 @@ ipcMain.handle('check-license', async () => {
  * @param {string} licenseKey - The licence key string
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('activate-license', async (event, licenseKey) => {
+safeHandle('activate-license', async (event, licenseKey) => {
   if (process.env?.DEBUG) console.debug('[IPC] activate-license called');
   if (typeof licenseKey !== 'string' || !licenseKey.trim() || licenseKey.trim().length > 255) {
     return { success: false, error: 'Invalid license key' };
@@ -537,7 +577,7 @@ ipcMain.handle('activate-license', async (event, licenseKey) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('deactivate-license', async () => {
+safeHandle('deactivate-license', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] deactivate-license called');
   const result = await LicenseManager.deactivateLicense();
   if (result.success) {
@@ -551,7 +591,7 @@ ipcMain.handle('deactivate-license', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('get-license-info', async () => {
+safeHandle('get-license-info', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] get-license-info called');
   return LicenseManager.getLicenseInfo();
 });
@@ -562,7 +602,7 @@ ipcMain.handle('get-license-info', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('license-activated', async () => {
+safeHandle('license-activated', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] license-activated called - starting services');
   if (mainWindow?.isDestroyed?.()) return { success: false, error: 'Window not ready' };
   // Start app services if not already started
@@ -578,14 +618,14 @@ ipcMain.handle('license-activated', async () => {
  * @param {number} currentCount - Current number of registered devices
  * @returns {Promise<{allowed:boolean,canAdd:boolean,limit:number,remaining:number}>}
  */
-ipcMain.handle('can-add-phone', async (event, currentCount) => {
+safeHandle('can-add-phone', async (event, currentCount) => {
   return LicenseManager.canAddPhone(currentCount);
 });
 
 /**
  * @returns {Promise<boolean>} Whether remote access is allowed by the licence
  */
-ipcMain.handle('is-remote-access-allowed', async () => {
+safeHandle('is-remote-access-allowed', async () => {
   return LicenseManager.isRemoteAccessAllowed();
 });
 
@@ -597,7 +637,7 @@ ipcMain.handle('is-remote-access-allowed', async () => {
  * @param {string} mode - 'home' or 'office'
  * @returns {Promise<{success:boolean,mode:string}>}
  */
-ipcMain.handle('select-mode', async (event, mode) => {
+safeHandle('select-mode', async (event, mode) => {
   if (process.env?.DEBUG) console.debug('[IPC] Mode selected:', mode);
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   if (!VALID_MODES.includes(mode)) return { success: false, error: 'Invalid mode' };
@@ -613,7 +653,7 @@ ipcMain.handle('select-mode', async (event, mode) => {
 /**
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('go-back', async () => {
+safeHandle('go-back', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] Going back to mode selection');
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   currentMode = null;
@@ -626,7 +666,7 @@ ipcMain.handle('go-back', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<string|null>}
  */
-ipcMain.handle('get-current-mode', async () => {
+safeHandle('get-current-mode', async () => {
   return currentMode;
 });
 
@@ -639,7 +679,7 @@ ipcMain.handle('get-current-mode', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<boolean>}
  */
-ipcMain.handle('is-setup-completed', async () => {
+safeHandle('is-setup-completed', async () => {
   return appStore.get('setupCompleted', false);
 });
 
@@ -647,7 +687,7 @@ ipcMain.handle('is-setup-completed', async () => {
  * Flags the setup wizard as complete.
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('complete-setup', async () => {
+safeHandle('complete-setup', async () => {
   appStore.set('setupCompleted', true);
   return { success: true };
 });
@@ -656,7 +696,7 @@ ipcMain.handle('complete-setup', async () => {
  * Navigates the main window to the appropriate active page for the current mode.
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('navigate-to-main', async () => {
+safeHandle('navigate-to-main', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   const htmlFile = currentMode === 'office' ? 'office.html' : (currentMode === 'home' ? 'home.html' : 'index.html');
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', htmlFile));
@@ -667,7 +707,7 @@ ipcMain.handle('navigate-to-main', async () => {
  * Navigates to the setup wizard page.
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('navigate-to-setup', async () => {
+safeHandle('navigate-to-setup', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'setup.html'));
   return { success: true };
@@ -677,7 +717,7 @@ ipcMain.handle('navigate-to-setup', async () => {
  * Navigates to the help page.
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('navigate-to-help', async () => {
+safeHandle('navigate-to-help', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return { success: false, error: 'Window not ready' };
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'help.html'));
   return { success: true };
@@ -692,7 +732,7 @@ ipcMain.handle('navigate-to-help', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{installed:boolean,running:boolean,connected:boolean,ip?:string,error?:string}>}
  */
-ipcMain.handle('tailscale-status', async () => {
+safeHandle('tailscale-status', async () => {
   return await tailscaleManager.getStatus();
 });
 
@@ -701,7 +741,7 @@ ipcMain.handle('tailscale-status', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('tailscale-install', async (event) => {
+safeHandle('tailscale-install', async (event) => {
   return await tailscaleManager.install((progress) => {
     event.sender.send('tailscale-install-progress', progress);
   });
@@ -712,7 +752,7 @@ ipcMain.handle('tailscale-install', async (event) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('tailscale-login', async () => {
+safeHandle('tailscale-login', async () => {
   return await tailscaleManager.login();
 });
 
@@ -721,7 +761,7 @@ ipcMain.handle('tailscale-login', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('tailscale-open-admin', async () => {
+safeHandle('tailscale-open-admin', async () => {
   return await tailscaleManager.openAdmin();
 });
 
@@ -734,7 +774,7 @@ ipcMain.handle('tailscale-open-admin', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{installed:boolean,running:boolean,loggedIn:boolean,error?:string}>}
  */
-ipcMain.handle('parsec-status', async () => {
+safeHandle('parsec-status', async () => {
   return await parsecManager.getStatus();
 });
 
@@ -743,7 +783,7 @@ ipcMain.handle('parsec-status', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('parsec-install', async (event) => {
+safeHandle('parsec-install', async (event) => {
   return await parsecManager.install((progress) => {
     event.sender.send('parsec-install-progress', progress);
   });
@@ -754,7 +794,7 @@ ipcMain.handle('parsec-install', async (event) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('parsec-open', async () => {
+safeHandle('parsec-open', async () => {
   return await parsecManager.open();
 });
 
@@ -763,7 +803,7 @@ ipcMain.handle('parsec-open', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('parsec-start', async () => {
+safeHandle('parsec-start', async () => {
   return await parsecManager.start();
 });
 
@@ -777,7 +817,7 @@ ipcMain.handle('parsec-start', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,results:{tailscale:object,parsec:object},logs:string[]}>}
  */
-ipcMain.handle('auto-install-missing-tools', async (event) => {
+safeHandle('auto-install-missing-tools', async (event) => {
   const AutoInstaller = require('./auto-installer');
   const installer = new AutoInstaller();
   
@@ -795,7 +835,7 @@ ipcMain.handle('auto-install-missing-tools', async (event) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,devices:Array<object>}>}
  */
-ipcMain.handle('get-devices', async () => {
+safeHandle('get-devices', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] get-devices called');
   if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
@@ -808,7 +848,7 @@ ipcMain.handle('get-devices', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,devices:Array<object>,error?:string}>}
  */
-ipcMain.handle('refresh-devices', async () => {
+safeHandle('refresh-devices', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] refresh-devices called');
   if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   if (deviceMonitor) {
@@ -825,7 +865,7 @@ ipcMain.handle('refresh-devices', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{connected:boolean,version?:string,error?:string}>}
  */
-ipcMain.handle('adb-status', async () => {
+safeHandle('adb-status', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] adb-status called');
   const status = await adbManager.getStatus();
   if (process.env?.DEBUG) console.debug('[IPC] adb-status returning:', status);
@@ -841,7 +881,7 @@ ipcMain.handle('adb-status', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('scrcpy-status', async () => {
+safeHandle('scrcpy-status', async () => {
   return await scrcpyManager.getStatus();
 });
 
@@ -850,7 +890,7 @@ ipcMain.handle('scrcpy-status', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,results:Array<{deviceId:string,success:boolean,error?:string}>}>}
  */
-ipcMain.handle('scrcpy-start-all', async () => {
+safeHandle('scrcpy-start-all', async () => {
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
   const deviceIds = devices.map(d => d.id);
 
@@ -875,7 +915,7 @@ ipcMain.handle('scrcpy-start-all', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('scrcpy-stop-all', async () => {
+safeHandle('scrcpy-stop-all', async () => {
   return await scrcpyManager.stopAll();
 });
 
@@ -885,7 +925,7 @@ ipcMain.handle('scrcpy-stop-all', async () => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<{success:boolean,deviceId:string,error?:string}>}
  */
-ipcMain.handle('scrcpy-start-device', async (event, deviceId) => {
+safeHandle('scrcpy-start-device', async (event, deviceId) => {
   if (process.env?.DEBUG) console.debug('[IPC] scrcpy-start-device called for:', deviceId);
   const safeDeviceId = ipcDeviceId(deviceId);
   const result = await scrcpyManager.startDevice(safeDeviceId);
@@ -903,7 +943,7 @@ ipcMain.handle('scrcpy-start-device', async (event, deviceId) => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('scrcpy-stop-device', async (event, deviceId) => {
+safeHandle('scrcpy-stop-device', async (event, deviceId) => {
   const safeDeviceId = ipcDeviceId(deviceId);
   return await scrcpyManager.stopDevice(safeDeviceId);
 });
@@ -913,7 +953,7 @@ ipcMain.handle('scrcpy-stop-device', async (event, deviceId) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('scrcpy-get-options', async () => {
+safeHandle('scrcpy-get-options', async () => {
   return scrcpyManager.getOptions();
 });
 
@@ -923,7 +963,7 @@ ipcMain.handle('scrcpy-get-options', async () => {
  * @param {object} options - Partial options object to merge into stored config
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('scrcpy-set-options', async (event, options) => {
+safeHandle('scrcpy-set-options', async (event, options) => {
   assertJsonBodySize(options);
   return scrcpyManager.setOptions(options);
 });
@@ -939,7 +979,7 @@ ipcMain.handle('scrcpy-set-options', async (event, options) => {
  * @param {string} text - The text to type on the device
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
+safeHandle('send-text-to-device', async (event, deviceId, text) => {
   if (process.env?.DEBUG) console.debug('[IPC] send-text-to-device called for:', deviceId, 'text:', text);
   const safeDeviceId = ipcDeviceId(deviceId);
   const textCheck = ipcDeviceText(text);
@@ -956,7 +996,7 @@ ipcMain.handle('send-text-to-device', async (event, deviceId, text) => {
  * @param {string|number} keycode - The Android keycode to send (e.g. KEYCODE_HOME = 3)
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('send-key-to-device', async (event, deviceId, keycode) => {
+safeHandle('send-key-to-device', async (event, deviceId, keycode) => {
   if (process.env?.DEBUG) console.debug('[IPC] send-key-to-device called for:', deviceId, 'keycode:', keycode);
   const safeDeviceId = ipcDeviceId(deviceId);
   const safeKeycode = ipcKeycode(keycode);
@@ -970,35 +1010,35 @@ ipcMain.handle('send-key-to-device', async (event, deviceId, keycode) => {
 /**
  * @returns {Promise<{enabled:boolean}>}
  */
-ipcMain.handle('autostart-status', async () => {
+safeHandle('autostart-status', async () => {
   return autostartManager.getStatus();
 });
 
 /**
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('autostart-enable', async () => {
+safeHandle('autostart-enable', async () => {
   return { success: autostartManager.enable() };
 });
 
 /**
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('autostart-disable', async () => {
+safeHandle('autostart-disable', async () => {
   return { success: autostartManager.disable() };
 });
 
 /**
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('autostart-toggle', async () => {
+safeHandle('autostart-toggle', async () => {
   return { success: autostartManager.toggle() };
 });
 
 /**
  * @returns {Promise<object>} All autostart configuration flags
  */
-ipcMain.handle('get-autostart-settings', async () => {
+safeHandle('get-autostart-settings', async () => {
   return autostartManager.getAllSettings();
 });
 
@@ -1006,7 +1046,7 @@ ipcMain.handle('get-autostart-settings', async () => {
  * @param {object} settings - Partial autostart settings merge object
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('update-autostart-settings', async (event, settings) => {
+safeHandle('update-autostart-settings', async (event, settings) => {
   assertJsonBodySize(settings);
   return autostartManager.updateSettings(settings);
 });
@@ -1020,7 +1060,7 @@ ipcMain.handle('update-autostart-settings', async (event, settings) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,tailscale:object,parsec:object,scrcpy:object,autostart:object,homeComputerName:string}>}
  */
-ipcMain.handle('get-full-status', async () => {
+safeHandle('get-full-status', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] get-full-status called');
 
   const [tailscale, parsec, scrcpy, autostart] = await Promise.all([
@@ -1053,7 +1093,7 @@ ipcMain.handle('get-full-status', async () => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<object>}
  */
-ipcMain.handle('get-device-data', async (event, deviceId) => {
+safeHandle('get-device-data', async (event, deviceId) => {
   const safeDeviceId = ipcDeviceId(deviceId);
   return deviceStore.getDeviceData(safeDeviceId);
 });
@@ -1065,7 +1105,7 @@ ipcMain.handle('get-device-data', async (event, deviceId) => {
  * @param {object} data - Arbitrary JSON-safe data to store
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('save-device-data', async (event, deviceId, data) => {
+safeHandle('save-device-data', async (event, deviceId, data) => {
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
     return { success: false, error: 'Invalid device data' };
   }
@@ -1083,7 +1123,7 @@ ipcMain.handle('save-device-data', async (event, deviceId, data) => {
  * @param {string} deviceId - The device identifier
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('delete-device-data', async (event, deviceId) => {
+safeHandle('delete-device-data', async (event, deviceId) => {
   const safeDeviceId = ipcDeviceId(deviceId);
   deviceStore.deleteDeviceData(safeDeviceId);
   return { success: true };
@@ -1094,7 +1134,7 @@ ipcMain.handle('delete-device-data', async (event, deviceId) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('get-all-device-data', async () => {
+safeHandle('get-all-device-data', async () => {
   return deviceStore.getAllDeviceData();
 });
 
@@ -1104,7 +1144,7 @@ ipcMain.handle('get-all-device-data', async () => {
  * @param {Array<{id:string, col:number, row:number, group?:string}>} positions
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('update-device-positions', async (event, positions) => {
+safeHandle('update-device-positions', async (event, positions) => {
   if (!Array.isArray(positions) || positions.length > 500) {
     return { success: false, error: 'Invalid positions data' };
   }
@@ -1117,7 +1157,7 @@ ipcMain.handle('update-device-positions', async (event, positions) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<string>>}
  */
-ipcMain.handle('get-groups', async () => {
+safeHandle('get-groups', async () => {
   return deviceStore.getGroups();
 });
 
@@ -1127,7 +1167,7 @@ ipcMain.handle('get-groups', async () => {
  * @param {string} name - The group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('add-group', async (event, name) => {
+safeHandle('add-group', async (event, name) => {
   if (typeof name !== 'string' || !name.trim() || name.length > 100) {
     return { success: false, error: 'Invalid group name' };
   }
@@ -1140,7 +1180,7 @@ ipcMain.handle('add-group', async (event, name) => {
  * @param {string} name - The group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('remove-group', async (event, name) => {
+safeHandle('remove-group', async (event, name) => {
   if (typeof name !== 'string' || !name.trim()) {
     return { success: false, error: 'Invalid group name' };
   }
@@ -1154,7 +1194,7 @@ ipcMain.handle('remove-group', async (event, name) => {
  * @param {string} newName - The new group name
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('rename-group', async (event, oldName, newName) => {
+safeHandle('rename-group', async (event, oldName, newName) => {
   if (typeof oldName !== 'string' || !oldName.trim() || typeof newName !== 'string' || !newName.trim()) {
     return { success: false, error: 'Invalid group name' };
   }
@@ -1166,7 +1206,7 @@ ipcMain.handle('rename-group', async (event, oldName, newName) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<object>>}
  */
-ipcMain.handle('get-merged-devices', async () => {
+safeHandle('get-merged-devices', async () => {
   if (process.env?.DEBUG) console.debug('[IPC] get-merged-devices called');
   if (process.env?.DEBUG) console.debug('[IPC] deviceMonitor exists:', !!deviceMonitor);
   const devices = deviceMonitor ? deviceMonitor.getDevices() : [];
@@ -1181,7 +1221,7 @@ ipcMain.handle('get-merged-devices', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('get-device-store-settings', async () => {
+safeHandle('get-device-store-settings', async () => {
   return deviceStore.getSettings();
 });
 
@@ -1198,7 +1238,7 @@ const VALID_SETTING_KEYS = [
   'sortBy',
   'groupByGroup',
 ];
-ipcMain.handle('set-device-store-setting', async (event, key, value) => {
+safeHandle('set-device-store-setting', async (event, key, value) => {
   if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
     return { success: false, error: 'Invalid setting key' };
   }
@@ -1213,7 +1253,7 @@ ipcMain.handle('set-device-store-setting', async (event, key, value) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean,data?:string,error?:string}>}
  */
-ipcMain.handle('export-device-data', async () => {
+safeHandle('export-device-data', async () => {
   return deviceStore.exportData();
 });
 
@@ -1223,7 +1263,7 @@ ipcMain.handle('export-device-data', async () => {
  * @param {string} data - JSON string previously returned by export-device-data
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('import-device-data', async (event, data) => {
+safeHandle('import-device-data', async (event, data) => {
   assertJsonBodySize(data);
   return deviceStore.importData(data);
 });
@@ -1237,7 +1277,7 @@ ipcMain.handle('import-device-data', async (event, data) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<object>}
  */
-ipcMain.handle('get-notification-settings', async () => {
+safeHandle('get-notification-settings', async () => {
   return notificationManager.getSettings();
 });
 
@@ -1247,7 +1287,7 @@ ipcMain.handle('get-notification-settings', async () => {
  * @param {boolean} enabled - Whether notifications should be active
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('set-notification-enabled', async (event, enabled) => {
+safeHandle('set-notification-enabled', async (event, enabled) => {
   notificationManager.setEnabled(enabled);
   return { success: true };
 });
@@ -1258,7 +1298,7 @@ ipcMain.handle('set-notification-enabled', async (event, enabled) => {
  * @param {boolean} enabled - Whether sound should be active
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('set-notification-sound', async (event, enabled) => {
+safeHandle('set-notification-sound', async (event, enabled) => {
   notificationManager.setSoundEnabled(enabled);
   return { success: true };
 });
@@ -1269,7 +1309,7 @@ ipcMain.handle('set-notification-sound', async (event, enabled) => {
  * @param {object} settings - Partial notification settings to merge
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('update-notification-settings', async (event, settings) => {
+safeHandle('update-notification-settings', async (event, settings) => {
   assertJsonBodySize(settings);
   notificationManager.updateSettings(settings);
   return { success: true };
@@ -1284,7 +1324,7 @@ ipcMain.handle('update-notification-settings', async (event, settings) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<object>>}
  */
-ipcMain.handle('get-shortcuts', async () => {
+safeHandle('get-shortcuts', async () => {
   return shortcutManager.getShortcutList();
 });
 
@@ -1298,7 +1338,7 @@ ipcMain.handle('get-shortcuts', async () => {
  * @param {boolean} running - Whether the farm is actively running
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('set-farm-running', async (event, running) => {
+safeHandle('set-farm-running', async (event, running) => {
   isFarmRunning = running;
   return { success: true };
 });
@@ -1308,7 +1348,7 @@ ipcMain.handle('set-farm-running', async (event, running) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<boolean>}
  */
-ipcMain.handle('get-farm-running', async () => {
+safeHandle('get-farm-running', async () => {
   return isFarmRunning;
 });
 
@@ -1321,7 +1361,7 @@ ipcMain.handle('get-farm-running', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<string>}
  */
-ipcMain.handle('get-home-computer-name', async () => {
+safeHandle('get-home-computer-name', async () => {
   return appStore.get('homeComputerName', '');
 });
 
@@ -1331,7 +1371,7 @@ ipcMain.handle('get-home-computer-name', async () => {
  * @param {string} name - The hostname or IP to store
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('set-home-computer-name', async (event, name) => {
+safeHandle('set-home-computer-name', async (event, name) => {
   if (typeof name !== 'string' || name.length > 255) {
     return { success: false, error: 'Invalid computer name' };
   }
@@ -1343,7 +1383,7 @@ ipcMain.handle('set-home-computer-name', async (event, name) => {
 // IPC: ABOUT
 // =====================================================
 
-ipcMain.handle('open-about', async () => {
+safeHandle('open-about', async () => {
   createAboutWindow();
   return { success: true };
 });
@@ -1352,16 +1392,16 @@ ipcMain.handle('open-about', async () => {
 // IPC: UPDATER
 // =====================================================
 
-ipcMain.handle('update:check', async () => {
+safeHandle('update:check', async () => {
   Updater.checkForUpdates();
   return { success: true };
 });
 
-ipcMain.handle('update:get-settings', async () => {
+safeHandle('update:get-settings', async () => {
   return Updater.getSettings();
 });
 
-ipcMain.handle('update:save-settings', async (event, settings) => {
+safeHandle('update:save-settings', async (event, settings) => {
   Updater.saveSettings(settings);
   Updater.init();
   return { success: true };
@@ -1372,7 +1412,7 @@ ipcMain.handle('update:save-settings', async (event, settings) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('close-about', async () => {
+safeHandle('close-about', async () => {
   if (aboutWindow) {
     aboutWindow.close();
   }
@@ -1384,7 +1424,7 @@ ipcMain.handle('close-about', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('minimize-window', async () => {
+safeHandle('minimize-window', async () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.minimize();
   }
@@ -1397,7 +1437,7 @@ ipcMain.handle('minimize-window', async () => {
  * @param {string} errStr - Raw error string to humanize
  * @returns {Promise<{id:string,title:string,hint:string,fix_steps:string[],raw:string}>}
  */
-ipcMain.handle('humanize-error', async (event, errStr) => {
+safeHandle('humanize-error', async (event, errStr) => {
   return humanizeError(errStr || '');
 });
 
@@ -1406,7 +1446,7 @@ ipcMain.handle('humanize-error', async (event, errStr) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{name:string,version:string,author:string,electron:string,node:string,chrome:string}>}
  */
-ipcMain.handle('get-app-info', async () => {
+safeHandle('get-app-info', async () => {
   return {
     name: 'Phone Farm',
     version: APP_VERSION,
@@ -1428,7 +1468,7 @@ ipcMain.handle('get-app-info', async () => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<{timestamp:string,number:string,duration:number,status:string}>>}
  */
-ipcMain.handle('phone:call-bulk', async (event, numbers) => {
+safeHandle('phone:call-bulk', async (event, numbers) => {
   if (!Array.isArray(numbers) || numbers.length === 0) {
     return { success: false, error: 'No numbers provided for bulk call' };
   }
@@ -1455,6 +1495,7 @@ ipcMain.handle('phone:call-bulk', async (event, numbers) => {
     const jobId = await submitBulkCallJob(deviceId, validNumbers);
     return { success: true, jobId };
   } catch (error) {
+    sendErrorNotification('phone:call-bulk', error.message);
     return { success: false, error: humanizeError(error.message) };
   }
 });
@@ -1511,7 +1552,7 @@ async function submitBulkCallJob(deviceId, numbers) {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<Array<{timestamp:string,number:string,duration:number,status:string}>>}
  */
-ipcMain.handle('call-history:get', async () => {
+safeHandle('call-history:get', async () => {
   const fs = require('fs');
   const logsDir = path.join(__dirname, '..', '..', 'logs');
 
@@ -1552,6 +1593,7 @@ ipcMain.handle('call-history:get', async () => {
     return allRecords;
   } catch (e) {
     console.error('[IPC] call-history:get error:', e.message);
+    sendErrorNotification('call-history:get', e.message);
     return [];
   }
 });
@@ -1650,7 +1692,7 @@ function parseCrashLog(content, filename) {
  * @param {{offset?:number,limit?:number,level?:string,text?:string,since?:string,until?:string}} [opts]
  * @returns {Promise<{entries:Array,total:number,offset:number,limit:number}>}
  */
-ipcMain.handle('get-logs', async (event, opts) => {
+safeHandle('get-logs', async (event, opts) => {
   const safeOpts = (opts && typeof opts === 'object') ? opts : {};
   const limit = Math.max(1, Math.min(2000, parseInt(safeOpts.limit, 10) || 200));
   const offset = Math.max(0, parseInt(safeOpts.offset, 10) || 0);
@@ -1733,6 +1775,7 @@ ipcMain.handle('get-logs', async (event, opts) => {
     return { entries: page, total: total, offset: offset, limit: limit };
   } catch (e) {
     console.error('[IPC] get-logs error:', e.message);
+    sendErrorNotification('get-logs', e.message);
     return { entries: [], total: 0, offset: 0, limit: limit };
   }
 });
@@ -1747,7 +1790,7 @@ ipcMain.handle('get-logs', async (event, opts) => {
  * @param {string} url - The URL to open
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('open-external', async (event, url) => {
+safeHandle('open-external', async (event, url) => {
   try {
     if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) {
       return { success: false, error: humanizeError('Only http/https URLs are allowed') };
@@ -1755,6 +1798,7 @@ ipcMain.handle('open-external', async (event, url) => {
     await shell.openExternal(url);
     return { success: true };
   } catch (e) {
+    sendErrorNotification('open-external', e.message);
     return { success: false, error: humanizeError(e.message) };
   }
 });
@@ -1764,7 +1808,7 @@ ipcMain.handle('open-external', async (event, url) => {
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('quit-app', async () => {
+safeHandle('quit-app', async () => {
   app.quit();
   return { success: true };
 });
@@ -1773,7 +1817,7 @@ ipcMain.handle('quit-app', async () => {
  * IPC: Relaunches the application (restart).
  * @returns {Promise<{success:boolean}>}
  */
-ipcMain.handle('app:relaunch', async () => {
+safeHandle('app:relaunch', async () => {
   app.relaunch();
   app.exit(0);
   return { success: true };
@@ -1789,14 +1833,14 @@ ipcMain.handle('app:relaunch', async () => {
  * @param {string} deviceId - ADB device identifier
  * @returns {Promise<{ok:boolean,sim:object,signal:object,battery:object,memory:object,error?:string}>}
  */
-ipcMain.handle('health:system', async () => {
+safeHandle('health:system', async () => {
   if (healthMonitor) {
     return { success: true, health: healthMonitor.getHealth() };
   }
   return { success: false, error: 'Health monitor not initialized' };
 });
 
-ipcMain.handle('health:get', async (event, deviceId) => {
+safeHandle('health:get', async (event, deviceId) => {
   let safeDeviceId;
   try {
     safeDeviceId = ipcDeviceId(deviceId);
@@ -1851,6 +1895,7 @@ ipcMain.handle('health:get', async (event, deviceId) => {
 
     return { ok: true, sim, signal, battery, memory };
   } catch (e) {
+    sendErrorNotification('health:get', e.message);
     return { ok: false, error: humanizeError(e.message) };
   }
 });
@@ -1989,7 +2034,7 @@ process.on('unhandledRejection', (reason) => {
  * @param {Object} params - {deviceId: string, number: string}
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('phone:call', async (event, params) => {
+safeHandle('phone:call', async (event, params) => {
    try {
    assertJsonBodySize(params);
    const { deviceId, number } = params;
@@ -2003,23 +2048,26 @@ ipcMain.handle('phone:call', async (event, params) => {
       const cliPath = getCliPath();
       return new Promise((resolve) => {
           execFile(cliPath, ['call', deviceId, '--number', number], { windowsHide: true }, (error, stdout, stderr) => {
-            if (error) {
-               console.error('[IPC] phone:call error:', error);
-               resolve({ success: false, error: humanizeError(error.message) });
-            } else {
-               mainWindow?.webContents?.send('phone-state-update', 'ringing');
-               resolve({ success: true, output: stdout });
-            }
-         });
-      });
-   } catch (error) {
-      console.error('[IPC] phone:call exception:', error);
-      return { success: false, error: humanizeError(error.message) };
-   }
-   } catch (outerError) {
-      console.error('[IPC] phone:call outer exception:', outerError);
-      return { success: false, error: humanizeError(outerError.message) };
-   }
+             if (error) {
+                console.error('[IPC] phone:call error:', error);
+                sendErrorNotification('phone:call', error.message);
+                resolve({ success: false, error: humanizeError(error.message) });
+             } else {
+                mainWindow?.webContents?.send('phone-state-update', 'ringing');
+                resolve({ success: true, output: stdout });
+             }
+          });
+       });
+    } catch (error) {
+       console.error('[IPC] phone:call exception:', error);
+       sendErrorNotification('phone:call', error.message);
+       return { success: false, error: humanizeError(error.message) };
+    }
+    } catch (outerError) {
+       console.error('[IPC] phone:call outer exception:', outerError);
+       sendErrorNotification('phone:call', outerError.message);
+       return { success: false, error: humanizeError(outerError.message) };
+    }
 });
 
 /**
@@ -2028,7 +2076,7 @@ ipcMain.handle('phone:call', async (event, params) => {
  * @param {Object} params - {deviceId: string}
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('phone:answer', async (event, params) => {
+safeHandle('phone:answer', async (event, params) => {
    try {
    assertJsonBodySize(params);
    const { deviceId } = params;
@@ -2041,23 +2089,26 @@ ipcMain.handle('phone:answer', async (event, params) => {
       const cliPath = getCliPath();
       return new Promise((resolve) => {
           execFile(cliPath, ['run', deviceId, 'answer'], { windowsHide: true }, (error, stdout, stderr) => {
-            if (error) {
-               console.error('[IPC] phone:answer error:', error);
-               resolve({ success: false, error: humanizeError(error.message) });
-            } else {
-               mainWindow?.webContents?.send('phone-state-update', 'active');
-               resolve({ success: true, output: stdout });
-            }
-         });
-      });
-   } catch (error) {
-      console.error('[IPC] phone:answer exception:', error);
-      return { success: false, error: humanizeError(error.message) };
-   }
-   } catch (outerError) {
-      console.error('[IPC] phone:answer outer exception:', outerError);
-      return { success: false, error: humanizeError(outerError.message) };
-   }
+             if (error) {
+                console.error('[IPC] phone:answer error:', error);
+                sendErrorNotification('phone:answer', error.message);
+                resolve({ success: false, error: humanizeError(error.message) });
+             } else {
+                mainWindow?.webContents?.send('phone-state-update', 'active');
+                resolve({ success: true, output: stdout });
+             }
+          });
+       });
+    } catch (error) {
+       console.error('[IPC] phone:answer exception:', error);
+       sendErrorNotification('phone:answer', error.message);
+       return { success: false, error: humanizeError(error.message) };
+    }
+    } catch (outerError) {
+       console.error('[IPC] phone:answer outer exception:', outerError);
+       sendErrorNotification('phone:answer', outerError.message);
+       return { success: false, error: humanizeError(outerError.message) };
+    }
 });
 
 /**
@@ -2066,7 +2117,7 @@ ipcMain.handle('phone:answer', async (event, params) => {
  * @param {Object} params - {deviceId: string}
  * @returns {Promise<{success:boolean,error?:string}>}
  */
-ipcMain.handle('phone:hangup', async (event, params) => {
+safeHandle('phone:hangup', async (event, params) => {
    try {
    assertJsonBodySize(params);
    const { deviceId } = params;
@@ -2079,23 +2130,26 @@ ipcMain.handle('phone:hangup', async (event, params) => {
       const cliPath = getCliPath();
       return new Promise((resolve) => {
           execFile(cliPath, ['run', deviceId, 'hangup'], { windowsHide: true }, (error, stdout, stderr) => {
-            if (error) {
-               console.error('[IPC] phone:hangup error:', error);
-               resolve({ success: false, error: humanizeError(error.message) });
-            } else {
-               mainWindow?.webContents?.send('phone-state-update', 'ended');
-               resolve({ success: true, output: stdout });
-            }
-         });
-      });
-   } catch (error) {
-      console.error('[IPC] phone:hangup exception:', error);
-      return { success: false, error: humanizeError(error.message) };
-   }
-   } catch (outerError) {
-      console.error('[IPC] phone:hangup outer exception:', outerError);
-      return { success: false, error: humanizeError(outerError.message) };
-   }
+             if (error) {
+                console.error('[IPC] phone:hangup error:', error);
+                sendErrorNotification('phone:hangup', error.message);
+                resolve({ success: false, error: humanizeError(error.message) });
+             } else {
+                mainWindow?.webContents?.send('phone-state-update', 'ended');
+                resolve({ success: true, output: stdout });
+             }
+          });
+       });
+    } catch (error) {
+       console.error('[IPC] phone:hangup exception:', error);
+       sendErrorNotification('phone:hangup', error.message);
+       return { success: false, error: humanizeError(error.message) };
+    }
+    } catch (outerError) {
+       console.error('[IPC] phone:hangup outer exception:', outerError);
+       sendErrorNotification('phone:hangup', outerError.message);
+       return { success: false, error: humanizeError(outerError.message) };
+    }
 });
 
 /**
@@ -2104,7 +2158,7 @@ ipcMain.handle('phone:hangup', async (event, params) => {
  * @param {Object} params - {deviceId: string}
  * @returns {Promise<{success:boolean,state:string,error?:string}>}
  */
-ipcMain.handle('phone:state', async (event, params) => {
+safeHandle('phone:state', async (event, params) => {
     try {
         assertJsonBodySize(params);
         const { deviceId } = params;
@@ -2129,6 +2183,7 @@ ipcMain.handle('phone:state', async (event, params) => {
         return { success: true, state };
     } catch (error) {
         console.error('[IPC] phone:state exception:', error);
+        sendErrorNotification('phone:state', error.message);
         return { success: false, state: 'unknown', error: humanizeError(error.message) };
     }
 });

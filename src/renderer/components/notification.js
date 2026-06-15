@@ -68,3 +68,14 @@ window.PhoneFarmNotification = (function() {
 
   return { show, dismiss, dismissAll };
 })();
+
+if (window.electronAPI && window.electronAPI.onShowErrorNotification) {
+  window.electronAPI.onShowErrorNotification(function(data) {
+    if (data && data.title) {
+      window.PhoneFarmNotification.show(
+        data.title + (data.message ? ': ' + data.message : ''),
+        'error'
+      );
+    }
+  });
+}

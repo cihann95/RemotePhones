@@ -412,6 +412,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   /** IPC: Fired when the update has been fully downloaded and is ready to install */
   onUpdateDownloaded: (callback) => {
     return ipcRenderer.on('update-downloaded', (event, info) => callback(info));
+  },
+
+  // =====================================================
+  // ERROR NOTIFICATIONS
+  // =====================================================
+  /** IPC: Subscribes to error notifications from the main process */
+  onShowErrorNotification: (callback) => {
+    return ipcRenderer.on('show-error-notification', (event, data) => callback(data));
   }
 });
 
