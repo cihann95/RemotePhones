@@ -1,0 +1,27 @@
+Task 18: Wire Preflight Checks into Startup Sequence
+====================================================
+Date: 2025-06-15
+Status: COMPLETE
+
+Changes Made:
+- src/main/main.js:
+  - Added `dialog` to Electron import (line 7)
+  - Added `const { runPreflightChecks } = require('./preflight');` import (line 139)
+  - Added preflight check logic before `createWindow()` in `app.whenReady()`:
+    * Calls `await runPreflightChecks()` (which internally calls `ensureEnvFile()` for .env auto-copy)
+    * Logs warnings to console without blocking startup
+    * On errors (status='error'), shows `dialog.showMessageBox` with Turkish messages and fix steps
+    * On success, logs summary to console
+
+Verification:
+- node -c src/main/main.js -> PASS (no syntax errors)
+- npx vitest run src/tests/preflight.test.js -> 11/11 passed
+- npx vitest run (all JS tests) -> 118/120 passed (2 pre-existing failures in tray.test.js)
+- python3 -m pytest tests/ -q -> 380/381 passed (1 pre-existing failure: test_doctor missing Python package)
+
+Design Decisions:
+- Preflight runs BEFORE createWindow() so errors can be caught before UI loads
+- Uses dialog.showMessageBox (not IPC) since window doesn't exist yet when errors occur
+- Warnings are logged-only; only errors trigger the dialog
+- ensureEnvFile() is already called inside runPreflightChecks(), no separate call needed
+- All Turkish error messages and fix steps come from preflight.js (Task 4)
