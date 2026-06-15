@@ -1,4 +1,12 @@
-"""Worker that reads agent logs and writes entries to the status board."""
+"""
+DEPRECATED
+===========
+This module is not currently wired into the application. LogWatcher and
+run_worker are never used by PhoneFarmManager or any other component. They
+are preserved for future use but are not loaded by the running system.
+
+Worker that reads agent logs and writes entries to the status board.
+"""
 
 from __future__ import annotations
 

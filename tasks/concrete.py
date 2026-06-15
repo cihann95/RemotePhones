@@ -13,6 +13,8 @@ import time
 
 from core.mobile_ops import not_up, MobileOperations
 from tasks.base_task import BaseTask, TaskConfig, TaskResult
+from automations.instagram import InstagramFollowTask
+from automations.instagram_flow import InstagramFollowSequenceTask
 from tasks.phone_call import (
     PhoneCallTask,
     PhoneAnswerTask,
@@ -194,6 +196,8 @@ ALL = [
     PhoneRejectTask,
     PhoneHangUpTask,
     PhoneCallMonitorTask,
+    InstagramFollowTask,
+    InstagramFollowSequenceTask,
 ]
 
 

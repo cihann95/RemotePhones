@@ -30,9 +30,8 @@ class JobQueue:
 
     def __init__(self, db_path: str | None = None, max_retries: int = 3, retry_delay_s: float = 5.0) -> None:
         if db_path is None:
-            data_dir = os.getenv(
-                "DATA_DIR",
-                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data"),
+            data_dir = os.getenv("DATA_DIR") or os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data",
             )
             os.makedirs(data_dir, exist_ok=True)
             db_path = os.path.join(data_dir, "job_queue.db")
@@ -277,7 +276,8 @@ class JobQueue:
             cursor = conn.execute(
                 "SELECT COUNT(*) FROM jobs WHERE status = ?", (JobStatus.QUEUED,)
             )
-            return cursor.fetchone()[0]
+            row = cursor.fetchone()
+            return int(row[0]) if row else 0
 
     def clear(self) -> None:
         with self._lock:

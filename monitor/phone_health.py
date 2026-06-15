@@ -11,6 +11,7 @@ import re
 from typing import Any, Dict, Optional, Tuple
 
 from core.adb import ADBClient
+from core.utils import safe_shell
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +48,8 @@ class PhoneHealthChecker:
         timeout: int = 30,
         device_id: Optional[str] = None,
     ) -> Tuple[str, bool]:
-        try:
-            out = self.adb.run_command(
-                ["shell", cmd], device_id=device_id, timeout=timeout
-            )
-            return out, True
-        except Exception as exc:
-            self.log.warning("shell(%s) failed: %s", cmd, exc)
-            return "", False
+        result = safe_shell(self.adb, "run_command", ["shell", cmd], device_id=device_id, timeout=timeout)
+        return result["data"], result["ok"]
 
     # sim status --------------------------------------------------------------
     def check_sim(

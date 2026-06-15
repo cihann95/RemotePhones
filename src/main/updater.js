@@ -40,11 +40,9 @@ function init() {
   // Set update channel based on settings
   const settings = getSettings();
   autoUpdater.setFeedURL({
-    provider: 'generic',
-    url: `https://update.phonefarm.sergio.dev/${settings.channel}/`,
-    headers: {
-      'User-Agent': `PhoneFarm/${app.getVersion()}`
-    }
+    provider: 'github',
+    owner: 'cihann95',
+    repo: 'RemotePhones'
   });
 
   // Check for updates on app ready if auto-check is enabled

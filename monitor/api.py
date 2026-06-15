@@ -33,12 +33,12 @@ MAX_CSV_BODY = 512 * 1024  # 512 KB
 
 def validate_device_id(device_id: str) -> None:
     if not isinstance(device_id, str) or not DEVICE_ID_RE.match(device_id):
-        raise HTTPException(400, detail="Invalid device ID format")
+        raise HTTPException(400, detail=_error_detail("Invalid device ID format"))
 
 
 def validate_phone_number(number: str) -> None:
     if not isinstance(number, str) or not PHONE_RE.match(number):
-        raise HTTPException(400, detail="Invalid phone number format")
+        raise HTTPException(400, detail=_error_detail("Invalid phone number format"))
 
 try:
     from fastapi import FastAPI, HTTPException, Header, Depends, Body
@@ -54,6 +54,7 @@ from monitor.health import DeviceHealthChecker
 from monitor.phone_health import PhoneHealthChecker
 from core.phone import PhoneOperations
 from scheduler.manager import PhoneFarmManager
+from utils.error_handler import humanize_error
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,23 @@ def _require_manager() -> PhoneFarmManager:
     if _manager is None or _health_checker is None:
         raise HTTPException(503, "Manager not initialised — call attach_manager() first")
     return _manager
+
+
+def _error_detail(error_message: str, **extra: Any) -> dict[str, Any]:
+    """Build a structured error response using the centralized error catalog.
+
+    Returns a dict suitable as the ``detail`` kwarg of HTTPException that
+    includes the humanized hint and fix steps alongside the raw message.
+    """
+    info = humanize_error(error_message)
+    detail: dict[str, Any] = {
+        "error": info["id"],
+        "message": error_message,
+        "hint": info["hint"],
+        "fix_steps": info["fix_steps"],
+    }
+    detail.update(extra)
+    return detail
 
 
 # ── routes (only registered when FastAPI is available) ────────────────────────
@@ -227,7 +245,7 @@ if app is not None:
         _require_manager()
         rec = _manager.queue.get_status(job_id)
         if rec is None:
-            raise HTTPException(404, detail=f"Job {job_id!r} not found")
+            raise HTTPException(404, detail=_error_detail(f"Job {job_id!r} not found"))
         return rec
 
     @app.post("/tasks")
@@ -253,7 +271,7 @@ if app is not None:
         _require_manager()
         success = _manager.queue.cancel(job_id)
         if not success:
-            raise HTTPException(404, detail=f"Job {job_id!r} not found or cannot be cancelled")
+            raise HTTPException(404, detail=_error_detail(f"Job {job_id!r} not found or cannot be cancelled"))
         return {"job_id": job_id, "status": "cancelled"}
 
     @app.post("/devices/{device_id}/run")
@@ -304,7 +322,7 @@ if app is not None:
         phone_ops = PhoneOperations(_manager.dm.adb)
         result = phone_ops.call(number, device_id)
         if not result.get("ok"):
-            raise HTTPException(400, detail=result.get("error", "Call failed"))
+            raise HTTPException(400, detail=_error_detail(result.get("error", "Call failed")))
         return result
 
     @app.post("/phone/call-bulk")
@@ -317,7 +335,7 @@ if app is not None:
         _require_manager()
         validate_device_id(device_id)
         if len(csv_data) > MAX_CSV_BODY:
-            raise HTTPException(400, detail="CSV data exceeds maximum allowed size")
+            raise HTTPException(400, detail=_error_detail("CSV data exceeds maximum allowed size"))
         phone_ops = PhoneOperations(_manager.dm.adb)
         csv_result = phone_ops.read_csv_string(csv_data)
         if csv_result.get("warnings"):
@@ -327,7 +345,7 @@ if app is not None:
         
         numbers = csv_result.get("numbers", [])
         if not numbers:
-            raise HTTPException(400, detail="No valid numbers found in CSV data")
+            raise HTTPException(400, detail=_error_detail("No valid numbers found in CSV data"))
         
         results = []
         for item in numbers:
@@ -355,7 +373,7 @@ if app is not None:
         phone_ops = PhoneOperations(_manager.dm.adb)
         result = phone_ops.answer(device_id)
         if not result.get("ok"):
-            raise HTTPException(400, detail=result.get("error", "Answer failed"))
+            raise HTTPException(400, detail=_error_detail(result.get("error", "Answer failed")))
         return result
 
     @app.post("/phone/hangup")
@@ -369,7 +387,7 @@ if app is not None:
         phone_ops = PhoneOperations(_manager.dm.adb)
         result = phone_ops.hang_up(device_id)
         if not result.get("ok"):
-            raise HTTPException(400, detail=result.get("error", "Hang up failed"))
+            raise HTTPException(400, detail=_error_detail(result.get("error", "Hang up failed")))
         return result
 
     def _rotate_api_key_impl() -> dict[str, Any]:

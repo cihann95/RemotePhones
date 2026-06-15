@@ -1,4 +1,12 @@
-"""Status board implementation for logging agent activities."""
+"""
+DEPRECATED
+===========
+This module is not currently wired into the application. StatusBoard is never
+used by PhoneFarmManager or any other component. It is preserved for future
+use but is not loaded by the running system.
+
+Status board implementation for logging agent activities.
+"""
 
 from __future__ import annotations
 

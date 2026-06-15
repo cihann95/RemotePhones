@@ -18,79 +18,10 @@ import re
 import secrets
 import sys
 
+from utils.error_handler import humanize_error
+
 DEVICE_ID_RE = re.compile(r'^[a-zA-Z0-9_\-]+$')
 PHONE_RE = re.compile(r'^\+?[0-9]{7,15}$')
-
-# ── Error message map ─────────────────────────────────────────────────────────
-
-_ERROR_MESSAGES_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "shared", "error_messages.json"
-)
-_ERROR_MESSAGES: list[dict] = []
-
-def _load_error_messages() -> list[dict]:
-    """Load the centralized error message map from shared/error_messages.json."""
-    global _ERROR_MESSAGES
-    if _ERROR_MESSAGES:
-        return _ERROR_MESSAGES
-    try:
-        with open(_ERROR_MESSAGES_PATH, "r", encoding="utf-8") as fh:
-            _ERROR_MESSAGES = json.load(fh)
-    except (OSError, json.JSONDecodeError) as exc:
-        print(
-            f"WARNING: Could not load error messages from {_ERROR_MESSAGES_PATH}: {exc}",
-            file=sys.stderr,
-        )
-        _ERROR_MESSAGES = []
-    return _ERROR_MESSAGES
-
-
-def humanize_error(err_str: str, lang: str = "tr") -> dict:
-    """Match a raw error string against the error map and return a structured dict.
-
-    Returns:
-        {
-            "id": str,
-            "title": str,
-            "hint": str,
-            "fix_steps": list[str],
-            "raw": str   # original error string
-        }
-    """
-    err_lower = err_str.lower()
-    messages = _load_error_messages()
-
-    for entry in messages:
-        for pattern in entry.get("patterns", []):
-            try:
-                if re.search(pattern, err_lower):
-                    return {
-                        "id": entry["id"],
-                        "title": entry["title"],
-                        "hint": entry["hint"],
-                        "fix_steps": entry.get("fix_steps", []),
-                        "raw": err_str,
-                    }
-            except re.error:
-                if pattern in err_lower:
-                    return {
-                        "id": entry["id"],
-                        "title": entry["title"],
-                        "hint": entry["hint"],
-                        "fix_steps": entry.get("fix_steps", []),
-                        "raw": err_str,
-                    }
-
-    fallback = next((e for e in messages if e["id"] == "unknown_error"), None)
-    if fallback:
-        return {
-            "id": fallback["id"],
-            "title": fallback["title"],
-            "hint": fallback["hint"],
-            "fix_steps": fallback.get("fix_steps", []),
-            "raw": err_str,
-        }
-    return {"id": "unknown_error", "title": "Bilinmeyen hata", "hint": err_str, "fix_steps": [], "raw": err_str}
 
 
 def _print_human_error(err_str: str) -> None:

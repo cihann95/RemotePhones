@@ -12,7 +12,7 @@ If you have never used Phone Farm before, start with the [Getting Started guide]
 
 ## Quick Start
 
-1. **Install Python 3.8 or newer** and make sure it is on your PATH.
+1. **Install Python 3.10 or newer** and make sure it is on your PATH.
 2. **Install ADB** (platform-tools from Google) and add it to your PATH.
 3. **Enable USB debugging** on your Android phone. Connect it to your computer with a USB cable.
 4. **Clone and install:**
@@ -33,7 +33,7 @@ That is it. You should see your device's battery level, Android version, and con
 
 ## Prerequisites
 
-- **Python 3.8+** on your PATH
+- **Python 3.10+** on your PATH
 - **ADB** (Android Debug Bridge) installed and accessible from the command line
 - A **USB cable** that supports data transfer
 - An **Android phone** with USB Debugging enabled (Settings > Developer Options > USB Debugging)

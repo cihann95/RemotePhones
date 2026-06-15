@@ -34,12 +34,8 @@ class AlertManager:
         self.battery_low_pct: int = int(mon_cfg.get("battery_low_pct", 15))
         self.temperature_high_c: int = int(mon_cfg.get("temperature_high_c", 50))
         self.cpu_high_pct: float = float(mon_cfg.get("cpu_high_pct", 95.0))
-        self.memory_low_free_mb: int | None = mon_cfg.get("memory_low_free_mb", None)
-        if self.memory_low_free_mb is not None:
-            self.memory_low_free_mb = int(self.memory_low_free_mb)
-        else:
-            # Default: flag memory below 200 MB (conservative for phones)
-            self.memory_low_free_mb = 200
+        _memory_low_raw = mon_cfg.get("memory_low_free_mb", None)
+        self.memory_low_free_mb: int = int(_memory_low_raw) if _memory_low_raw is not None else 200
 
         # Webhook configuration
         self.webhook_url: str | None = os.environ.get("ALERT_WEBHOOK_URL")

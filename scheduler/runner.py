@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from typing import Any
 
 from core.adb import ADBTimeoutError, DeviceDisconnectedError
 from scheduler.job_queue import JobQueue, JobStatus
@@ -31,7 +32,7 @@ class TaskRunner:
         queue: JobQueue | None = None,
         registry: TaskRegistry | None = None,
         poll_interval: float = 1.0,
-        device_manager: object | None = None,
+        device_manager: Any = None,
     ) -> None:
         self.queue: JobQueue = queue or JobQueue()
         self.registry: TaskRegistry = registry or TaskRegistry()

@@ -16,6 +16,7 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 from core.adb import ADBClient, ADBTimeoutError, DeviceDisconnectedError, DeviceOfflineError, DeviceUnauthorizedError, LowStorageError, ADBInstallError, ADBPullError, ADBPushError
+from core.utils import safe_shell
 
 logger = logging.getLogger(__name__)
 
@@ -90,13 +91,8 @@ class PhoneOperations:
         timeout: int = 30,
         device_id: Optional[str] = None,
     ) -> Tuple[str, bool]:
-        try:
-            out = self.adb.shell_output(cmd, device_id=device_id, timeout=timeout)
-            return out, True
-        except (DeviceDisconnectedError, DeviceOfflineError, DeviceUnauthorizedError, 
-                LowStorageError, ADBTimeoutError, ADBInstallError, ADBPullError, ADBPushError, Exception) as exc:
-            self.log.warning("shell(%s) failed: %s", cmd, exc)
-            return "", False
+        result = safe_shell(self.adb, "shell_output", cmd, device_id=device_id, timeout=timeout)
+        return result["data"], result["ok"]
 
     def _validate_number(self, number: str) -> Tuple[bool, str]:
         """Validate phone number format. Returns (is_valid, error_message)."""

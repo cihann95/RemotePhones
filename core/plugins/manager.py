@@ -1,4 +1,12 @@
-"""PluginManager — discovers, loads, and manages Phone Farm plugins."""
+"""
+DEPRECATED
+===========
+This module is not currently wired into the application. PluginManager is never
+instantiated by PhoneFarmManager or any other component. It is preserved for
+future use but is not loaded by the running system.
+
+PluginManager — discovers, loads, and manages Phone Farm plugins.
+"""
 from __future__ import annotations
 
 import importlib

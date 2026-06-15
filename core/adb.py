@@ -139,7 +139,7 @@ class ADBClient:
              timeout: int = 30) -> str:
         cmd = self._device_prefix(device_id) + args
         logger.debug("RUN: %s", " ".join(cmd))
-        last_exc = None
+        last_exc: Exception | None = None
         adb_restarted = False
         for attempt in range(1, self.max_retries + 1):
             try:

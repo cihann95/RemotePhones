@@ -30,7 +30,7 @@ class TaskRegistry(RegistryProtocol):
 
         Returns the class so it can be used as a decorator.
         """
-        name = task_cls.config.name
+        name: str = task_cls.config.name  # type: ignore[misc]
         if name in self._tasks:
             logger.warning("Task %r already registered — overwriting", name)
         self._tasks[name] = task_cls
@@ -61,7 +61,9 @@ class TaskRegistry(RegistryProtocol):
         if task_cls is None:
             logger.error("Task %r not found in registry", name)
             return None
-        return task_cls(device_manager=device_manager, **kwargs)
+        instance = task_cls(device_manager=device_manager, **kwargs)
+        assert isinstance(instance, BaseTask)
+        return instance
 
     @property
     def names(self) -> list[str]:

@@ -58,7 +58,7 @@ class BaseTask(ABC):
         # zero-arg instantiation (e.g. ``handler()`` in the runner) works
         # without requiring callers to pass config explicitly.
         if config is None:
-            config = self.config  # type: ignore[attr-defined]
+            config = self.config  # type: ignore[has-type]
         self.config = config
         self.device_manager = device_manager
 
