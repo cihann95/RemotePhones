@@ -527,7 +527,8 @@ async function startDevice(deviceId) {
     }
   } catch (e) {
     console.error('Start device error:', e);
-    PhoneFarmNotification.show('Device could not be started: ' + (e?.message || String(e)), 'error');
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
   }
 }
 
@@ -608,22 +609,27 @@ async function saveDeviceEdit() {
     await refreshDevicesWithMerge();
   } catch (e) {
     console.error('Save device error:', e);
-    PhoneFarmNotification.show('Device could not be saved: ' + (e?.message || String(e)), 'error');
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
   }
 }
 
 async function resetDeviceEdit() {
   if (!editingDeviceId) return;
 
-  if (confirm('Are you sure you want to reset all custom settings for this device?')) {
-    try {
-      await window.electronAPI.deleteDeviceData(editingDeviceId);
-      closeDeviceEdit();
-      await refreshDevicesWithMerge();
-    } catch (e) {
-      console.error('Reset device error:', e);
+  window.PhoneFarmConfirmModal.show({
+    title: 'Ayarları Sıfırla',
+    message: 'Bu cihazın tüm özel ayarlarını sıfırlamak istediğinize emin misiniz?',
+    onConfirm: async () => {
+      try {
+        await window.electronAPI.deleteDeviceData(editingDeviceId);
+        closeDeviceEdit();
+        await refreshDevicesWithMerge();
+      } catch (e) {
+        console.error('Reset device error:', e);
+      }
     }
-  }
+  });
 }
 
 function closeDeviceEdit() {
@@ -697,10 +703,11 @@ async function sendText() {
     } else {
       showTextStatus('Error: ' + (result?.error || 'Could not send'), true);
     }
-  } catch (e) {
-    console.error('Send text error:', e);
-    showTextStatus('Error: ' + (e?.message || String(e)), true);
-  }
+} catch (e) {
+      console.error('Send text error:', e);
+      const h = await window.electronAPI.humanizeError(e?.message || String(e));
+      showTextStatus(h.title + ': ' + h.hint, true);
+    }
 }
 
 async function sendEnterKey() {
@@ -714,7 +721,8 @@ async function sendEnterKey() {
     }
   } catch (e) {
     console.error('Send enter error:', e);
-    showTextStatus('Error: ' + (e?.message || String(e)), true);
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    showTextStatus(h.title + ': ' + h.hint, true);
   }
 }
 
@@ -729,7 +737,8 @@ async function sendBackspace() {
     }
   } catch (e) {
     console.error('Send backspace error:', e);
-    showTextStatus('Error: ' + (e?.message || String(e)), true);
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    showTextStatus(h.title + ': ' + h.hint, true);
   }
 }
 
@@ -784,7 +793,8 @@ async function startAll() {
     }
   } catch (e) {
     console.error('Start all error:', e);
-    PhoneFarmNotification.show('Could not start: ' + (e?.message || String(e)), 'error');
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
   } finally {
     PhoneFarmLoading.hide();
     elements.btnStart.innerHTML = '<span>▶️</span><span>START</span>';
@@ -924,7 +934,8 @@ async function saveSettings() {
     await window.electronAPI.scrcpySetOptions(options);
   } catch (e) {
     console.error('Save scrcpy settings error:', e);
-    PhoneFarmNotification.show('Settings could not be saved: ' + (e?.message || String(e)), 'error');
+    const h = await window.electronAPI.humanizeError(e?.message || String(e));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
     return;
   }
 
@@ -963,7 +974,8 @@ async function checkForUpdatesManually() {
     await window.electronAPI.updateCheck();
   } catch (e) {
     console.error('Manual update check error:', e);
-    showUpdateStatus('Update check failed: ' + (e?.message || 'Unknown error'), 'error');
+    const h = await window.electronAPI.humanizeError(e?.message || 'Unknown error');
+    showUpdateStatus(h.title + ': ' + h.hint, 'error');
   } finally {
     if (btn) setTimeout(() => { btn.disabled = false; }, 3000);
   }

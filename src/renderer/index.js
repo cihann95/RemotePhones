@@ -113,33 +113,30 @@ async function checkLicenseInfo() {
 document.getElementById('btn-deactivate-license').addEventListener('click', async () => {
   const btn = document.getElementById('btn-deactivate-license');
 
-  const confirmed = confirm(
-    'Lisansi deaktive etmek istediginizden emin misiniz?\n\n' +
-    'Bu islem geri alinamaz ve uygulamayi tekrar kullanmak icin yeni bir lisans anahtari girmeniz gerekecek.'
-  );
+  window.PhoneFarmConfirmModal.show({
+    title: 'Lisans Deaktivasyonu',
+    message: 'Lisansi deaktive etmek istediginizden emin misiniz?\n\nBu islem geri alinamaz ve uygulamayi tekrar kullanmak icin yeni bir lisans anahtari girmeniz gerekecek.',
+    onConfirm: async () => {
+      btn.disabled = true;
 
-  if (!confirmed) {
-    return;
-  }
+      try {
+        const result = await window.electronAPI.deactivateLicense();
 
-  btn.disabled = true;
-
-  try {
-    const result = await window.electronAPI.deactivateLicense();
-
-    if (result.success) {
-      PhoneFarmNotification.show('License deactivated successfully. Redirecting to license page.', 'success');
-      // Reload to license page
-      window.location.href = 'license.html';
-    } else {
-      PhoneFarmNotification.show('License could not be deactivated: ' + (result.error || 'Unknown error'), 'error');
-    }
-  } catch (error) {
+        if (result.success) {
+          PhoneFarmNotification.show('License deactivated successfully. Redirecting to license page.', 'success');
+          window.location.href = 'license.html';
+        } else {
+          PhoneFarmNotification.show('License could not be deactivated: ' + (result.error || 'Unknown error'), 'error');
+        }
+} catch (error) {
     console.error('Deactivation error:', error);
-    PhoneFarmNotification.show('An error occurred while deactivating license: ' + error.message, 'error');
+    const h = await window.electronAPI.humanizeError(error.message || String(error));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
   } finally {
-    btn.disabled = false;
-  }
+        btn.disabled = false;
+      }
+    }
+  });
 });
 
 // Initial check

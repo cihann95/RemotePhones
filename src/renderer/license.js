@@ -70,7 +70,8 @@ async function checkLicenseStatus() {
     }
   } catch (error) {
     console.error('License check error:', error);
-    showDeactivatedState(error.message);
+    const h = await window.electronAPI.humanizeError(error.message || String(error));
+    showDeactivatedState(h.title + ': ' + h.hint);
   } finally {
     setLoading(false);
   }
@@ -99,7 +100,8 @@ async function handleActivate() {
     }
   } catch (error) {
     console.error('Activation error:', error);
-    showError(error.message || 'Aktivasyon sirasinda hata olustu');
+    const h = await window.electronAPI.humanizeError(error.message || 'Aktivasyon sirasinda hata olustu');
+    showError(h.title + ': ' + h.hint);
   } finally {
     setLoading(false);
   }
@@ -116,28 +118,31 @@ async function handleContinue() {
 
 // Handle deactivate button
 async function handleDeactivate() {
-  if (!confirm('Lisansi deaktif etmek istediginizden emin misiniz?')) {
-    return;
-  }
+  window.PhoneFarmConfirmModal.show({
+    title: 'Lisans Deaktivasyonu',
+    message: 'Lisansi deaktif etmek istediginizden emin misiniz?',
+    onConfirm: async () => {
+      setLoading(true);
+      hideMessages();
 
-  setLoading(true);
-  hideMessages();
+      try {
+        const result = await window.electronAPI.deactivateLicense();
 
-  try {
-    const result = await window.electronAPI.deactivateLicense();
-
-    if (result.success) {
-      showSuccess('Lisans deaktif edildi');
-      showDeactivatedState();
-    } else {
-      showError(result.error || 'Deaktivasyon basarisiz');
-    }
-  } catch (error) {
+        if (result.success) {
+          showSuccess('Lisans deaktif edildi');
+          showDeactivatedState();
+        } else {
+          showError(result.error || 'Deaktivasyon basarisiz');
+        }
+} catch (error) {
     console.error('Deactivation error:', error);
-    showError(error.message || 'Deaktivasyon sirasinda hata olustu');
+    const h = await window.electronAPI.humanizeError(error.message || 'Deaktivasyon sirasinda hata olustu');
+    showError(h.title + ': ' + h.hint);
   } finally {
-    setLoading(false);
-  }
+        setLoading(false);
+      }
+    }
+  });
 }
 
 // Show activated state
