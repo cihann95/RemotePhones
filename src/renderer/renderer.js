@@ -1179,9 +1179,13 @@ async function init() {
      await refreshDevicesWithMerge();
    }, 10000);
 
-   if (window.HealthDashboard) {
-     window.HealthDashboard.mount('health-panel');
-   }
+    if (window.HealthDashboard) {
+      window.HealthDashboard.mount('health-panel');
+    }
+
+    if (window.ConnectionBanner) {
+      window.ConnectionBanner.init();
+    }
 
    var btnRefreshHealth = document.getElementById('btn-refresh-health');
    if (btnRefreshHealth) {

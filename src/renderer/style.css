@@ -1059,3 +1059,124 @@ textarea,
   background: rgba(248, 250, 252, 0.7);
 }
 
+/* =====================================================
+   CONNECTION-LOST PERSISTENT BANNER
+   ===================================================== */
+
+.connection-banner {
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 8000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: var(--shadow-md);
+  animation: connection-banner-slide 0.25s ease-out;
+}
+
+@keyframes connection-banner-slide {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.connection-banner-warning {
+  background: color-mix(in srgb, var(--warning) 15%, var(--bg-secondary));
+  border-bottom: 2px solid var(--warning);
+  color: var(--text-primary);
+}
+
+.connection-banner-critical {
+  background: color-mix(in srgb, var(--error) 15%, var(--bg-secondary));
+  border-bottom: 2px solid var(--error);
+  color: var(--text-primary);
+}
+
+.connection-banner-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.connection-banner-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.connection-banner-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.connection-banner-desc {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.connection-banner-retry {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.connection-banner-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  white-space: nowrap;
+}
+
+.connection-banner-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+.connection-banner-dismiss {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.connection-banner-dismiss:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+/* Light theme adjustments */
+[data-theme="light"] .connection-banner-warning {
+  background: color-mix(in srgb, var(--warning) 10%, var(--bg-secondary));
+}
+
+[data-theme="light"] .connection-banner-critical {
+  background: color-mix(in srgb, var(--error) 10%, var(--bg-secondary));
+}
+

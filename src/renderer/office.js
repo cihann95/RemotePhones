@@ -133,3 +133,7 @@ elements.settingsModal?.addEventListener('click', (e) => {
 // Initialize
 refreshStatus();
 setInterval(refreshStatus, 10000);
+
+if (window.ConnectionBanner) {
+  window.ConnectionBanner.init();
+}
