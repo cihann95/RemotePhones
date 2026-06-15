@@ -10,6 +10,7 @@ module.exports = defineConfig({
       ['src/tests/confirm-modal.test.js', 'jsdom'],
       ['src/tests/error-boundary.test.js', 'happy-dom'],
       ['src/tests/connection-banner.test.js', 'happy-dom'],
+      ['src/tests/integration-error-flow.test.js', 'happy-dom'],
     ],
     include: [
       'src/tests/error_messages.test.js',
@@ -20,6 +21,7 @@ module.exports = defineConfig({
       'src/tests/error-boundary.test.js',
       'src/tests/error-leaks.test.js',
       'src/tests/connection-banner.test.js',
+      'src/tests/integration-error-flow.test.js',
     ],
     css: false,
     // Support both CommonJS (main process) and ESM (renderer)
