@@ -55,21 +55,24 @@ describe('tray module', () => {
     mockElectron = createMockElectron(mockTray);
     mockFs = createMockFs(true);
     mockMainWindow = createMockWindow();
-    mockApp = { quit: vi.fn() };
+    mockApp = { quit: vi.fn(), relaunch: vi.fn(), exit: vi.fn() };
   });
 
   function create(opts) {
     return trayModule.createTray(
       (opts && opts.window) || mockMainWindow,
       (opts && opts.app) || mockApp,
-      { electron: mockElectron, fs: mockFs }
+      { electron: mockElectron, fs: mockFs },
+      (opts && opts.getStatusFn) || (() => false)
     );
   }
 
-  it('should export createTray, getTray, destroyTray, and _resetForTesting', () => {
+  it('should export createTray, getTray, destroyTray, refreshTrayMenu, getStatusLabel, and _resetForTesting', () => {
     expect(typeof trayModule.createTray).toBe('function');
     expect(typeof trayModule.getTray).toBe('function');
     expect(typeof trayModule.destroyTray).toBe('function');
+    expect(typeof trayModule.refreshTrayMenu).toBe('function');
+    expect(typeof trayModule.getStatusLabel).toBe('function');
     expect(typeof trayModule._resetForTesting).toBe('function');
   });
 
@@ -83,16 +86,17 @@ describe('tray module', () => {
     expect(mockTray.setToolTip).toHaveBeenCalledWith('Phone Farm');
   });
 
-  it('should create context menu with Turkish labels', () => {
+  it('should create context menu with Turkish labels per spec', () => {
     create();
     expect(mockElectron.Menu.buildFromTemplate).toHaveBeenCalled();
 
     const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
     const labels = template.filter(item => item.label).map(item => item.label);
 
-    expect(labels).toContain('Göster');
-    expect(labels).toContain('Gizle');
-    expect(labels).toContain('Çıkış');
+    expect(labels).toContain("Phone Farm'ı Göster");
+    expect(labels.some(l => l.startsWith('Durum:'))).toBe(true);
+    expect(labels).toContain('Yeniden Başlat');
+    expect(labels).toContain('Kapat');
   });
 
   it('should have a separator in the context menu', () => {
@@ -101,10 +105,10 @@ describe('tray module', () => {
     expect(template.some(item => item.type === 'separator')).toBe(true);
   });
 
-  it('should have exactly 4 menu items (show, hide, separator, quit)', () => {
+  it('should have exactly 5 menu items (show, status, separator, restart, close)', () => {
     create();
     const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
-    expect(template.length).toBe(4);
+    expect(template.length).toBe(5);
   });
 
   it('should register click handler on tray', () => {
@@ -112,32 +116,47 @@ describe('tray module', () => {
     expect(mockTray.on).toHaveBeenCalledWith('click', expect.any(Function));
   });
 
-  it('Göster should show and restore window', () => {
+  it("Phone Farm'ı Göster should show and restore window", () => {
     create();
     const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
-    const showItem = template.find(item => item.label === 'Göster');
+    const showItem = template.find(item => item.label === "Phone Farm'ı Göster");
 
     showItem.click();
     expect(mockMainWindow.show).toHaveBeenCalled();
     expect(mockMainWindow.restore).toHaveBeenCalled();
   });
 
-  it('Gizle should hide window', () => {
+  it('status item should be disabled (not clickable)', () => {
     create();
     const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
-    const hideItem = template.find(item => item.label === 'Gizle');
+    const statusItem = template.find(item => item.label && item.label.startsWith('Durum:'));
 
-    hideItem.click();
-    expect(mockMainWindow.hide).toHaveBeenCalled();
+    expect(statusItem.enabled).toBe(false);
   });
 
-  it('Çıkış should quit the app', () => {
+  it('Yeniden Başlat should relaunch and exit the app', () => {
     create();
     const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
-    const quitItem = template.find(item => item.label === 'Çıkış');
+    const restartItem = template.find(item => item.label === 'Yeniden Başlat');
 
-    quitItem.click();
+    restartItem.click();
+    expect(mockApp.relaunch).toHaveBeenCalled();
+    expect(mockApp.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('Kapat should quit the app', () => {
+    create();
+    const template = mockElectron.Menu.buildFromTemplate.mock.calls[0][0];
+    const closeItem = template.find(item => item.label === 'Kapat');
+
+    closeItem.click();
     expect(mockApp.quit).toHaveBeenCalled();
+  });
+
+  it('status label shows connected when getStatusFn returns true', () => {
+    const { getStatusLabel } = trayModule;
+    expect(getStatusLabel(() => true)).toBe('Durum: Bağlı');
+    expect(getStatusLabel(() => false)).toBe('Durum: Bağlantı Yok');
   });
 
   it('left-click should hide visible window', () => {
