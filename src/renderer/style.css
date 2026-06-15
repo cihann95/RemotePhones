@@ -506,6 +506,33 @@ body {
   50% { opacity: 1; }
 }
 
+.health-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.badge-green {
+  background: rgba(52, 211, 153, 0.15);
+  color: var(--success);
+}
+
+.badge-yellow {
+  background: rgba(251, 191, 36, 0.15);
+  color: var(--warning);
+}
+
+.badge-red {
+  background: rgba(248, 113, 113, 0.15);
+  color: var(--error);
+}
+
 /* =====================================================
    HEALTH TREND CHARTS (24h ring buffer, CSS-only SVG)
    ===================================================== */
@@ -517,6 +544,124 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.health-trend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.health-trend-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.health-trend-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.health-trend-tab {
+  padding: 2px 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1.6;
+}
+
+.health-trend-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.health-trend-tab.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.health-trend-tab:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.health-trend-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.health-trend-chart-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.health-trend-svg {
+  width: 100%;
+  height: 80px;
+  overflow: visible;
+}
+
+.health-trend-gridline {
+  stroke: var(--border-color);
+  stroke-width: 0.5;
+  stroke-dasharray: 3, 3;
+}
+
+.health-trend-axis-label {
+  fill: var(--text-muted);
+  font-size: 9px;
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.health-trend-empty-text {
+  fill: var(--text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.health-trend-line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.health-trend-line-battery {
+  stroke: var(--success);
+}
+
+.health-trend-line-cpu {
+  stroke: var(--info);
+}
+
+.health-trend-dot {
+  fill: var(--text-primary);
+}
+
+.health-trend-dot-battery {
+  fill: var(--success);
+}
+
+.health-trend-dot-cpu {
+  fill: var(--info);
+}
+
+.health-trend-latest {
+  fill: var(--text-secondary);
+  font-size: 9px;
+  font-weight: 500;
 }
 
 /* =====================================================

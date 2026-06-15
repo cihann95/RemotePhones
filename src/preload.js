@@ -332,8 +332,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   phoneCallBulk: (numbers) => ipcRenderer.invoke('phone:call-bulk', numbers),
   /** IPC: Listens for phone state update events */
   onPhoneStateUpdate: (callback) => ipcRenderer.on('phone-state-update', (event, ...args) => callback(...args)),
-  /** IPC: Sends a raw IPC message */
-  send: (channel, data) => ipcRenderer.send(channel, data),
+  /** IPC: Sends a raw IPC message (restricted to an allowlist) */
+  send: (channel, data) => {
+    const ALLOWED_SEND_CHANNELS = ['phone:state-change'];
+    if (!ALLOWED_SEND_CHANNELS.includes(channel)) {
+      console.warn(`[Preload] Blocked send() to disallowed channel: "${channel}"`);
+      return;
+    }
+    ipcRenderer.send(channel, data);
+  },
 
   // =====================================================
   // SYSTEM HEALTH

@@ -400,7 +400,20 @@ app.whenReady().then(async () => {
     await startAppServices();
   }
 
-  // Register shortcuts
+  shortcutManager.setHandlers({
+    'F5': () => { deviceMonitor?.refresh().catch(() => {}); },
+    'CommandOrControl+R': () => { deviceMonitor?.refresh().catch(() => {}); },
+    'CommandOrControl+A': () => {
+      const devices = deviceMonitor?.getDevices() || [];
+      if (devices.length > 0) {
+        scrcpyManager.startAll(devices.map(d => d.id)).catch(() => {});
+      }
+    },
+    'CommandOrControl+Shift+W': () => { scrcpyManager.stopAll().catch(() => {}); },
+    'F11': () => {
+      if (mainWindow) mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    },
+  });
   shortcutManager.registerAll();
 });
 
@@ -1355,6 +1368,18 @@ ipcMain.handle('update:save-settings', async (event, settings) => {
 ipcMain.handle('close-about', async () => {
   if (aboutWindow) {
     aboutWindow.close();
+  }
+  return { success: true };
+});
+
+/**
+ * IPC: Minimises the main application window.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @returns {Promise<{success:boolean}>}
+ */
+ipcMain.handle('minimize-window', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.minimize();
   }
   return { success: true };
 });

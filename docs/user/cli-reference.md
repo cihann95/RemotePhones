@@ -40,13 +40,13 @@ Other tasks: `answer`, `reject`, `hangup`, `unlock`.
 
 ## submit
 
-Submit a batch job from a CSV file.
+Submit a JSON steps file for a device.
 
 ```
-python phone_farm_cli.py submit <csv_file>
+python phone_farm_cli.py submit <device_id> <steps_file>
 ```
 
-The CSV must contain a `phone` column. Phone Farm processes each row as a task. See [Phone Calls](phone-calls.md) for the CSV format.
+The steps file must be a JSON array of task objects. See [Phone Calls](phone-calls.md) for the task format.
 
 ## status
 

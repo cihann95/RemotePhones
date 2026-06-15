@@ -48,8 +48,8 @@ class PhoneHealthChecker:
         device_id: Optional[str] = None,
     ) -> Tuple[str, bool]:
         try:
-            out = self.adb.shell_output(
-                cmd, device_id=device_id, timeout=timeout
+            out = self.adb.run_command(
+                ["shell", cmd], device_id=device_id, timeout=timeout
             )
             return out, True
         except Exception as exc:
