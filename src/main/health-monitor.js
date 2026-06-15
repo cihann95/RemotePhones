@@ -387,7 +387,7 @@ class HealthMonitor {
         const drive = appDataPath.split(':')[0] + ':';
         const execSync = require('child_process').execSync;
         try {
-          const output = execSync(`wmic logicaldisk where "deviceid='${drive}'" get freespace,size`).toString();
+          const output = execSync(`wmic logicaldisk where "deviceid='${drive}'" get freespace,size`, { windowsHide: true }).toString();
           const lines = output.trim().split('\n');
           if (lines.length >= 3) {
             const parts = lines[2].trim().split(/\s+/);

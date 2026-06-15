@@ -186,6 +186,13 @@ function createWindow() {
 
   global.mainWindow = mainWindow;
 
+  // Block DevTools keyboard shortcut in production (Ctrl+Shift+I / Cmd+Option+I)
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'I' && input.control && input.shift && app.isPackaged && !process.argv.includes('--dev')) {
+      event.preventDefault();
+    }
+  });
+
   // Show when ready
   mainWindow.once('ready-to-show', () => {
     if (autostartManager.shouldStartMinimized()) {
@@ -275,7 +282,7 @@ function buildAppMenu() {
       label: 'View',
       submenu: [
         { role: 'reload' },
-        { role: 'toggleDevTools' },
+        ...(process.argv.includes('--dev') || !app.isPackaged ? [{ role: 'toggleDevTools' }] : []),
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },
@@ -1385,6 +1392,16 @@ ipcMain.handle('minimize-window', async () => {
 });
 
 /**
+ * IPC: Humanizes a raw error string into a user-friendly Turkish message.
+ * @param {Electron.IpcMainInvokeEvent} event
+ * @param {string} errStr - Raw error string to humanize
+ * @returns {Promise<{id:string,title:string,hint:string,fix_steps:string[],raw:string}>}
+ */
+ipcMain.handle('humanize-error', async (event, errStr) => {
+  return humanizeError(errStr || '');
+});
+
+/**
  * IPC: Returns build/version information for the application.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{name:string,version:string,author:string,electron:string,node:string,chrome:string}>}
@@ -1465,7 +1482,7 @@ async function submitBulkCallJob(deviceId, numbers) {
       const { execFile: execFileCmd } = require('child_process');
       const cliPath = getCliPath();
       const result = await new Promise((resolve, reject) => {
-        execFileCmd(cliPath, ['submit', deviceId, jobFilePath], { timeout: 30000 }, (err, stdout, stderr) => {
+        execFileCmd(cliPath, ['submit', deviceId, jobFilePath], { timeout: 30000, windowsHide: true }, (err, stdout, stderr) => {
          if (err) { reject(err); return; }
          resolve({ stdout: stdout || '', stderr: stderr || '' });
        });
@@ -1743,22 +1760,22 @@ ipcMain.handle('open-external', async (event, url) => {
 });
 
 /**
- * IPC: Minimises the main application window.
- * @param {Electron.IpcMainInvokeEvent} event
- * @returns {Promise<{success:boolean}>}
- */
-ipcMain.handle('minimize-window', async () => {
-  mainWindow?.minimize();
-  return { success: true };
-});
-
-/**
  * IPC: Terminates the entire application process.
  * @param {Electron.IpcMainInvokeEvent} event
  * @returns {Promise<{success:boolean}>}
  */
 ipcMain.handle('quit-app', async () => {
   app.quit();
+  return { success: true };
+});
+
+/**
+ * IPC: Relaunches the application (restart).
+ * @returns {Promise<{success:boolean}>}
+ */
+ipcMain.handle('app:relaunch', async () => {
+  app.relaunch();
+  app.exit(0);
   return { success: true };
 });
 
@@ -1985,7 +2002,7 @@ ipcMain.handle('phone:call', async (event, params) => {
       const { execFile } = require('child_process');
       const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile(cliPath, ['call', deviceId, '--number', number], (error, stdout, stderr) => {
+          execFile(cliPath, ['call', deviceId, '--number', number], { windowsHide: true }, (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:call error:', error);
                resolve({ success: false, error: humanizeError(error.message) });
@@ -2023,7 +2040,7 @@ ipcMain.handle('phone:answer', async (event, params) => {
       const { execFile } = require('child_process');
       const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile(cliPath, ['run', deviceId, 'answer'], (error, stdout, stderr) => {
+          execFile(cliPath, ['run', deviceId, 'answer'], { windowsHide: true }, (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:answer error:', error);
                resolve({ success: false, error: humanizeError(error.message) });
@@ -2061,7 +2078,7 @@ ipcMain.handle('phone:hangup', async (event, params) => {
       const { execFile } = require('child_process');
       const cliPath = getCliPath();
       return new Promise((resolve) => {
-         execFile(cliPath, ['run', deviceId, 'hangup'], (error, stdout, stderr) => {
+          execFile(cliPath, ['run', deviceId, 'hangup'], { windowsHide: true }, (error, stdout, stderr) => {
             if (error) {
                console.error('[IPC] phone:hangup error:', error);
                resolve({ success: false, error: humanizeError(error.message) });

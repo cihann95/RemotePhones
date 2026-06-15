@@ -193,7 +193,7 @@ class ScrcpyManager extends BaseToolManager {
     try {
       const proc = await spawnPromise(scrcpy, args, {
         cwd: path.dirname(scrcpy),
-        windowsHide: false,
+        windowsHide: true,
         detached: false
       });
 

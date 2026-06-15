@@ -146,7 +146,7 @@ class TailscaleManager {
   async login() {
     return new Promise((resolve) => {
       const proc = spawn(this.tailscalePath, ['up'], {
-        windowsHide: false
+        windowsHide: true
       });
 
       let output = '';

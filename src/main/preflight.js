@@ -21,7 +21,7 @@ function getProjectRoot() {
  */
 function checkAdbBinary() {
   try {
-    cp.execSync('adb version', { stdio: 'pipe', timeout: 5000 });
+    cp.execSync('adb version', { stdio: 'pipe', timeout: 5000, windowsHide: true });
     return {
       name: 'adb-binary',
       status: 'ok',
@@ -150,7 +150,7 @@ function checkPythonDeps() {
     try {
       cp.execSync(
         `python -c "import ${pkg}" 2>&1 || python3 -c "import ${pkg}" 2>&1`,
-        { stdio: 'pipe', timeout: 5000 }
+        { stdio: 'pipe', timeout: 5000, windowsHide: true }
       );
       found.push(pkg);
     } catch (e) {
@@ -158,7 +158,7 @@ function checkPythonDeps() {
       try {
         cp.execSync(
           `python3 -c "import ${pkg}" 2>&1`,
-          { stdio: 'pipe', timeout: 5000 }
+          { stdio: 'pipe', timeout: 5000, windowsHide: true }
         );
         found.push(pkg);
       } catch (e2) {
@@ -295,7 +295,8 @@ function checkDiskSpace() {
         const drive = projectRoot.split(':')[0] + ':';
         const output = cp.execSync(`wmic logicaldisk where "deviceid='${drive}'" get freespace`, {
           stdio: 'pipe',
-          timeout: 5000
+          timeout: 5000,
+          windowsHide: true
         }).toString();
         const lines = output.trim().split('\n');
         if (lines.length >= 2) {
@@ -305,7 +306,8 @@ function checkDiskSpace() {
         // Unix: use df
         const output = cp.execSync(`df -k "${projectRoot}" | tail -1 | awk '{print $4}'`, {
           stdio: 'pipe',
-          timeout: 5000
+          timeout: 5000,
+          windowsHide: true
         }).toString().trim();
         freeBytes = parseInt(output, 10) * 1024; // df -k gives kilobytes
       }
@@ -346,11 +348,29 @@ function checkDiskSpace() {
   }
 }
 
+function ensureEnvFile() {
+  const projectRoot = getProjectRoot();
+  const envPath = path.join(projectRoot, '.env');
+  const envExamplePath = path.join(projectRoot, '.env.example');
+
+  if (fs.existsSync(envPath)) return;
+  if (!fs.existsSync(envExamplePath)) return;
+
+  try {
+    fs.copyFileSync(envExamplePath, envPath);
+    console.log('.env dosyası .env.example\'dan oluşturuldu');
+  } catch (err) {
+    console.warn('.env otomatik oluşturulamadı:', err.message);
+  }
+}
+
 /**
  * Run all pre-flight checks and return aggregated results.
  * @returns {Promise<{ok: boolean, checks: Array, summary: string}>}
  */
 async function runPreflightChecks() {
+  ensureEnvFile();
+
   // Synchronous checks
   const syncChecks = [
     checkAdbBinary(),

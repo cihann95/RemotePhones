@@ -142,7 +142,7 @@ class ParsecManager {
 
     return new Promise((resolve) => {
       // Opening Parsec again will bring it to foreground
-      exec(`"${parsec}"`, { windowsHide: false }, (err) => {
+      exec(`"${parsec}"`, { windowsHide: true }, (err) => {
         if (err && !err.message.includes('already running')) {
           console.error('[Parsec] Open error:', err.message);
         }
