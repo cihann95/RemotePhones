@@ -8,7 +8,8 @@
       "USB kablosunu çıkarıp tekrar takın",
       "Telefonda Ayarlar > Geliştirici Seçenekleri > USB Debugging açık olmalı",
       "'adb devices' komutu cihazı gösteriyor mu kontrol edin"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "adb_not_found",
@@ -19,7 +20,8 @@
       "https://developer.android.com/tools/releases/platform-tools adresinden platform-tools indirin",
       "İndirilen klasörü PATH'e ekleyin",
       "Terminali yeniden başlatın ve 'adb version' komutuyla kontrol edin"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "device_offline",
@@ -30,7 +32,8 @@
       "USB kablosunu çıkarıp tekrar takın",
       "Telefonda Ayarlar > Geliştirici Seçenekleri > USB Debugging iznini kaldırıp yeniden onaylayın",
       "'adb kill-server' ardından 'adb start-server' komutlarını çalıştırın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "task_failed",
@@ -41,7 +44,8 @@
       "Cihaz ekranının açık ve kilitli olmadığından emin olun",
       "'python phone_farm_cli.py health <device_id>' ile cihaz durumunu kontrol edin",
       "Cihazın yeterli şarja sahip olduğunu doğrulayın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "device_id_invalid",
@@ -52,7 +56,8 @@
       "'adb devices' komutuyla bağlı cihazların ID'lerini kontrol edin",
       "Cihaz ID'sinde boşluk veya özel karakter olmadığından emin olun",
       "ID büyük/küçük harf duyarlıdır, doğru yazdığınızdan emin olun"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "invalid_phone_number",
@@ -63,7 +68,8 @@
       "Telefon numarasını uluslararası formatta girin: +905XXXXXXXXX",
       "veya yerel formatta: 05XXXXXXXXX (10-15 rakam)",
       "Numarada boşluk veya tire olmamalı"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "csv_file_not_found",
@@ -74,7 +80,8 @@
       "Dosya yolunun doğru olduğunu kontrol edin",
       "Dosya adında yazım hatası olup olmadığını kontrol edin",
       "Dosyanın bulunduğu klasörde 'dir' veya 'ls' ile doğrulayın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "connection_timeout",
@@ -86,7 +93,8 @@
       "Sinyal gücünü telefonun üst çubuğundan kontrol edin",
       "Cihazın airplane modda olmadığından emin olun",
       "İşlemi biraz bekleyip tekrar deneyin"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "permission_denied",
@@ -97,7 +105,8 @@
       "Telefonda USB Debugging izni popup'ı gelip gelmediğini kontrol edin",
       "Ayarlar > Geliştirici Seçenekleri > USB Debugging'i kapatıp tekrar açın",
       "Bilinen bilgisayarları kaldırıp yeniden onaylayın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "device_unauthorized",
@@ -108,7 +117,8 @@
       "Telefonda 'Bu bilgisayara güvenilsin mi?' sorusuna EVET deyin",
       "Eğer popup gelmiyorsa: Ayarlar > Geliştirici Seçenekleri > USB Debugging izinlerini sıfırlayın",
       "USB kablosunu çıkarıp tekrar takın ve onaylayın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "no_valid_numbers_in_csv",
@@ -118,8 +128,9 @@
     "fix_steps": [
       "CSV dosyasında 'number' sütunu olduğundan emin olun",
       "Numaraların uluslararası formatta (+905...) olduğunu kontrol edin",
-      "Dosyanın UTF-8编码'lı olduğunu doğrulayın"
-    ]
+      "Dosyanın UTF-8 kodlamalı olduğunu doğrulayın"
+    ],
+    "severity": "error"
   },
   {
     "id": "call_failed",
@@ -131,7 +142,8 @@
       "Telefonun sinyal alıp almadığını kontrol edin",
       "Arama yapılacak numaranın doğru olduğunu doğrulayın",
       "Başka bir numara ile test araması yapın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "config_not_found",
@@ -142,7 +154,8 @@
       "'config/phone_farm.yaml' dosyasının varlığını kontrol edin",
       "'--config' parametresi ile doğru yolu belirtin",
       "Varsayılan yapılandırma ile devam etmek için parametre vermeden çalıştırın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "json_parse_error",
@@ -153,7 +166,8 @@
       "JSON verisinin doğru formatta olduğunu kontrol edin (virgül, tırnak işareti)",
       "Online JSON validator ile doğrulama yapın",
       "Özel karakterleri escape etmeyi unutmayın"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "steps_file_not_array",
@@ -164,7 +178,8 @@
       "Dosyanın '[' ile başlayıp ']' ile bittiğinden emin olun",
       "Her adımın '{' ve '}' ile sarılı olduğundan emin olun",
       "Örnek format: [{\"action\": \"call\", \"number\": \"+905...\"}]"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "file_permission_error",
@@ -175,30 +190,8 @@
       "Dosya yolunun doğru olduğunu kontrol edin",
       "Dosyanın okunabilir olduğundan emin olun",
       "Klasör izinlerini kontrol edin (yazma izni gerekebilir)"
-    ]
-  },
-  {
-    "id": "network_error",
-    "patterns": ["network error", "network.*error", "connection refused", "connection reset", "enetunreach"],
-    "title": "Ağ hatası",
-    "hint": "Ağ bağlantınızı kontrol edin",
-    "fix_steps": [
-      "İnternet bağlantınızın aktif olduğunu kontrol edin",
-      "Eğer uzak cihaz kullanıyorsanız, VPN/Tailscale bağlantısını kontrol edin",
-      "Güvenlik duvarı ayarlarını kontrol edin",
-      "İşlemi biraz bekleyip tekrar deneyin"
-    ]
-  },
-  {
-    "id": "license_expired",
-    "patterns": ["license.*expired", "lisans.*süresi", "license.*invalid", "lisans.*geçersiz"],
-    "title": "Lisans süresi dolmuş",
-    "hint": "Lisansınızı yenileyin",
-    "fix_steps": [
-      "Lisans durumunu kontrol edin",
-      "Yeni bir lisans anahtarı girin",
-      "Destek ekibiyle iletişime geçin"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "memory_low",
@@ -209,7 +202,8 @@
       "Gereksiz uygulamaları kapatın",
       "Cihazın yeterli belleğe sahip olduğunu kontrol edin",
       "İş sayısını azaltın (aynı anda daha az cihaz)"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "disk_full",
@@ -220,7 +214,8 @@
       "Eski log dosyalarını temizleyin: logs/ klasörünü kontrol edin",
       "Geçici dosyaları silin",
       "Yeterli disk alanı olduğundan emin olun"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "adb_server_crash",
@@ -231,7 +226,8 @@
       "'adb kill-server' komutunu çalıştırın",
       "'adb start-server' ile yeniden başlatın",
       "'adb devices' ile cihazların görünüp olmadığını kontrol edin"
-    ]
+    ],
+    "severity": "error"
   },
   {
     "id": "unknown_error",
@@ -242,6 +238,420 @@
       "Hata mesajını kontrol edin ve not edin",
       "'python phone_farm_cli.py health <device_id>' ile cihaz durumunu kontrol edin",
       "Sorun devam ederse destek ekibiyle iletişime geçin"
-    ]
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "app_crash",
+    "patterns": ["app.*crash", "uncaught exception", "cannot read property.*undefined", "cannot read properties.*null", "segmentation fault", "core dumped"],
+    "title": "Uygulama çöktü",
+    "hint": "Uygulama beklenmedik bir şekilde kapandı",
+    "fix_steps": [
+      "Uygulamayı kapatıp yeniden açın",
+      "Güncellemeleri kontrol edin (Yardım > Güncellemeleri Kontrol Et)",
+      "Sorun devam ederse logs/ klasöründeki hata kayıtlarını destek ekibine iletin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "unexpected_restart",
+    "patterns": ["unexpected restart", "unexpected.*restart", "yeniden başlatma", "restart.*unexpect"],
+    "title": "Beklenmeyen yeniden başlatma",
+    "hint": "Sistem beklenmedik şekilde yeniden başladı",
+    "fix_steps": [
+      "Bilgisayarınızı yeniden başlatın",
+      "Arka planda çalışan gereksiz programları kapatın",
+      "Sorun devam ederse logs/ klasörünü inceleyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "corrupted_config",
+    "patterns": ["corrupt.*config", "config.*corrupt", "config.*bozuk", "yapılandırma.*bozuk", "invalid.*yaml", "yaml.*invalid"],
+    "title": "Yapılandırma dosyası bozuk",
+    "hint": "Yapılandırma dosyasının içeriğini kontrol edin",
+    "fix_steps": [
+      "config/phone_farm.yaml dosyasını yedekleyin",
+      "Varsayılan yapılandırma ile devam etmek için dosyayı geçici olarak taşıyın",
+      "config/phone_farm.yaml dosyasını bir metin editörüyle açıp bozuk satırları düzeltin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "adb_server_timeout",
+    "patterns": ["adb.*timeout", "adb.*timed out", "adb.*zaman aşımı", "adb server.*time"],
+    "title": "ADB sunucu zaman aşımı",
+    "hint": "ADB sunucusu yanıt vermiyor",
+    "fix_steps": [
+      "'adb kill-server' komutunu çalıştırın",
+      "'adb start-server' ile yeniden başlatın",
+      "USB kablosunu çıkarıp tekrar takın",
+      "Bilgisayarı yeniden başlatın"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "adb_device_lost",
+    "patterns": ["device.*lost", "connection.*lost", "bağlantı.*koptu", "device.*disconnect", "read from socket failed", "transport endpoint"],
+    "title": "ADB cihaz bağlantısı koptu",
+    "hint": "Cihaz ile bağlantı kesildi",
+    "fix_steps": [
+      "USB kablosunu çıkarıp tekrar takın",
+      "Kablo bağlantısının sağlam olduğundan emin olun",
+      "'adb devices' komutuyla cihazın hala görünüp görünmediğini kontrol edin",
+      "Kablosuz bağlantı kullanıyorsanız ağ bağlantınızı kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "adb_multiple_devices",
+    "patterns": ["multiple devices", "more than one device", "birden fazla cihaz", "error.*more than one", "device.*multiple"],
+    "title": "Birden fazla ADB cihazı",
+    "hint": "Birden fazla cihaz bağlı, hangisini kullanacağınızı belirtin",
+    "fix_steps": [
+      "'adb devices' ile tüm bağlı cihazların listesini görün",
+      "İşlemi belirli bir cihaz ID'si ile tekrar deneyin: --device <ID>",
+      "Kullanmak istediğiniz cihaz dışındakilerin bağlantısını geçici olarak kesin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "adb_install_fail",
+    "patterns": ["install.*fail", "installation.*error", "kurulum.*başarısız", "adb.*install.*error", "failed.*install"],
+    "title": "ADB kurulum başarısız",
+    "hint": "Uygulama yüklenirken hata oluştu",
+    "fix_steps": [
+      "Cihazda yeterli depolama alanı olduğundan emin olun",
+      "Cihaz ekranının açık ve kilitli olmadığından emin olun",
+      "Bilinmeyen kaynaklardan uygulama yüklemeye izin verildiğinden emin olun",
+      "APK dosyasının bozuk olmadığını kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "network_dns",
+    "patterns": ["dns.*error", "dns.*not resolved", "cannot resolve.*host", "dns_probe", "name or service not known", "dns server"],
+    "title": "DNS hatası",
+    "hint": "DNS sorgulaması başarısız oldu",
+    "fix_steps": [
+      "İnternet bağlantınızın aktif olduğunu kontrol edin",
+      "DNS sunucunuzu değiştirin (Örn: 8.8.8.8 veya 1.1.1.1)",
+      "Modemi/yönlendiriciyi yeniden başlatın",
+      "Bilgisayarı yeniden başlatın"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "network_proxy",
+    "patterns": ["proxy.*error", "proxy.*authentication", "cannot connect.*proxy", "407.*proxy", "proxy.*required"],
+    "title": "Proxy hatası",
+    "hint": "Proxy ayarlarınızı kontrol edin",
+    "fix_steps": [
+      "Proxy ayarlarınızı kontrol edin (Ayarlar > Ağ > Proxy)",
+      "Proxy kullanıcı adı ve şifrenizin doğru olduğunu doğrulayın",
+      "Geçici olarak proxy'yi devre dışı bırakıp tekrar deneyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "network_ssl",
+    "patterns": ["ssl.*error", "tls.*error", "certificate.*verify", "certificate.*expired", "self.signed certificate", "ssl.*handshake", "unable to get local issuer certificate"],
+    "title": "SSL/TLS hatası",
+    "hint": "Güvenli bağlantı kurulamadı",
+    "fix_steps": [
+      "Sistem saatinizin doğru olduğunu kontrol edin",
+      "İnternet bağlantınızı kontrol edin",
+      "Virüsten koruma veya güvenlik duvarının SSL denetimini geçici olarak kapatıp deneyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "network_connection_refused",
+    "patterns": ["connection refused", "actively refused", "bağlantı reddedildi", "could not connect", "no connection could be made"],
+    "title": "Bağlantı reddedildi",
+    "hint": "Hedef sunucu bağlantıyı reddetti",
+    "fix_steps": [
+      "Hedef sunucunun çalıştığından emin olun",
+      "Güvenlik duvarının bağlantıyı engellemediğinden emin olun",
+      "Doğru port ve adresi kullandığınızı kontrol edin",
+      "VPN veya Tailscale bağlantınızı kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "network_error",
+    "patterns": ["network error", "network.*error", "connection reset", "enetunreach"],
+    "title": "Ağ hatası",
+    "hint": "Ağ bağlantınızı kontrol edin",
+    "fix_steps": [
+      "İnternet bağlantınızın aktif olduğunu kontrol edin",
+      "Eğer uzak cihaz kullanıyorsanız, VPN/Tailscale bağlantısını kontrol edin",
+      "Güvenlik duvarı ayarlarını kontrol edin",
+      "İşlemi biraz bekleyip tekrar deneyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "license_invalid_key",
+    "patterns": ["invalid.*license.*key", "license.*key.*invalid", "geçersiz.*lisans.*anahtar", "lisans.*anahtarı.*geçersiz", "invalid license", "license.*not valid"],
+    "title": "Geçersiz lisans anahtarı",
+    "hint": "Girdiğiniz lisans anahtarı geçerli değil",
+    "fix_steps": [
+      "Lisans anahtarını doğru girdiğinizden emin olun (büyük/küçük harf duyarlı)",
+      "Lisans anahtarını e-postanızdan kopyalayıp yapıştırın",
+      "Yeni bir lisans anahtarı almak için destek ekibiyle iletişime geçin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "license_server_unreachable",
+    "patterns": ["license.*server.*unreachable", "lisans.*sunucu.*ulaş", "cannot reach.*license", "license.*server.*connect", "license.*activation.*fail"],
+    "title": "Lisans sunucusuna ulaşılamıyor",
+    "hint": "Lisans doğrulama sunucusuna bağlanılamadı",
+    "fix_steps": [
+      "İnternet bağlantınızı kontrol edin",
+      "Güvenlik duvarının uygulamayı engellemediğinden emin olun",
+      "Bir süre bekleyip tekrar deneyin",
+      "Proxy ayarlarınızı kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "license_machine_mismatch",
+    "patterns": ["machine.*mismatch", "device.*mismatch", "hardware.*change", "machine.*changed", "lisans.*makine", "bu.*bilgisayar"],
+    "title": "Makine lisans uyuşmazlığı",
+    "hint": "Lisans başka bir bilgisayara tanımlanmış",
+    "fix_steps": [
+      "Lisansı mevcut bilgisayarınızda devre dışı bırakıp yeni bilgisayarda etkinleştirin",
+      "Eski bilgisayarınıza erişemiyorsanız destek ekibiyle iletişime geçin",
+      "Lisans sıfırlama talebi oluşturun"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "license_expired",
+    "patterns": ["license.*expired", "lisans.*süresi", "license.*invalid", "lisans.*geçersiz"],
+    "title": "Lisans süresi dolmuş",
+    "hint": "Lisansınızı yenileyin",
+    "fix_steps": [
+      "Lisans durumunu kontrol edin",
+      "Yeni bir lisans anahtarı girin",
+      "Destek ekibiyle iletişime geçin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "env_missing",
+    "patterns": ["env.*not found", "environment.*missing", "ortam.*değişken.*eksik", "missing.*env", ".env.*not found", "env file.*missing"],
+    "title": "Ortam değişkeni eksik",
+    "hint": "Gerekli ortam değişkeni veya .env dosyası bulunamadı",
+    "fix_steps": [
+      "Proje kökünde .env dosyası olup olmadığını kontrol edin",
+      ".env.example dosyasını .env olarak kopyalayın: cp .env.example .env",
+      ".env dosyasındaki değerlerin doğru olduğundan emin olun",
+      "Uygulamayı yeniden başlatın"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "env_corrupted",
+    "patterns": ["env.*corrupt", "environment.*corrupt", "ortam.*bozuk", ".env.*bozuk", "env.*parse.*error"],
+    "title": "Ortam değişkeni bozuk",
+    "hint": ".env dosyasının içeriği bozuk veya hatalı",
+    "fix_steps": [
+      ".env dosyasını yedekleyip silin",
+      ".env.example dosyasını .env olarak kopyalayın: cp .env.example .env",
+      "Gerekli değişkenleri tek tek girin",
+      "Uygulamayı yeniden başlatın"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "log_write_fail",
+    "patterns": ["log.*write", "cannot write.*log", "log.*error", "log file.*fail", "failed.*write.*log"],
+    "title": "Log yazma hatası",
+    "hint": "Log dosyasına yazılamıyor",
+    "fix_steps": [
+      "logs/ klasörünün yazılabilir olduğundan emin olun",
+      "Disk alanını kontrol edin",
+      "Klasör izinlerini kontrol edin: chmod -R 755 logs/"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "config_read_only",
+    "patterns": ["config.*read.?only", "read.only.*config", "yapılandırma.*salt okunur", "config.*permission denied", "cannot write.*config"],
+    "title": "Yapılandırma dosyası salt okunur",
+    "hint": "Yapılandırma dosyasına yazılamıyor",
+    "fix_steps": [
+      "config/phone_farm.yaml dosyasının salt okunur olmadığından emin olun",
+      "Dosya izinlerini değiştirin: chmod 644 config/phone_farm.yaml",
+      "Dosyayı yönetici/root olarak çalıştırmayı deneyin"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "device_busy",
+    "patterns": ["device.*busy", "cihaz.*meşgul", "device.*occupied", "busy.*device", "device.*currently in use"],
+    "title": "Cihaz meşgul",
+    "hint": "Cihaz şu anda başka bir işlem tarafından kullanılıyor",
+    "fix_steps": [
+      "Cihazda çalışan diğer işlemlerin tamamlanmasını bekleyin",
+      "scrcpy pencerelerini kapatın",
+      "Birkaç saniye bekleyip tekrar deneyin",
+      "Cihazı yeniden başlatın"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "device_resetting",
+    "patterns": ["device.*reset", "cihaz.*sıfırla", "resetting.*device", "factory reset", "device.*restarting"],
+    "title": "Cihaz sıfırlanıyor",
+    "hint": "Cihaz şu anda sıfırlanıyor veya yeniden başlatılıyor",
+    "fix_steps": [
+      "Cihazın sıfırlanmasını bekleyin",
+      "Birkaç dakika sonra tekrar deneyin",
+      "Cihaz açıldığında USB Debugging'in hala açık olduğundan emin olun"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "device_storage_critical",
+    "patterns": ["storage.*low", "storage.*critical", "depolama.*dolu", "insufficient storage", "no storage", "disk.*full.*device", "device.*storage"],
+    "title": "Cihaz depolama kritik",
+    "hint": "Cihazın depolama alanı kritik seviyede düşük",
+    "fix_steps": [
+      "Cihazda gereksiz dosyaları temizleyin",
+      "Kullanılmayan uygulamaları kaldırın",
+      "Fotoğraf/videoları bilgisayara yedekleyin",
+      "Cihaz ayarlarından depolama kullanımını kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "device_battery_critical",
+    "patterns": ["battery.*low", "battery.*critical", "batarya.*kritik", "şarj.*kritik", "battery.*0%", "battery.*warning"],
+    "title": "Cihaz bataryası kritik",
+    "hint": "Cihazın batarya seviyesi çok düşük",
+    "fix_steps": [
+      "Cihazı şarja takın",
+      "Kritik işlemleri batarya şarj olana kadar erteleyin",
+      "Cihazın kapanmasını önlemek için şarjdayken işlem yapın"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "device_overheating",
+    "patterns": ["overheat", "aşırı ısın", "device.*hot", "temperature.*high", "thermal.*error", "device.*cooling", "cihaz.*ısın"],
+    "title": "Cihaz aşırı ısındı",
+    "hint": "Cihaz aşırı ısınma nedeniyle yavaşlayabilir veya durabilir",
+    "fix_steps": [
+      "Cihazı gölge ve serin bir yere koyun",
+      "Cihazı şarjdan çıkarın",
+      "Yoğun işlemleri durdurun ve cihazın soğumasını bekleyin",
+      "Kılıf varsa çıkarın"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "cli_binary_missing",
+    "patterns": ["cli.*not found", "phone_farm_cli.*not found", "cannot find.*cli", "cli.*missing", "phone.farm.cli.*no"],
+    "title": "CLI programı bulunamadı",
+    "hint": "phone_farm_cli çalıştırılabilir dosyası bulunamadı",
+    "fix_steps": [
+      "Projeyi yeniden derleyin: pip install -r requirements.txt",
+      "PyInstaller ile CLI'yi yeniden oluşturun",
+      "dist/ klasöründe phone_farm_cli dosyasının varlığını kontrol edin",
+      "'python phone_farm_cli.py --help' ile Python sürümünü deneyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "adb_path_missing",
+    "patterns": ["adb path", "path.*adb", "adb.*PATH", "adb.*yolu", "platform-tools.*PATH", "adb: command not found"],
+    "title": "ADB yolu eksik",
+    "hint": "ADB'nin yolu sistem PATH'inde bulunamadı",
+    "fix_steps": [
+      "platform-tools klasörünü bulun (genellikle kullanıcı klasöründe)",
+      "platform-tools yolunu PATH'e ekleyin",
+      "Terminali yeniden başlatın",
+      "'adb version' komutuyla doğrulayın"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "python_missing",
+    "patterns": ["python.*not found", "python.*not recognized", "python.*no such file", "python.*missing", "python3.*not found"],
+    "title": "Python bulunamadı",
+    "hint": "Python yüklü değil veya PATH'te bulunamadı",
+    "fix_steps": [
+      "https://www.python.org/downloads/ adresinden Python 3.10+ indirin",
+      "Kurulumda 'Add Python to PATH' seçeneğini işaretleyin",
+      "Terminali yeniden başlatın",
+      "'python --version' ile kontrol edin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "call_no_sim",
+    "patterns": ["no sim", "sim.*card.*not", "sim.*error", "sim kartı yok", "sim card absent", "insert sim", "no sim card"],
+    "title": "SIM kart yok",
+    "hint": "Cihazda SIM kart bulunamadı",
+    "fix_steps": [
+      "SIM kartın cihaza takılı olduğunu kontrol edin",
+      "SIM kartı çıkarıp tekrar takın",
+      "SIM kartın etkin olduğunu kontrol edin: Ayarlar > SIM Kartlar",
+      "Başka bir SIM kart ile deneyin"
+    ],
+    "severity": "error"
+  },
+  {
+    "id": "call_airplane_mode",
+    "patterns": ["airplane.*mode", "uçak.*modu", "flight.*mode", "airplane mode", "all radios off"],
+    "title": "Uçak modu açık",
+    "hint": "Cihaz uçak modunda, arama yapılamaz",
+    "fix_steps": [
+      "Hızlı ayarlar panelini açın (yukarıdan aşağı kaydırın)",
+      "Uçak modu simgesine tıklayarak kapatın",
+      "Ayarlar > Bağlantılar > Uçak Modu'ndan kapatın"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "call_rejected",
+    "patterns": ["call.*reject", "arama.*reddet", "call.*busy", "call.*declined", "rejected.*call", "user.*busy"],
+    "title": "Arama reddedildi",
+    "hint": "Arama karşı tarafça reddedildi veya hat meşgul",
+    "fix_steps": [
+      "Numarayı kontrol edin ve tekrar arayın",
+      "Karşı tarafın meşgul olmadığı bir zamanda tekrar deneyin",
+      "Numaranın doğru formatta olduğundan emin olun (+905...)"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "operation_timeout",
+    "patterns": ["operation.*timeout", "işlem.*zaman aşımı", "process.*timeout", "timeout.*exceeded", "request.*timeout", "operation timed out"],
+    "title": "İşlem zaman aşımı",
+    "hint": "İşlem çok uzun sürdü ve zaman aşımına uğradı",
+    "fix_steps": [
+      "İşlemi tekrar deneyin",
+      "Cihazın yanıt verdiğinden emin olun",
+      "Ağ bağlantınızı kontrol edin",
+      "Daha az sayıda cihazla işlemi tekrar deneyin"
+    ],
+    "severity": "warning"
+  },
+  {
+    "id": "toast_error",
+    "patterns": ["toast.*error", "bildirim.*hatası", "notification.*error", "could not show.*notification"],
+    "title": "Bildirim hatası",
+    "hint": "Bildirim gösterilemedi",
+    "fix_steps": [
+      "Bildirim ayarlarını kontrol edin",
+      "Uygulamayı yeniden başlatın",
+      "Sorun devam ederse destek ekibiyle iletişime geçin"
+    ],
+    "severity": "warning"
   }
 ]

@@ -1,6 +1,6 @@
 """Shared utility functions for ADB shell operations.
 
-Provides :func:`safe_shell`, a common wrapper that calls an ADB method,
+Provides :func:`_safe_shell`, a common wrapper that calls an ADB method,
 catches exceptions, and returns a structured result dict.  This replaces
 the duplicated ``_safe_shell`` methods that previously lived in
 ``core.phone``, ``core.mobile_ops``, and ``monitor.phone_health``.
@@ -14,7 +14,7 @@ from typing import Any, Dict
 logger = logging.getLogger(__name__)
 
 
-def safe_shell(
+def _safe_shell(
     adb_client: Any,
     method_name: str,
     *args: Any,
@@ -46,5 +46,5 @@ def safe_shell(
         result = getattr(adb_client, method_name)(*args, **kwargs)
         return {"ok": True, "data": result, "error": None}
     except Exception as exc:
-        logger.warning("safe_shell(%s) failed: %s", method_name, exc)
+        logger.warning("_safe_shell(%s) failed: %s", method_name, exc)
         return {"ok": False, "data": "", "error": str(exc)}

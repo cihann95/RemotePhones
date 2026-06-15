@@ -62,12 +62,12 @@
 | Metric | Değer |
 |--------|-------|
 | Test Framework | pytest |
-| Test Files | 14 |
-| Total Test Functions | 234 |
+| Test Files | 16 |
+| Total Test Functions | 333 |
 | Test Classes | 53 |
 | Baseline (pre-Waves 1-3) | 190 tests |
-| New Tests Added (Wave 3) | 44 (test_device_manager: 26, test_manager: 18) |
-| Pending Test Files | test_adb.py, test_health.py, test_api.py |
+| New Tests Added (Waves 3-4) | 143 (test_device_manager: 26, test_manager: 18, test_adb, test_health, test_api) |
+| Completed Test Files | ✓ test_adb.py, ✓ test_health.py, ✓ test_api.py — all passing |
 | mypy Status | Core modules clean, 8 ignore_errors remain |
 | CI Pipeline | GitHub Actions: Python + Node tests |
 

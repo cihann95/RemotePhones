@@ -94,7 +94,7 @@ describe('humanizeError IPC handler', () => {
 
   it('should have humanize-error IPC handler in main.js', () => {
     const content = fs.readFileSync(mainPath, 'utf-8');
-    expect(content).toContain("ipcMain.handle('humanize-error'");
+    expect(content).toMatch(/ipcMain\.handle\(['"]humanize-error['"]|safeHandle\(['"]humanize-error['"]/);
   });
 
   it('should expose humanizeError in preload.js', () => {
