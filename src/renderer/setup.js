@@ -320,8 +320,9 @@ els.btnModeContinue.addEventListener('click', async () => {
     } catch (e) {
       cleanupTailscale();
       console.error('Auto-install error:', e);
-      els.tailscaleProgressText.textContent = 'Hata: ' + e.message;
-      els.parsecProgressText.textContent = 'Hata: ' + e.message;
+      const h = await window.electronAPI.humanizeError(e.message || String(e));
+      els.tailscaleProgressText.textContent = h.title + ': ' + h.hint;
+      els.parsecProgressText.textContent = h.title + ': ' + h.hint;
       els.btnNetworkSkip.disabled = false;
       els.btnNetworkNext.disabled = false;
     }
@@ -364,8 +365,9 @@ async function checkAdb() {
     }
   } catch (e) {
     console.error('ADB check error:', e);
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
     els.adbStatus.innerHTML =
-      `<span class="status-badge status-offline">✗ ADB kontrolü başarısız: ${escapeHtml(e.message || String(e))}</span>`;
+      `<span class="status-badge status-offline">✗ ${escapeHtml(h.title)}: ${escapeHtml(h.hint)}</span>`;
     els.btnAdbRetry.hidden = false;
   }
 }
@@ -417,8 +419,9 @@ async function checkDevices() {
     els.btnDeviceNext.disabled = false;
   } catch (e) {
     console.error('Device check error:', e);
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
     els.deviceStatus.innerHTML =
-      `<span class="status-badge status-offline">✗ Cihaz listesi alınamadı: ${escapeHtml(e.message || String(e))}</span>`;
+      `<span class="status-badge status-offline">✗ ${escapeHtml(h.title)}: ${escapeHtml(h.hint)}</span>`;
     els.btnDeviceRetry.hidden = false;
   }
 }
@@ -496,7 +499,8 @@ async function installTailscale() {
       els.tailscaleProgressText.textContent = 'Kurulum basarisiz: ' + result.error;
     }
   } catch (e) {
-    els.tailscaleProgressText.textContent = 'Hata: ' + e.message;
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
+    els.tailscaleProgressText.textContent = h.title + ': ' + h.hint;
   } finally {
     setTimeout(() => {
       _onTailscaleProgress?.();
@@ -540,7 +544,8 @@ async function installParsec() {
       els.parsecProgressText.textContent = 'Kurulum basarisiz: ' + result.error;
     }
   } catch (e) {
-    els.parsecProgressText.textContent = 'Hata: ' + e.message;
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
+    els.parsecProgressText.textContent = h.title + ': ' + h.hint;
   } finally {
     setTimeout(() => {
       _onParsecProgress?.();
@@ -666,8 +671,9 @@ async function runFirstTask() {
     els.btnFirstTaskRun.addEventListener('click', completeSetup);
   } catch (e) {
     console.error('First task error:', e);
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
     els.firstTaskStatus.innerHTML =
-      `<span class="status-badge status-offline">✗ Sağlık kontrolü başarısız: ${escapeHtml(e.message || String(e))}</span>`;
+      `<span class="status-badge status-offline">✗ ${escapeHtml(h.title)}: ${escapeHtml(h.hint)}</span>`;
     els.btnFirstTaskRun.disabled = false;
     els.btnFirstTaskSkip.disabled = false;
   }

@@ -80,7 +80,8 @@ async function connectToParsec() {
     await window.electronAPI.parsecOpen();
   } catch (e) {
     console.error('Connect error:', e);
-    PhoneFarmNotification.show('Failed to open Parsec: ' + e.message, 'error');
+    const h = await window.electronAPI.humanizeError(e.message || String(e));
+    PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
   } finally {
     if (elements.btnConnect) {
       elements.btnConnect.innerHTML = '<span>🎮</span><span>PARSEC BAGLAN</span>';

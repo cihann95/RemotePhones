@@ -103,7 +103,8 @@ class CSVUpload {
         await window.electronAPI.phoneCallBulk(this.numbers);
         this.showSuccess(`Bulk call initiated for ${this.numbers.length} numbers`);
       } catch (error) {
-        this.showError(`Bulk call failed: ${error.message}`);
+        const h = await window.electronAPI.humanizeError(error.message || String(error));
+        this.showError(h.title + ': ' + h.hint);
       } finally {
         this.isProcessing = false;
         startBtn.disabled = false;

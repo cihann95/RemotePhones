@@ -139,7 +139,8 @@ class PhonePanel {
             this.setCallState('ringing');
         } catch (error) {
             console.error('Call failed:', error);
-            PhoneFarmNotification.show('Failed to initiate call: ' + error.message, 'error');
+            const h = await window.electronAPI.humanizeError(error.message || String(error));
+            PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
         }
     }
 
@@ -151,7 +152,8 @@ class PhonePanel {
             this.setCallState('active');
         } catch (error) {
             console.error('Answer failed:', error);
-            PhoneFarmNotification.show('Failed to answer call: ' + error.message, 'error');
+            const h = await window.electronAPI.humanizeError(error.message || String(error));
+            PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
         }
     }
 
@@ -163,7 +165,8 @@ class PhonePanel {
             this.setCallState('ended');
         } catch (error) {
             console.error('Hangup failed:', error);
-            PhoneFarmNotification.show('Failed to hangup call: ' + error.message, 'error');
+            const h = await window.electronAPI.humanizeError(error.message || String(error));
+            PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
         }
     }
 
@@ -175,7 +178,8 @@ class PhonePanel {
             this.setCallState('ended');
         } catch (error) {
             console.error('Reject failed:', error);
-            PhoneFarmNotification.show('Failed to reject call: ' + error.message, 'error');
+            const h = await window.electronAPI.humanizeError(error.message || String(error));
+            PhoneFarmNotification.show(h.title + ': ' + h.hint, 'error');
         }
     }
 
