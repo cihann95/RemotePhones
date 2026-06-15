@@ -6,6 +6,7 @@
 
 const cp = require('child_process');
 const fs = require('fs');
+const dns = require('dns');
 
 describe('preflight module', () => {
   let preflight;
@@ -36,6 +37,8 @@ describe('preflight module', () => {
       }));
     }
 
+    vi.spyOn(dns.promises, 'lookup').mockResolvedValue({ address: '142.250.80.46', family: 4 });
+
     // Reload module to get fresh mocks
     delete require.cache[require.resolve('../main/preflight')];
     preflight = require('../main/preflight');
@@ -51,7 +54,7 @@ describe('preflight module', () => {
 
       expect(result.ok).toBe(true);
       expect(Array.isArray(result.checks)).toBe(true);
-      expect(result.checks.length).toBeGreaterThanOrEqual(6);
+      expect(result.checks.length).toBeGreaterThanOrEqual(9);
       expect(typeof result.summary).toBe('string');
     });
 
@@ -60,10 +63,13 @@ describe('preflight module', () => {
       const names = result.checks.map(c => c.name);
 
       expect(names).toContain('adb-binary');
+      expect(names).toContain('adb-server');
       expect(names).toContain('cli-binary');
       expect(names).toContain('env-file');
+      expect(names).toContain('license-file');
       expect(names).toContain('python-deps');
       expect(names).toContain('data-dir');
+      expect(names).toContain('network');
       expect(names).toContain('disk-space');
     });
 

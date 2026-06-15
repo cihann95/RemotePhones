@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const cp = require('child_process');
 const net = require('net');
+const dns = require('dns');
 
 /**
  * Get the project root directory
@@ -38,6 +39,91 @@ function checkAdbBinary() {
         '2. İndirilen klasörü PATH\'e ekleyin.',
         '3. Terminal\'de `adb version` yazarak doğrulayın.',
         '4. Bilgisayarı yeniden başlatın.'
+      ]
+    };
+  }
+}
+
+/**
+ * Check if ADB server is running and detects connected devices.
+ * Runs `adb devices` and checks output for listed devices.
+ */
+function checkAdbServer() {
+  try {
+    const output = cp.execFileSync('adb', ['devices'], { stdio: 'pipe', timeout: 5000, windowsHide: true }).toString();
+    const lines = output.trim().split('\n').filter(line => line.trim().length > 0);
+    const deviceLines = lines.slice(1).filter(line => line.includes('\t') && !line.includes('offline'));
+
+    if (deviceLines.length > 0) {
+      return {
+        name: 'adb-server',
+        status: 'ok',
+        message: 'ADB sunucusu çalışıyor ve cihaz(lar) bağlı.',
+        fix_steps: []
+      };
+    }
+
+    return {
+      name: 'adb-server',
+      status: 'warning',
+      message: 'ADB sunucusu çalışıyor ancak bağlı cihaz bulunamadı.',
+      fix_steps: [
+        '1. USB hata ayıklamanın etkin olduğundan emin olun.',
+        '2. Cihazı USB kablosuyla bağlayın.',
+        '3. `adb devices` komutunu çalıştırarak doğrulayın.',
+        '4. Kabloyu çıkarıp tekrar takın.'
+      ]
+    };
+  } catch (e) {
+    return {
+      name: 'adb-server',
+      status: 'warning',
+      message: 'ADB sunucusu kontrol edilemedi (ADB binary mevcut değil veya sunucu başlatılamadı).',
+      fix_steps: [
+        '1. ADB binary\'nin PATH\'te olduğundan emin olun.',
+        '2. `adb start-server` ile sunucuyu başlatın.',
+        '3. `adb devices` ile doğrulayın.'
+      ]
+    };
+  }
+}
+
+/**
+ * Check if the license file (src/main/license.js) exists and is readable.
+ */
+function checkLicenseFile() {
+  const licenseFilePath = path.join(__dirname, 'license.js');
+
+  try {
+    if (fs.existsSync(licenseFilePath)) {
+      fs.accessSync(licenseFilePath, fs.constants.R_OK);
+      return {
+        name: 'license-file',
+        status: 'ok',
+        message: 'Lisans dosyası mevcut ve okunabilir durumda.',
+        fix_steps: []
+      };
+    }
+
+    return {
+      name: 'license-file',
+      status: 'error',
+      message: 'Lisans dosyası bulunamadı.',
+      fix_steps: [
+        '1. Proje dosyalarının tam olduğundan emin olun.',
+        '2. src/main/license.js dosyasının var olduğunu doğrulayın.',
+        '3. Uygulamayı yeniden yükleyin.'
+      ]
+    };
+  } catch (e) {
+    return {
+      name: 'license-file',
+      status: 'error',
+      message: 'Lisans dosyası okunamıyor.',
+      fix_steps: [
+        '1. Dosya izinlerini kontrol edin.',
+        '2. src/main/license.js dosyasına okuma izni verin.',
+        '3. Uygulamayı yeniden yükleyin.'
       ]
     };
   }
@@ -229,6 +315,34 @@ function checkDataDir() {
 }
 
 /**
+ * Check network connectivity via DNS lookup.
+ * Uses dns.promises.lookup with a 3-second timeout.
+ */
+async function checkNetworkConnectivity() {
+  try {
+    await dns.promises.lookup('google.com', { timeout: 3000 });
+    return {
+      name: 'network',
+      status: 'ok',
+      message: 'İnternet bağlantısı mevcut.',
+      fix_steps: []
+    };
+  } catch (e) {
+    return {
+      name: 'network',
+      status: 'warning',
+      message: 'İnternet bağlantısı kontrol edilemedi (DNS çözümleme başarısız).',
+      fix_steps: [
+        '1. İnternet bağlantınızı kontrol edin.',
+        '2. Güvenlik duvarı ayarlarınızı kontrol edin.',
+        '3. Proxy ayarlarınızı kontrol edin.',
+        '4. DNS sunucularını kontrol edin.'
+      ]
+    };
+  }
+}
+
+/**
  * Check if port 8000 (monitor API) is available.
  */
 function checkPortAvailability() {
@@ -374,8 +488,10 @@ async function runPreflightChecks() {
   // Synchronous checks
   const syncChecks = [
     checkAdbBinary(),
+    checkAdbServer(),
     checkCliBinary(),
     checkEnvFile(),
+    checkLicenseFile(),
     checkPythonDeps(),
     checkDataDir(),
     checkDiskSpace()
@@ -383,7 +499,8 @@ async function runPreflightChecks() {
 
   // Asynchronous checks
   const asyncChecks = await Promise.all([
-    checkPortAvailability()
+    checkPortAvailability(),
+    checkNetworkConnectivity()
   ]);
 
   const checks = [...syncChecks, ...asyncChecks];
