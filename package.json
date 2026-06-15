@@ -5,6 +5,7 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
+    "dev": "electron . --dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "electron-builder --win --x64",
