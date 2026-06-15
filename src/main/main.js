@@ -4,7 +4,7 @@
 // by SERGIO
 // =====================================================
 
-const { app, BrowserWindow, ipcMain, shell, Menu, session } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Menu, session, dialog } = require('electron');
 const crypto = require('crypto');
 const path = require('path');
 const os = require('os');
@@ -21,6 +21,7 @@ const DeviceStore = require('./device-store');
 const AutostartManager = require('./autostart');
 const NotificationManager = require('./notifications');
 const ShortcutManager = require('./shortcuts');
+const { showCrashDialog } = require('./crash-dialog');
 
 // ── Error message map ─────────────────────────────────────────────────────────
 let _errorMessages = [];
@@ -136,6 +137,7 @@ const Paths = require('./paths');
 const { ipcDeviceId, ipcDeviceText, ipcKeycode } = require('./ipc-validators');
 const HealthMonitor = require('./health-monitor');
 const Updater = require('./updater');
+const { runPreflightChecks } = require('./preflight');
 
 // Version from package.json
 const appPkg = require(path.join(__dirname, '..', '..', 'package.json'));
@@ -2011,8 +2013,7 @@ process.on('uncaughtException', (error) => {
   isShuttingDown = true;
   writeCrashLog(error, 'uncaughtException');
   console.error('[Main] Uncaught exception:', error);
-  app.quit();
-  setTimeout(() => { isShuttingDown = false; }, 5000);
+  showCrashDialog({ error, canRestart: true });
 });
 
 process.on('unhandledRejection', (reason) => {
@@ -2020,8 +2021,7 @@ process.on('unhandledRejection', (reason) => {
   isShuttingDown = true;
   writeCrashLog(reason, 'unhandledRejection');
   console.error('[Main] Unhandled rejection:', reason);
-  app.quit();
-  setTimeout(() => { isShuttingDown = false; }, 5000);
+  showCrashDialog({ error: new Error(String(reason)), canRestart: true });
 });
 
 // =====================================================
