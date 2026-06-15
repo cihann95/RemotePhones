@@ -367,6 +367,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getLogs: (opts) => ipcRenderer.invoke('get-logs', opts || {}),
 
   // =====================================================
+  // ERROR HUMANIZATION
+  // =====================================================
+  /** IPC: Converts a raw error string into a user-friendly Turkish message */
+  humanizeError: (errStr) => ipcRenderer.invoke('humanize-error', errStr),
+
+  // =====================================================
   // UTILITY
   // =====================================================
   /** IPC: Opens a URL in the OS default browser */
@@ -375,6 +381,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   /** IPC: Gracefully quits the application */
   quitApp: () => ipcRenderer.invoke('quit-app'),
+  /** IPC: Relaunches the application (restart) */
+  relaunch: () => ipcRenderer.invoke('app:relaunch'),
 
   // =====================================================
   // UPDATE

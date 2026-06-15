@@ -8,12 +8,16 @@ module.exports = defineConfig({
     // confirm-modal uses DOM APIs — needs jsdom
     environmentMatchGlobs: [
       ['src/tests/confirm-modal.test.js', 'jsdom'],
+      ['src/tests/error-boundary.test.js', 'happy-dom'],
     ],
     include: [
       'src/tests/error_messages.test.js',
       'src/tests/crash-dialog.test.js',
       'src/tests/confirm-modal.test.js',
       'src/tests/preflight.test.js',
+      'src/tests/tray.test.js',
+      'src/tests/error-boundary.test.js',
+      'src/tests/error-leaks.test.js',
     ],
     css: false,
     // Support both CommonJS (main process) and ESM (renderer)

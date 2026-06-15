@@ -959,3 +959,103 @@ textarea,
   background: rgba(248, 250, 252, 0.7);
 }
 
+/* =====================================================
+   ERROR BOUNDARY OVERLAY
+   ===================================================== */
+
+.error-boundary-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30000;
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.error-boundary-backdrop.error-boundary-visible {
+  opacity: 1;
+}
+
+.error-boundary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--error);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  padding: 32px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform var(--transition-normal), opacity var(--transition-normal);
+}
+
+.error-boundary-visible .error-boundary-card {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.error-boundary-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.error-boundary-title {
+  margin: 0 0 20px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.error-boundary-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.error-boundary-btn {
+  padding: 10px 24px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.error-boundary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-boundary-btn-retry {
+  background: var(--accent-primary);
+  color: #ffffff;
+}
+
+.error-boundary-btn-retry:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.error-boundary-btn-restart {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.error-boundary-btn-restart:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+}
+
+[data-theme="light"] .error-boundary-backdrop {
+  background: rgba(248, 250, 252, 0.7);
+}
+
