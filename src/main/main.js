@@ -1917,6 +1917,33 @@ safeHandle('app:relaunch', async () => {
 });
 
 // =====================================================
+// IPC: SYSTEM DOCTOR
+// =====================================================
+
+/**
+ * IPC: Runs the phone_farm_cli doctor command and returns the result.
+ * Spawns `python3 phone_farm_cli.py doctor` as a subprocess and captures
+ * stdout/stderr. Returns {ok, output, exitCode} to the renderer.
+ * @returns {Promise<{ok:boolean,output:string,exitCode:number|null}>}
+ */
+safeHandle('run-doctor', async () => {
+  const { spawn } = require('child_process');
+  const cliPath = path.join(__dirname, '..', '..', 'phone_farm_cli.py');
+  return new Promise((resolve) => {
+    const proc = spawn('python3', [cliPath, 'doctor'], { windowsHide: true });
+    let output = '';
+    proc.stdout.on('data', (d) => { output += d.toString(); });
+    proc.stderr.on('data', (d) => { output += d.toString(); });
+    proc.on('close', (code) => {
+      resolve({ ok: code === 0, output, exitCode: code });
+    });
+    proc.on('error', (err) => {
+      resolve({ ok: false, output: 'Sistem kontrolü başlatılamadı: ' + err.message, exitCode: null });
+    });
+  });
+});
+
+// =====================================================
 // IPC: DEVICE HEALTH
 // =====================================================
 

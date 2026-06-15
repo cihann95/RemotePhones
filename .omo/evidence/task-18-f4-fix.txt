@@ -1,0 +1,28 @@
+Task 18 F4 Fix Evidence
+========================
+Date: 2026-06-15
+
+Deliverables implemented:
+1. run-doctor IPC handler (src/main/main.js, line ~1929)
+   - Uses safeHandle('run-doctor', ...) wrapper
+   - Spawns `python3 phone_farm_cli.py doctor` via child_process.spawn
+   - Returns {ok, output, exitCode} to renderer
+   - Uses windowsHide: true
+   - Turkish error message on spawn failure: 'Sistem kontrolü başlatılamadı'
+
+2. runDoctor preload bridge (src/preload.js, line ~429)
+   - Exposes runDoctor: () => ipcRenderer.invoke('run-doctor') in electronAPI
+
+3. "Sistem Kontrolü" UI button (src/renderer/components/connection-banner.js, line ~87-110)
+   - Added inside buildBanner() after reconnect button
+   - Turkish label: "Sistem Kontrolü"
+   - On click: calls window.electronAPI.runDoctor()
+   - Shows PhoneFarmNotification with result (success/error + output details)
+   - Button disables during check with "Kontrol ediliyor..." text
+   - Uses existing PhoneFarmNotification system
+
+Test results:
+- npm test: 139/139 passed (all 9 test files pass)
+- python3 -m pytest tests/ -q: 396 passed, 1 pre-existing failure (test_all_packages_available)
+
+No regressions introduced.

@@ -84,6 +84,31 @@ window.ConnectionBanner = (function () {
     });
     wrapper.appendChild(reconnectBtn);
 
+    // Sistem Kontrolü button
+    var doctorBtn = el('button', 'connection-banner-btn sistem-kontrolu-btn', 'Sistem Kontrolü');
+    doctorBtn.type = 'button';
+    doctorBtn.addEventListener('click', async function () {
+      doctorBtn.disabled = true;
+      doctorBtn.textContent = 'Kontrol ediliyor...';
+      try {
+        var result = await window.electronAPI.runDoctor();
+        if (result.ok) {
+          window.PhoneFarmNotification.show('Sistem sa\u011Fl\u0131kl\u0131', 'success');
+        } else {
+          window.PhoneFarmNotification.show('Sistem sorunlar\u0131 var', 'error');
+        }
+        if (result.output) {
+          window.PhoneFarmNotification.show(result.output.slice(0, 300), result.ok ? 'info' : 'warning', 8000);
+        }
+      } catch (e) {
+        window.PhoneFarmNotification.show('Sistem kontrolü ba\u015Far\u0131s\u0131z: ' + (e.message || e), 'error');
+      } finally {
+        doctorBtn.disabled = false;
+        doctorBtn.textContent = 'Sistem Kontrolü';
+      }
+    });
+    wrapper.appendChild(doctorBtn);
+
     // Dismiss button
     var dismissBtn = el('button', 'connection-banner-dismiss', '\u00D7');
     dismissBtn.type = 'button';

@@ -423,6 +423,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   // =====================================================
+  // SYSTEM DOCTOR
+  // =====================================================
+  /** IPC: Runs phone_farm_cli doctor and returns {ok, output, exitCode} */
+  runDoctor: () => ipcRenderer.invoke('run-doctor'),
+
+  // =====================================================
   // HEALTH ALERT NOTIFICATIONS
   // =====================================================
   /** IPC: Subscribes to connection-lost events from device monitor */
