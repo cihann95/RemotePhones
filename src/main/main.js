@@ -22,6 +22,7 @@ const AutostartManager = require('./autostart');
 const NotificationManager = require('./notifications');
 const ShortcutManager = require('./shortcuts');
 const { showCrashDialog } = require('./crash-dialog');
+const { createTray, destroyTray } = require('./tray');
 
 // ── Error message map ─────────────────────────────────────────────────────────
 let _errorMessages = [];
@@ -147,11 +148,15 @@ const APP_VERSION = appPkg.version;
 // GLOBAL STATE
 // =====================================================
 
+// Notification deduplication — prevents repeated health alerts from stacking
+const _notifiedAlerts = new Set();
+
 let mainWindow = null;
 let aboutWindow = null;
 let currentMode = null; // 'home' or 'office'
 let isFarmRunning = false;
 let isLicenseValid = false;
+let isQuitting = false;
 
 // Initialize managers
 const adbManager = new ADBManager();
@@ -421,8 +426,53 @@ app.whenReady().then(async () => {
     isLicenseValid = false;
   }
 
+  // ── Preflight checks ──────────────────────────────────────────────────────
+  // runPreflightChecks() also calls ensureEnvFile() to auto-copy .env.example
+  let preflightResult;
+  try {
+    preflightResult = await runPreflightChecks();
+  } catch (e) {
+    console.error('[Preflight] Preflight kontrolü başarısız:', e.message);
+    preflightResult = { ok: false, checks: [], summary: '❌ Preflight kontrol hatası: ' + e.message };
+  }
+
+  // Log warnings but don't block startup
+  const warnings = preflightResult.checks.filter(c => c.status === 'warning');
+  for (const w of warnings) {
+    console.warn(`[Preflight] ⚠️ Uyarı: ${w.message}`);
+  }
+
+  // If errors found, show dialog with Turkish error messages and fix steps
+  const errors = preflightResult.checks.filter(c => c.status === 'error');
+  if (errors.length > 0) {
+    console.error('[Preflight]', preflightResult.summary);
+    const errorDetails = errors.map(e =>
+      `❌ ${e.message}\n\n${e.fix_steps.join('\n')}`
+    ).join('\n\n---\n\n');
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'Phone Farm - Başlangıç Kontrolü',
+      message: `${errors.length} kritik sorun bulundu — uygulama yine de başlatılacak`,
+      detail: errorDetails,
+      buttons: ['Tamam']
+    });
+  } else {
+    console.log('[Preflight]', preflightResult.summary);
+  }
+
   // Create window
   createWindow();
+
+  // Create tray icon (minimize-to-tray behavior)
+  createTray(mainWindow, app);
+
+  // Intercept window close — minimize to tray instead of quitting
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
 
   // Initialize auto-updater (checks for updates if autoCheck is enabled)
   Updater.init();
@@ -441,7 +491,32 @@ app.whenReady().then(async () => {
 
   // Wire critical health alerts to renderer
   healthMonitor.onCritical((alerts) => {
-    try { mainWindow?.webContents?.send('health:system-critical', alerts); } catch (e) { console.debug('IPC handler error:', e.message); }
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('health:system-critical', alerts);
+      }
+    } catch (e) { console.debug('health:system-critical IPC error:', e.message); }
+    // Dispatch individual notifications for each alert
+    for (const alert of alerts) {
+      // Deduplicate: skip if we already notified this exact alert text
+      const dedupKey = 'health:' + alert;
+      if (_notifiedAlerts.has(dedupKey)) continue;
+      _notifiedAlerts.add(dedupKey);
+      // Send health:critical to notification system
+      sendErrorNotification('health:critical', alert);
+      // If ADB-related, also notify as connection:lost
+      if (alert.toLowerCase().includes('adb')) {
+        try {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('connection:lost', {
+              deviceId: 'adb',
+              deviceName: 'ADB Sunucusu',
+              message: 'ADB sunucusu \u00E7al\u0131\u015Fm\u0131yor \u2014 cihaz ba\u011Flant\u0131lar\u0131 kesilebilir'
+            });
+          }
+        } catch (e) { console.debug('connection:lost (adb) IPC error:', e.message); }
+      }
+    }
   });
 
   // If license is valid, start normal services
@@ -494,12 +569,24 @@ async function startAppServices() {
     if (process.env?.DEBUG) console.debug('[App] device-connected event:', device.id);
     notificationManager.deviceConnected(device);
     try { mainWindow?.webContents?.send('device-connected', device); } catch(e) { console.debug('IPC handler error:', e.message); }
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const deviceName = device.customName || device.model || device.id || 'Bilinmeyen cihaz';
+        mainWindow.webContents.send('connection:restored', { deviceId: device.id, deviceName, message: deviceName + ' cihaz\u0131 yeniden ba\u011Flant\u0131 kurdu' });
+      }
+    } catch(e) { console.debug('connection:restored IPC error:', e.message); }
   });
 
   deviceMonitor.on('device-disconnected', (device) => {
     if (process.env?.DEBUG) console.debug('[App] device-disconnected event:', device.id);
     notificationManager.deviceDisconnected(device);
     try { mainWindow?.webContents?.send('device-disconnected', device); } catch(e) { console.debug('IPC handler error:', e.message); }
+    try {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        const deviceName = device.customName || device.model || device.id || 'Bilinmeyen cihaz';
+        mainWindow.webContents.send('connection:lost', { deviceId: device.id, deviceName, message: deviceName + ' cihaz\u0131n\u0131n ba\u011Flant\u0131s\u0131 kesildi' });
+      }
+    } catch(e) { console.debug('connection:lost IPC error:', e.message); }
   });
 
   // Start device monitoring
@@ -521,6 +608,10 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', async () => {
+  // Allow window close without minimize-to-tray
+  isQuitting = true;
+  destroyTray();
+
   // Clean up LexActivator resources
   try {
     await LicenseManager.cleanup();
