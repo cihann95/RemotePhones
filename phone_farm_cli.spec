@@ -21,6 +21,7 @@ a = Analysis(
     binaries=[],
     datas=[
         (os.path.join(PROJECT_ROOT, "config", "phone_farm.yaml"), "config"),
+        (os.path.join(PROJECT_ROOT, "tools", "adb", "adb.exe"), os.path.join("tools", "adb")),
     ],
     hiddenimports=[
         "yaml",

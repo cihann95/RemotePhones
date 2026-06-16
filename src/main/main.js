@@ -95,16 +95,16 @@ function safeHandle(channel, handler) {
 
 /**
  * Returns the path to the phone_farm_cli bundled executable.
- * In packaged Electron app (process.resourcesPath exists), uses the bundled executable
- * from extraResources. In development, uses the PyInstaller-built executable from dist/.
+ * In packaged Electron app, extraResources puts dist/phone_farm_cli/ folder
+ * into resources/phone_farm_cli/. In development, use dist/phone_farm_cli/ directly.
  */
 function getCliPath() {
   if (process.resourcesPath) {
     const ext = process.platform === 'win32' ? '.exe' : '';
-    return path.join(process.resourcesPath, `phone_farm_cli${ext}`);
+    return path.join(process.resourcesPath, 'phone_farm_cli', `phone_farm_cli${ext}`);
   }
   // Development mode — use PyInstaller-built executable
-  return path.join(__dirname, '..', '..', 'dist', 'phone_farm_cli');
+  return path.join(__dirname, '..', '..', 'dist', 'phone_farm_cli', 'phone_farm_cli.exe');
 }
 
 let LicenseManager;

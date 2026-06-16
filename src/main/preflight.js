@@ -8,6 +8,7 @@ const path = require('path');
 const cp = require('child_process');
 const net = require('net');
 const dns = require('dns');
+const { getAdbPath } = require('./paths');
 
 /**
  * Get the project root directory
@@ -21,24 +22,43 @@ function getProjectRoot() {
  * Runs `adb version` and checks exit code.
  */
 function checkAdbBinary() {
+  const adbPath = getAdbPath();
+  if (adbPath && fs.existsSync(adbPath)) {
+    try {
+      cp.execFileSync(adbPath, ['version'], { stdio: 'pipe', timeout: 5000, windowsHide: true });
+      return {
+        name: 'adb-binary',
+        status: 'ok',
+        message: 'ADB (paket içinde) mevcut.',
+        fix_steps: []
+      };
+    } catch (e) {
+      return {
+        name: 'adb-binary',
+        status: 'error',
+        message: 'ADB (paket içinde) çalışmıyor.',
+        fix_steps: ['ADB dosyasını kontrol edin: tools/adb/adb.exe']
+      };
+    }
+  }
+
+  // Fallback to system adb
   try {
     cp.execSync('adb version', { stdio: 'pipe', timeout: 5000, windowsHide: true });
     return {
       name: 'adb-binary',
       status: 'ok',
-      message: 'ADB binary sistemde mevcut.',
+      message: 'ADB (sistemde) mevcut.',
       fix_steps: []
     };
   } catch (e) {
     return {
       name: 'adb-binary',
       status: 'error',
-      message: 'ADB binary sistemde bulunamadı.',
+      message: 'ADB bulunamadı.',
       fix_steps: [
-        '1. Android platform-tools\'u indirin: https://developer.android.com/studio/releases/platform-tools',
-        '2. İndirilen klasörü PATH\'e ekleyin.',
-        '3. Terminal\'de `adb version` yazarak doğrulayın.',
-        '4. Bilgisayarı yeniden başlatın.'
+        '1. Uygulamayı yeniden yükleyin.',
+        '2. tools/adb/adb.exe dosyasının var olduğunu kontrol edin.'
       ]
     };
   }
@@ -49,8 +69,9 @@ function checkAdbBinary() {
  * Runs `adb devices` and checks output for listed devices.
  */
 function checkAdbServer() {
+  const adbPath = getAdbPath() || 'adb';
   try {
-    const output = cp.execFileSync('adb', ['devices'], { stdio: 'pipe', timeout: 5000, windowsHide: true }).toString();
+    const output = cp.execFileSync(adbPath, ['devices'], { stdio: 'pipe', timeout: 5000, windowsHide: true }).toString();
     const lines = output.trim().split('\n').filter(line => line.trim().length > 0);
     const deviceLines = lines.slice(1).filter(line => line.includes('\t') && !line.includes('offline'));
 
@@ -130,18 +151,18 @@ function checkLicenseFile() {
 }
 
 /**
- * Check if the phone_farm_cli binary or Python script exists.
+ * Check if the phone_farm_cli binary exists (packaged or dist).
  */
 function checkCliBinary() {
   const projectRoot = getProjectRoot();
 
-  // Check for PyInstaller-built binary in dist/
-  const cliBinary = process.platform === 'win32'
-    ? path.join(projectRoot, 'dist', 'phone_farm_cli.exe')
-    : path.join(projectRoot, 'dist', 'phone_farm_cli');
-
-  // Check for Python script as fallback
-  const cliScript = path.join(projectRoot, 'phone_farm_cli.py');
+  // In packaged app, CLI is in resources/phone_farm_cli/
+  let cliBinary = null;
+  if (process.resourcesPath) {
+    cliBinary = path.join(process.resourcesPath, 'phone_farm_cli', 'phone_farm_cli.exe');
+  } else {
+    cliBinary = path.join(projectRoot, 'dist', 'phone_farm_cli', 'phone_farm_cli.exe');
+  }
 
   if (fs.existsSync(cliBinary)) {
     return {
@@ -152,24 +173,13 @@ function checkCliBinary() {
     };
   }
 
-  if (fs.existsSync(cliScript)) {
-    return {
-      name: 'cli-binary',
-      status: 'ok',
-      message: 'phone_farm_cli.py betiği mevcut.',
-      fix_steps: []
-    };
-  }
-
   return {
     name: 'cli-binary',
-    status: 'error',
-    message: 'phone_farm_cli bulunamadı.',
+    status: 'warning',
+    message: 'phone_farm_cli binary\'si bulunamadı — CLI komutları kullanılamaz.',
     fix_steps: [
-      '1. Proje dizininde olduğunuzdan emin olun.',
-      '2. `python phone_farm_cli.py` komutunun çalıştığını doğrulayın.',
-      '3. PyInstaller ile binary oluşturmak için `pyinstaller phone_farm_cli.spec` çalıştırın.',
-      '4. Veya doğrudan Python betiğini kullanın: `python phone_farm_cli.py`.'
+      '1. Uygulamayı yeniden yükleyin.',
+      '2. Veya PyInstaller ile binary oluşturun: pyinstaller phone_farm_cli.spec'
     ]
   };
 }
@@ -213,67 +223,6 @@ function checkEnvFile() {
       '2. Gerekli değişkenleri ekleyin: API_SECRET_KEY, DATA_DIR, CORS_ORIGINS.',
       '3. Örnek için .env.example dosyasını inceleyin.'
     ]
-  };
-}
-
-/**
- * Check if required Python dependencies are importable.
- * Tries to import key packages without running a full Python script.
- */
-function checkPythonDeps() {
-  const requiredPackages = [
-    'fastapi',
-    'uvicorn',
-    'yaml',
-    'PIL',
-    'requests'
-  ];
-
-  const missing = [];
-  const found = [];
-
-  for (const pkg of requiredPackages) {
-    try {
-      cp.execSync(
-        `python -c "import ${pkg}" 2>&1 || python3 -c "import ${pkg}" 2>&1`,
-        { stdio: 'pipe', timeout: 5000, windowsHide: true }
-      );
-      found.push(pkg);
-    } catch (e) {
-      // Try python3 as fallback
-      try {
-        cp.execSync(
-          `python3 -c "import ${pkg}" 2>&1`,
-          { stdio: 'pipe', timeout: 5000, windowsHide: true }
-        );
-        found.push(pkg);
-      } catch (e2) {
-        missing.push(pkg);
-      }
-    }
-  }
-
-  const reqPath = path.join(getProjectRoot(), 'requirements.txt');
-
-  if (missing.length === 0) {
-    return {
-      name: 'python-deps',
-      status: 'ok',
-      message: 'Gerekli Python paketleri mevcut.',
-      fix_steps: []
-    };
-  }
-
-  return {
-    name: 'python-deps',
-    status: 'error',
-    message: `Eksik Python paketleri: ${missing.join(', ')}`,
-    fix_steps: [
-      `1. Terminal'de şu komutu çalıştırın: pip install -r requirements.txt`,
-      `2. Eksik paketleri tek tek yükleyin: pip install ${missing.join(' ')}`,
-      `3. Sanal ortam kullanıyorsanız aktif olduğundan emin olun.`,
-      fs.existsSync(reqPath) ? '' : `4. requirements.txt dosyası bulunamadı: ${reqPath}`
-    ].filter(Boolean)
   };
 }
 
@@ -492,7 +441,6 @@ async function runPreflightChecks() {
     checkCliBinary(),
     checkEnvFile(),
     checkLicenseFile(),
-    checkPythonDeps(),
     checkDataDir(),
     checkDiskSpace()
   ];

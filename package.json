@@ -1,6 +1,6 @@
 {
   "name": "phone-farm",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Phone Farm - Professional Phone Management System by SERGIO",
   "main": "src/main/main.js",
   "scripts": {
@@ -53,10 +53,6 @@
       {
         "from": "dist/phone_farm_cli",
         "to": "phone_farm_cli"
-      },
-      {
-        "from": "dist/phone_farm_cli.exe",
-        "to": "phone_farm_cli.exe"
       }
     ],
     "asar": true,
