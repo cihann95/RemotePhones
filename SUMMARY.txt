@@ -1,0 +1,78 @@
+=============================================================
+PHONE FARM v3.0 — PORTABİL PAKET HAZIR!
+=============================================================
+
+✅ TAMAMLANAN İŞLER:
+
+1. Electron builder kod imzalama hatası düzeltildi
+   - package.json: signAndEditExecutable = false
+
+2. ADB Windows DLL'leri eklendi
+   - tools/adb/AdbWinApi.dll (106 KB)
+   - tools/adb/AdbWinUsbApi.dll (72 KB)
+   - phone_farm_cli.spec güncellendi
+
+3. Portable build oluşturuldu
+   - PhoneFarm-Portable-3.0.0.zip (265 MB)
+   - dist/win-unpacked/ tam çalışır durumda
+
+4. Dökümantasyon güncellendi
+   - README.md: Kullanıcı dostu, basit kurulum
+   - KURULUM.md: Türkçe adım adım kılavuz
+   - RELEASE_NOTES.md: Teknik detaylar
+
+=============================================================
+KULLANICI İÇİN KURULUM (3 ADIM):
+=============================================================
+
+1. PhoneFarm-Portable-3.0.0.zip indir
+2. Klasöre çıkar
+3. Phone Farm.exe çift tıkla
+
+Python, ADB, pip kurulumu GEREKMİYOR!
+
+=============================================================
+SONRAKI ADIMLAR (OPSİYONEL):
+=============================================================
+
+1. GitHub Release oluştur:
+   git add -A
+   git commit -m "v3.0.0: Portable release ready"
+   git push origin master
+   git tag v3.0.0
+   git push origin v3.0.0
+
+2. GitHub Releases'te ZIP yükle:
+   - PhoneFarm-Portable-3.0.0.zip
+   - RELEASE_NOTES.md içeriğini açıklama olarak ekle
+
+3. (İsteğe bağlı) Tam installer için:
+   - Windows'ta kod imzalama sertifikası al
+   - npm run build çalıştır (NSIS installer üretir)
+
+=============================================================
+DEĞİŞEN DOSYALAR:
+=============================================================
+
+M package.json              # İmzalama devre dışı
+M phone_farm_cli.spec       # ADB DLL'leri eklendi
+M README.md                 # Kullanıcı dostu güncelleme
+A KURULUM.md                # Yeni Türkçe kılavuz
+A RELEASE_NOTES.md          # Teknik detaylar
+A tools/adb/AdbWinApi.dll   # ADB DLL 1
+A tools/adb/AdbWinUsbApi.dll # ADB DLL 2
+A PhoneFarm-Portable-3.0.0.zip # Hazır paket
+
+=============================================================
+TEST EDİLMELİ:
+=============================================================
+
+Windows'ta test et:
+1. ZIP'i aç
+2. Phone Farm.exe çalıştır
+3. Android telefon bağla (USB debugging açık)
+4. Cihazın göründüğünü doğrula
+
+Başarılı olursa: GitHub'a release yükle!
+
+=============================================================

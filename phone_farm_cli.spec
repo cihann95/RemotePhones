@@ -21,7 +21,10 @@ a = Analysis(
     binaries=[],
     datas=[
         (os.path.join(PROJECT_ROOT, "config", "phone_farm.yaml"), "config"),
+        # ADB binary + Windows DLL dependencies (required for ADB to function)
         (os.path.join(PROJECT_ROOT, "tools", "adb", "adb.exe"), os.path.join("tools", "adb")),
+        (os.path.join(PROJECT_ROOT, "tools", "adb", "AdbWinApi.dll"), os.path.join("tools", "adb")),
+        (os.path.join(PROJECT_ROOT, "tools", "adb", "AdbWinUsbApi.dll"), os.path.join("tools", "adb")),
     ],
     hiddenimports=[
         "yaml",

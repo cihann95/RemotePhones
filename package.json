@@ -73,9 +73,7 @@
         }
       ],
       "icon": "assets/phoneFarm.ico",
-      "signAndEditExecutable": true,
-      "certificateFile": "${env.CSC_LINK}",
-      "certificatePassword": "${env.CSC_KEY_PASSWORD}"
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
